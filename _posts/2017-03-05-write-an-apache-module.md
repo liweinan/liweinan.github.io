@@ -146,7 +146,6 @@ See any operating system documentation about shared libraries for
 more information, such as the ld(1) and ld.so(8) manual pages.
 ----------------------------------------------------------------------
 chmod 755 /usr/lib64/httpd/modules/foo_module.so
-
 ```
 
 The important line is at the bottom of above log, from which we can see `foo_module.so` is installed to the default installation location of Fedora Linux provided `httpd`.
@@ -158,7 +157,6 @@ $ sudo apxs -ia foo_module.la
 ```
 
 And this time there is an additional line in the output:
-
 
 ```bash
 chmod 755 /usr/lib64/httpd/modules/foo_module.so
