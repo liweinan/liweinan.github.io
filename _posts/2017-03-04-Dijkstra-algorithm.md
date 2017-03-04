@@ -262,7 +262,9 @@ private Map<String, Integer> costs = new HashMap<>();
 
 This table stores the _weight sum_ from the start point to the target node. During calculation process, this table will be keep updated.
 
-Another important thing is that we use `Map<String, Integer>` type to store the `node <-> weight sum` pair，because the `Map` type is simliar to the `Set` type, it won't accept duplicate `key` value, which means it won't contain multiple entries for same _node_. If we put a `String <-> Integer` pair with an existing `String` value in `Map`, it will just update the existing entry. That is just what we need: to update the `node <-> weight sum` entry with new value.
+Another important thing is that we use `Map<String, Integer>` type to store the _node <-> weight sum_ pair，because the `Map` type is simliar to the `Set` type, it won't accept duplicate `key` value, which means it won't contain multiple entries for same `node`.
+
+If we put a _String <-> Integer_ pair with an existing `String` value in `Map`, it will just update the existing entry. That is just what we need: to update the _node <-> weight sum_ entry with new value.
 
 We also need to mark the _start node_ and the _end node_ of a graph, and here are the relative attributes in `Graph` class:
 
@@ -310,27 +312,25 @@ if (from.equals(start)) {
 }
 ```
 
-注意这里我们要分两种情况考虑：如果这条边是和`start`相连，那么这条边的另一头的`node`就是起始要进行最小`weight`计算的，所以我们要把真实的`weight`加到`costs`这张表中，用于初始的路径权重计算。
+We need to consider two conditions as shown above: Firstly, we need to check if the added edge is connected with start point. If so, we need to save the true weight into `costs` table, because they are initial edges need to be calculated by the algorithm.
 
-如果不是和起始节点相连的边，那么两头的节点的权重不应该做为一开始计算考虑的范围，所以设为`Integer.MAX_VALUE`就可以了。这样算法因为是寻找`最小权重`的下一个节点，所以这些节点肯定不会被选上。
-
-注意这里：
+Otherwise, we just use `Integer.MAX_VALUE` as the weight of the edge, because we do not want the algorithm to pick up these edges in initial calculation. During the calculation process, the true costs of these edges can be fetched from the `weight` attribute of `Edge` class later for calculation. Please note this condition:
 
 ```java
 else if (costs.get(to) == null)
 ```
 
-这里面要判断一下当前节点在`costs`表中是否已经有权重了，以免被新的值覆盖。为什么？因为和起点相连的边上的节点，可能还和别的边相连，如果这个节点的权重值被覆盖，逻辑就错了。比如这幅图：
+We need to check whether `costs` table contains the `to` node of the added edge, in case the weight value is overwrittee. This is important because the node connecting with start node may be part of multiple edges, and the edge that is not connecting with start node may overwrite the weight value of this node. Here is the diagram for example:
 
-![Graph]({{ site.url }}/assets/dij01.png)
+![Graph]({{ site.url }}/assets/dij01.jpg)
 
-如上图所示，我们可以看到`b`是和`start`相连，同时也和`c`相连，`b`的初始权值在`costs`表里面应该是`1`，所以`b->c`这条边在处理时，`b`的权值不应该被覆盖为`Integer.MAX_VALUE`。算法里面这些细节和边界条件其实是挺磨人的，但写实现就是要注意到这些。
+As the diagram shown above,  _b_ is connected with both _start_ and _c_, so it belongs to two edges: _start -> b_ and _b -> c_. In this case, if we add edge _start -> b_ firstly, the cost of b will be `1` in `costs` table.
 
-『阿男导读』＊Grokking Algorithm＊
+But if we add edge _b -> c_ later, the cost of b will be updated with value `Integer.MAX_VALUE` if we don't check the existing value in `costs` table, and then the algorithm will fail because the initial weight of _b_, which is connected with start node, is not correct.
 
 接下来看`nextCheapestNode()`这个方法：
 
-```
+```java
 private String nextCheapestNode() {
     if (nodes.size() == processed.size()) // all nodes are processed
         return null;
@@ -352,7 +352,7 @@ private String nextCheapestNode() {
 
 这个方法的目的就是寻找下一个还未计算过的权值最低的节点，核心逻辑是这里：
 
-```
+```java
 if (cost.getValue() <= cheapest && !processed.contains(cost.getKey()))
 ```
 
@@ -360,20 +360,20 @@ if (cost.getValue() <= cheapest && !processed.contains(cost.getKey()))
 
 这个方面里面需要注意的是一开始的一个结束状态的判断：
 
-```
+```java
 if (nodes.size() == processed.size()) // all nodes are processed
     return null;
 ```
 
 如果所有的`nodes`都在`processed`列表里面了，算法的计算也就结束了。为了支撑这个逻辑，我们要创建一个`processed`列表：
 
-```
+```java
 private List<String> processed = new ArrayList<>();
 ```
 
 然后在`Graph`创建的时候，要初始化这个列表：
 
-```
+```java
 {
     processed.add(start);
     processed.add(fin);
@@ -446,7 +446,7 @@ g.addEdge("b", "fin", 1);
 
 上面这个过程就是建立这个图的数据：
 
-![Graph]({{ site.url }}/assets/dij02.png)
+![Graph]({{ site.url }}/assets/dij02.jpg)
 
 执行最优路径计算的入口：
 
@@ -515,7 +515,7 @@ g.addEdge("b", "fin", 10);
 
 图变成了这样：
 
-![Graph]({{ site.url }}/assets/dij03.png)
+![Graph]({{ site.url }}/assets/dij03.jpg)
 
 我们可以看到，`start -> b`和`b -> c`的代价变大了，那么最优路径应该是`start -> a -> c -> fin`，执行代码看看是不是这样：
 
