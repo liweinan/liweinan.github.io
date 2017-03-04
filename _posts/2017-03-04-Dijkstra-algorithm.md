@@ -242,7 +242,7 @@ class Edge {
 }
 ```
 
-`from : String` and `to : String` are two nodes of connected by the edge. We use `String` as node class. This is okay because we don't allow different nodes to have same name. The `weight` attribute is straight-forward and it stores the weight of this edge for calculation. Because `Graph` contains many _edges_, so in `Graph` class, we store these edges like this:
+`from` and `to` are two nodes of connected by the edge. We use `String` as node class. This is okay because we don't allow different nodes to have same name. The `weight` attribute is straight-forward and it stores the weight of this edge for calculation. Because `Graph` contains many _edges_, so in `Graph` class, we store these edges like this:
 
 ```java
 private List<Edge> edges = new ArrayList<>();
@@ -262,7 +262,7 @@ private Map<String, Integer> costs = new HashMap<>();
 
 This table stores the _weight sum_ from the start point to the target node. During calculation process, this table will be keep updated.
 
-Another important thing is that we use `Map<String, Integer>` type to store the _node <-> weight sum_ pair，because the `Map` type is simliar to the `Set` type, it won't accept duplicate `key` value, which means it won't contain multiple entries for same `node`.
+Another important thing is that we use `Map<String, Integer>` type to store the _node <-> weight sum_ pair，because the `Map` type is simliar to the `Set` type, it won't accept duplicate key value, which means it won't contain multiple entries for same `node`.
 
 If we put a _String <-> Integer_ pair with an existing `String` value in `Map`, it will just update the existing entry. That is just what we need: to update the _node <-> weight sum_ entry with new value.
 
@@ -324,11 +324,9 @@ We need to check whether `costs` table contains the `to` node of the added edge,
 
 ![Graph]({{ site.url }}/assets/dij01.jpg)
 
-As the diagram shown above,  _b_ is connected with both _start_ and _c_, so it belongs to two edges: _start -> b_ and _b -> c_. In this case, if we add edge _start -> b_ firstly, the cost of b will be `1` in `costs` table.
+As the diagram shown above,  _b_ is connected with both _start_ and _c_, so it belongs to two edges: _start -> b_ and _b -> c_. In this case, if we add edge _start -> b_ firstly, the cost of b will be 1 in `costs` table.
 
-But if we add edge _b -> c_ later, the cost of b will be updated with value `Integer.MAX_VALUE` if we don't check the existing value in `costs` table, and then the algorithm will fail because the initial weight of _b_, which is connected with start node, is not correct.
-
-接下来看`nextCheapestNode()`这个方法：
+But if we add edge _b -> c_ later, the cost of b will be updated with value `Integer.MAX_VALUE` if we don't check the existing value in `costs` table, and then the algorithm will fail because the initial weight of _b_, which is connected with start node, is not correct. Now let's see `nextCheapestNode()` method：
 
 ```java
 private String nextCheapestNode() {
@@ -350,28 +348,26 @@ private String nextCheapestNode() {
 }
 ```
 
-这个方法的目的就是寻找下一个还未计算过的权值最低的节点，核心逻辑是这里：
+This method is to find the next cheapest node that is not processed yet. Here is the important part:
 
 ```java
 if (cost.getValue() <= cheapest && !processed.contains(cost.getKey()))
 ```
 
-这个逻辑和书里面介绍的算法是一模一样的，大家对照看就可以。
+We used a `processed` list to store the nodes that have been processed in `Graph`:
 
-这个方面里面需要注意的是一开始的一个结束状态的判断：
+```java
+private List<String> processed = new ArrayList<>();
+```
+
+After all the nodes are calculated, then all the nodes should be in `processed` list. Here is the end condition:
 
 ```java
 if (nodes.size() == processed.size()) // all nodes are processed
     return null;
 ```
 
-如果所有的`nodes`都在`processed`列表里面了，算法的计算也就结束了。为了支撑这个逻辑，我们要创建一个`processed`列表：
-
-```java
-private List<String> processed = new ArrayList<>();
-```
-
-然后在`Graph`创建的时候，要初始化这个列表：
+We need to initialize the `processed` list in `Graph` like this:
 
 ```java
 {
@@ -380,13 +376,9 @@ private List<String> processed = new ArrayList<>();
 }
 ```
 
-如上所示，把起点和终点都加进来，因为这两个节点不需要计算权重。阿男一直觉得，算法的一些边界条件，和细节处理是在实现的时候最需要想明白，写对的地方。这些地方不属于算法的主体，但是如果写错了，调试起来特别困难。
+Because start and end nodes will never be calculated and they are already processed. Now let us check the entry function:
 
-『阿男导读』＊Grokking Algorithm＊
-
-接下来是算法的入口函数：
-
-```
+```java
 public void dijkstra() {
     System.out.println("Initial costs: " + costs);
 
@@ -409,27 +401,29 @@ public void dijkstra() {
 }
 ```
 
-这个函数就是首先找到初始要计算的节点：
+This function will find the first node to calculate:
 
-```
+```java
 String node = nextCheapestNode();
 ```
 
-然后进入主循环逻辑：
+Then it will enter the calculation loop to calculate all the nodes in graph according to the algorithm:
 
-```
+```java
 while (node != null)
 ```
 
-找到每一个节点的`neighbors`，在`costs`表格里面不断更新它们的权值之和。注意这里还有一个`path`数据：
+In the loop, the function will find the next cheapest node, calculate the path weight, and update the `costs` table. In additon, it will generate the `path`:
 
 ```
 private Map<String, String> path = new HashMap<>(); // to -> from
 ```
 
-这个是我们实际上最后得到的路径结果，注意最后的路径是从结尾到起始点反推出来的，所以在书中这个数据叫做`parents`表格。具体原因当然是因为算法本身的计算过程决定的。
+The `path` is the `parent` data structure in the book, it contains the _to -> from_ data pair. We can use this data structure to generate a complete path from end to start.
 
-『阿男导读』＊Grokking Algorithm＊
+Why it's from end to start? It's determined by the algorithm calculation process, we may have some orphan paths in above data structure as the result of updated costs calculation, but we can always find a sole path from end to the start.
+
+During the calculation process, if it finds a cheaper path, the `from` of a `to` will be updated, so we use `to` as _key_ and `from` as _value_. In this way, where is the `to` from is always unique, and some _to -> from_ entries will become orphan and useless. But that doesn't matter, because we get a unique _to <- from <- to <- from_ path. We can clear 'path' data easily.
 
 最后我们来看使用，以下是建立一个书中所讲的`DAG`：
 
