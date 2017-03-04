@@ -423,9 +423,7 @@ The `path` is the `parent` data structure in the book, it contains the _to -> fr
 
 Why it's from end to start? It's determined by the algorithm calculation process, we may have some orphan paths in above data structure as the result of updated costs calculation, but we can always find a sole path from end to the start.
 
-During the calculation process, if it finds a cheaper path, the `from` of a `to` will be updated, so we use `to` as _key_ and `from` as _value_. In this way, where is the `to` from is always unique, and some _to -> from_ entries will become orphan and useless. But that doesn't matter, because we get a unique _to <- from <- to <- from_ path. We can clear 'path' data easily.
-
-最后我们来看使用，以下是建立一个书中所讲的`DAG`：
+During the calculation process, if it finds a cheaper path, the `from` of a `to` will be updated, so we use `to` as _key_ and `from` as _value_. In this way, where is the `to` from is always unique, and some _to -> from_ entries will become orphan and useless. But that doesn't matter, because we get a unique _to <- from <- to <- from_ path. We can clear `path` data easily. Finally let's recheck the usage of the codes:
 
 ```
 Graph g = new Graph();
@@ -438,25 +436,23 @@ g.addEdge("c", "fin", 1);
 g.addEdge("b", "fin", 1);
 ```
 
-上面这个过程就是建立这个图的数据：
+The above codes will create this graph:
 
 ![Graph]({{ site.url }}/assets/dij02.jpg)
 
-执行最优路径计算的入口：
+Then we execute the algorithm:
 
 ```
 g.dijkstra();
 ```
 
-打印出路径计算结果：
+And finally we print out the path:
 
 ```
 System.out.println(g.generatePath());
 ```
 
-为什么我们不可以直接查看`path`这个数据，还要一个`generatePath()`方法？因为在路径计算的时候，我们是不断更新一个节点更优的`parent`的，那么最后`path`列表里面肯定会有最重被舍弃掉的`死路`，这些`死路`的终点之前是`parent`，但后来被优化掉了。
-
-但是没关系，我们最终计算得到路径后，从path的数据结构里面，从终点的`parent`反推回起点就可以了，而`generatePath`就是做这件事的：
+The `generatePath()` is to print the path from _end_ to _start_ by using `path` data:
 
 ```
 private String generatePath() {
@@ -486,16 +482,14 @@ private String generatePath() {
 }
 ```
 
-这个函数的逻辑就是先从`path`里面找到终点，打印出来，然后再从终点一路反推回起点。这个函数改造一下就可以不是用来打印，而是清理出来一条完整的路径数据，留给大家自己玩。
-
-最后我们看代码执行结果：
+It will find the end node firstly, and use it as the initial `to`, then it will find its `from` in `path` data, and do this in a loop and it reaches the start point. Let's see the result:
 
 ```
 Updated cost:fin=2
 fin <- b <- start
 ```
 
-最优路径就是通过`b`直接到终点，`cost`是`2`。接下来我们改改路径的权重：
+The cheapest path of above graph is _fin <- b <- start_. Now let's try to change the weight of some nodes:
 
 ```
 g.addEdge("start", "a", 1);
@@ -507,17 +501,15 @@ g.addEdge("c", "fin", 1);
 g.addEdge("b", "fin", 10);
 ```
 
-图变成了这样：
+The graph becomes:
 
 ![Graph]({{ site.url }}/assets/dij03.jpg)
 
-我们可以看到，`start -> b`和`b -> c`的代价变大了，那么最优路径应该是`start -> a -> c -> fin`，执行代码看看是不是这样：
+We can see the weight of `start -> b` and `b -> c` have been increased. Now let's rerun the algorithm:
 
 ```
 Updated cost:fin=3
 fin <- c <- a <- start
 ```
 
-和预期的一样，只不过我们是从终点反推起点，把它处理成起点到终点也不是难事。
-
-这章花了很多功夫，总算给大家讲完了。大家也可以花些时间，把这章这个算法搞明白。图论是很有趣的领域，值得细细研究。
+We can see the cheapest path has been changed accordingly. Dijkstra's Algorithm is an interesting algorithm and worth studying.
