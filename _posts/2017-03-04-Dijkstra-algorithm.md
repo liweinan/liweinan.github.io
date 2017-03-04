@@ -505,7 +505,7 @@ The graph becomes:
 
 ![Graph]({{ site.url }}/assets/dij03.jpg)
 
-We can see the weight of `start -> b` and `b -> c` have been increased. Now let's rerun the algorithm:
+We can see the weight of _start -> b_ and _b -> c_ have been increased. Now let's rerun the algorithm:
 
 ```
 Updated cost:fin=3
