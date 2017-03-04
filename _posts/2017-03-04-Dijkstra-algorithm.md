@@ -183,7 +183,7 @@ public class Graph {
 
 I'll introduce the above implementation in this article. Firstly, the usage is like this:
 
-```
+```java
  public static void main(String[] args) throws Exception {
 
         Graph g = new Graph();
@@ -228,15 +228,15 @@ fin <- b <- start
 
 We can see how the path costs are updated in each iteration, and how the final path is calculated at last.
 
-Now I'd like to explain the design in details. Here is the class diagram:
+Here is the class diagram:
 
 ![Class Diagram]({{ site.url }}/assets/dig-class.png)
 
 The `Graph` class is to store the structure _DAG_, of which the full name is _Directed Acyclic Graph_. The `Graph` contains a lot of _edges_, so the `Edge` class is to represent the structure.
 
-Here are the attributes contain in the `Edge` class:
+Here are the attributes in `Edge` class:
 
-```
+```java
 class Edge {
     private String from;
     private String to;
@@ -244,40 +244,40 @@ class Edge {
 }
 ```
 
+`from : String` and `to : String` are two nodes of connected by the edge. We use `String` as node class. This is okay because we don't allow different nodes to have same name. The `weight` attribute is straight-forward and it stores the weight of this edge for calculation.
 
-这个`Edge`代表`Graph`里面的一条边，包含这条边两边的`node`，也就是`from`和`to`。我们用`String`来表示`node`就可以了，因为我们假设每一个节点都不会重名。然后`weight`就是这条边的权值，用于算法的计算。
+Because `Graph` contains many _edges_, so in `Graph` class, we store these edges like this:
 
-`Graph`包含很多`Edge`，所以我们在`Graph`里面保存这些`edges`:
-
+```java
+private List<Edge> edges = new ArrayList<>();
 ```
- private List<Edge> edges = new ArrayList<>();
-```
 
-此外我们在`Graphs`里面还要保存所有的`nodes`：
+We also need to store all the _nodes_ in graph for later calculation:
 
-```
+```java
 private Set<String> nodes = new HashSet<>();
 ```
 
-这里我们用`Set<String>`，因为`Set`不会保存两个内容一样的`String`，而我们的每个节点的名字都要不同，所以`Set`可以很方便地帮我们保证这一点。
+Please note we use `Set<String>` to store the `nodes`, because `Set` type will not store entries with same value. This can ensure no duplicated nodes will appear in the data structure.
 
-接下来我们要保存算法中所介绍到的`costs`表格，这张表就是保存从起点到某一个`node`的权值之和，算法在执行过程中会不断更新这张表：
+Next important data structure is the _cost table_:
 
 ```
 private Map<String, Integer> costs = new HashMap<>();
 ```
 
-如上所示，我使用`Map<String, Integer>`来保存每一个`node`和`起点`到这个`node`的权重，其中`Map`的好处也是不会保存两个相同的`key`，这样更新这张表格的时候就很方便。
+This table stores the _weight sum_ from the start point to the target node. During calculation process, this table will be keep updated.
 
-『阿男导读』＊Grokking Algorithm＊
+Another important thing is that we use `Map<String, Integer>` type to store the `node <-> weight sum` pair，because the `Map` type is simliar to the `Set` type, it won't accept duplicate `key` value, which means it won't contain multiple entries for same _node_. If we put a `String <-> Integer` pair with an existing `String` value in `Map`, it will just update the existing entry. That is just what we need: to update the `node <-> weight sum` entry with new value.
 
-我们要把路径的起始节点和结束节点特别标注出来，这个是算法能够开始和结束的保证：
+We also need to mark the _start node_ and the _end node_ of a graph, and here are the relative attributes in `Graph` class:
 
-```
+```java
 private String start = "start";
 private String fin = "fin";
 ```
-如上所示，我们管起始节点叫做`start`，结束节点叫做`fin`，这样算法就可以通过名字来判断。接下来我们看看`Graph`里面的方法，首先是`addEdge`：
+
+We can compare the node name in calculation process to check if it is start or end point. Now we can see the methods in `Graph`:
 
 ```
 public void addEdge(String from, String to, int weight) {
