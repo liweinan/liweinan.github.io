@@ -180,9 +180,7 @@ The above package will provide the commons-daemon jar:
 /usr/share/java/jakarta-commons-daemon.jar
 ```
 
-Above jars are acutally the same, most of them are symbolic links to the same actual jar file, so referring to anyone is the same.
-
-Now I can use `jsvc` and `commons-daemon.jar` to start our `MyDaemon`. The command is like the following:
+Above jars are acutally the same, most of them are symbolic links to the same actual jar file, so referring to anyone is the same. Now I can use `jsvc` and `commons-daemon.jar` to start our `MyDaemon`. The command is like the following:
 
 ```bash
 $ sudo /usr/bin/jsvc \
@@ -370,8 +368,6 @@ Service shut down
 ```
 
 As the log shown above, we can see how `jsvc` handles the signal properly and gracefully shutdown our `MyDaemon`. So it's our responsibility to implement `Daemon` interface correctly, so `jsvc` can use our implementation properly.
-
-
 
 ## What's the difference between `systemd` and `jsvc`
 

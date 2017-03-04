@@ -226,9 +226,7 @@ next cheapest: c
 fin <- b <- start
 ```
 
-We can see how the path costs are updated in each iteration, and how the final path is calculated at last.
-
-Here is the class diagram:
+We can see how the path costs are updated in each iteration, and how the final path is calculated at last. Here is the class diagram:
 
 ![Class Diagram]({{ site.url }}/assets/dig-class.png)
 
@@ -244,9 +242,7 @@ class Edge {
 }
 ```
 
-`from : String` and `to : String` are two nodes of connected by the edge. We use `String` as node class. This is okay because we don't allow different nodes to have same name. The `weight` attribute is straight-forward and it stores the weight of this edge for calculation.
-
-Because `Graph` contains many _edges_, so in `Graph` class, we store these edges like this:
+`from : String` and `to : String` are two nodes of connected by the edge. We use `String` as node class. This is okay because we don't allow different nodes to have same name. The `weight` attribute is straight-forward and it stores the weight of this edge for calculation. Because `Graph` contains many _edges_, so in `Graph` class, we store these edges like this:
 
 ```java
 private List<Edge> edges = new ArrayList<>();
@@ -258,11 +254,9 @@ We also need to store all the _nodes_ in graph for later calculation:
 private Set<String> nodes = new HashSet<>();
 ```
 
-Please note we use `Set<String>` to store the `nodes`, because `Set` type will not store entries with same value. This can ensure no duplicated nodes will appear in the data structure.
+Please note we use `Set<String>` to store the `nodes`, because `Set` type will not store entries with same value. This can ensure no duplicated nodes will appear in the data structure. The next important data structure is the _cost table_:
 
-Next important data structure is the _cost table_:
-
-```
+```java
 private Map<String, Integer> costs = new HashMap<>();
 ```
 
@@ -277,9 +271,9 @@ private String start = "start";
 private String fin = "fin";
 ```
 
-We can compare the node name in calculation process to check if it is start or end point. Now we can see the methods in `Graph`:
+We can compare the node name in calculation process to check if it is start or end point. Now let us check the methods in `Graph`:
 
-```
+```java
 public void addEdge(String from, String to, int weight) {
     edges.add(new Edge(from, to, weight));
     nodes.add(from);
@@ -293,22 +287,22 @@ public void addEdge(String from, String to, int weight) {
 }
 ```
 
-这个方法的作用就是`addEdge`，给`Graph`里面添加一条边：
+The purpose of above method is to add an _edge_ into _graph_:
 
-```
+```java
 edges.add(new Edge(from, to, weight));
 ```
 
-然后要把这条边两边的节点加到`nodes`列表里面去：
+And also add the two nodes of the edge into `nodes` set:
 
-```
+```java
 nodes.add(from);
 nodes.add(to);
 ```
 
-因为`nodes`本身是`Set`类型的，所以我们也不必担心加入重复的节点。然后是更新`costs`表格：
+We do not need to worry that we will add duplicate nodes into `nodes` set, because the type of `nodes` is `Set`, it does not contain duplicate entries with same value. Adding the `String` with same value will just overwrite the existing one. The next important task of `addEdge` is to update the `costs` table:
 
-```
+```java
 if (from.equals(start)) {
     costs.put(to, weight);
 } else if (costs.get(to) == null) {
@@ -322,7 +316,7 @@ if (from.equals(start)) {
 
 注意这里：
 
-```
+```java
 else if (costs.get(to) == null)
 ```
 

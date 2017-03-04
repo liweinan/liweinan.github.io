@@ -2,9 +2,7 @@
 title: Using Java RegExp Engine (01) - Group
 ---
 
-I'm playing Java RegExp Engine recently and I'd like to share some use experiences with you.
-
-Here is the first example:
+I'm playing Java RegExp Engine recently and I'd like to share some use experiences with you. Here is the first example:
 
 ```java
 Pattern p = Pattern.compile("(^[A-Za-z]+)( [0-9]+)( [A-Za-z]+)(.*)");
