@@ -2,11 +2,11 @@
 title: Write An Apache HTTPD Module - DRAFT
 ---
 
-In this article I'd like to show you how to write a module for `Apache HTTPD`. I'm using `Fedora Linux`, So I can use the `httpd` and `httpd-devel` provided by system:
+In this article I'd like to show you how to write a module for _Apache HTTPD_. I'm using _Fedora Linux_, So I can use the _httpd_ and _httpd-devel_ provided by system:
 
 ![img]({{ site.url }}/assets/httpd_module_01.jpg)
 
-The reason to install `httpd-devel` is that we need the header files relative to module deveplopment provided by it. Now let's write a simple module:
+The reason to install _httpd-devel_ is that we need the header files relative to module deveplopment provided by it. Now let's write a simple module:
 
 ```c
 // module_foo.c
@@ -52,7 +52,7 @@ This module will use `AP_MODULE_DECLARE_DATA` to register a `foo_module`：
 module AP_MODULE_DECLARE_DATA foo_module = ...
 ```
 
-And it will use `foo_hooks` to call `ap_hook_handler`, and `ap_hook_handler` will load our `foo_handler` into `httpd`：
+And it will use `foo_hooks` to call `ap_hook_handler`, and `ap_hook_handler` will load our `foo_handler` into _httpd_：
 
 ```c
 static void foo_hooks(apr_pool_t *pool) {
@@ -67,7 +67,7 @@ ap_set_content_type(r, "text/html");
 ap_rprintf(r, "Hello, martian!");
 ```
 
-As we have understood the meaning of this simple module, now we can compile it. `Apache HTTPD` has provided a module compiling and installing tool for us called `apxs`:
+As we have understood the meaning of this simple module, now we can compile it. _Apache HTTPD_ has provided a module compiling and installing tool for us called `apxs`:
 
 ![img]({{ site.url }}/assets/httpd_module_02.jpg)
 
@@ -75,7 +75,7 @@ We can use it to compile our `foo_module`:
 
 ![img]({{ site.url }}/assets/httpd_module_03.jpg)
 
-As the snapshot shown above，we have used `apxs` to compile `foo_module.c`:
+As the snapshot shown above，we have used `apxs` to compile _foo_module.c_:
 
 ```bash
 $ apxs -a -c foo_module.c
@@ -88,14 +88,14 @@ The output of compling process is like this:
 /usr/lib64/apr-1/build/libtool --silent --mode=link gcc -Wl,-z,relro,-z,now   -o foo_module.la  -rpath /usr/lib64/httpd/modules -module -avoid-version    foo_module.lo
 ```
 
-As the output shown above, we can see `apxs` used `libtool` to compile our module, and generated many files:
+As the output shown above, we can see `apxs` used _libtool_ to compile our module, and generated many files:
 
 ```bash
 $ ls
 foo_module.c  foo_module.la  foo_module.lo  foo_module.o  foo_module.slo
 ```
 
-There are also generated files in `.libs` directory：
+There are also generated files in _.libs_ directory：
 
 ```bash
 $ ls -l ./.libs/
@@ -107,16 +107,16 @@ lrwxrwxrwx. 1 weli weli    16 Jan 27 02:55 foo_module.la -> ../foo_module.la
 -rwxrwxr-x. 1 weli weli 25560 Jan 27 02:55 foo_module.so
 ```
 
-Most of the files on above are intermediate libraries genereated during compile process, what we care is the shared library, which is `.so` file. This is the module file that can be loaded by Apache HTTPD.
+Most of the files on above are intermediate libraries genereated during compile process, what we care is the shared library, which is _.so_ file. This is the module file that can be loaded by Apache HTTPD.
 
-Nevertheless, we don't have to install the module manually, we can also use the `apxs` utility to install it to default `httpd` installation location. Here is the command to install the module:
+Nevertheless, we don't have to install the module manually, we can also use the `apxs` utility to install it to default _httpd_ installation location. Here is the command to install the module:
 
 
 ```bash
 $ sudo apxs -i foo_module.la
 ```
 
-Please note we have used `sudo` to invoke `apxs`, because the module will be installed to system provided `httpd`, and its directories need root permission to modify. In addition, the `foo_module.la` is a `libtool` description file that describes the libraies it generated, and it is a pure text file if you'd like to check. Here is the output of above command:
+Please note we have used `sudo` to invoke `apxs`, because the module will be installed to system provided _httpd_, and its directories need root permission to modify. In addition, the `foo_module.la` is a _libtool_ description file that describes the libraries it generated, and it is a pure text file if you'd like to check. Here is the output of above command:
 
 ```bash
 /usr/lib64/httpd/build/instdso.sh SH_LIBTOOL='/usr/lib64/apr-1/build/libtool' foo_module.la /usr/lib64/httpd/modules
@@ -148,9 +148,9 @@ more information, such as the ld(1) and ld.so(8) manual pages.
 chmod 755 /usr/lib64/httpd/modules/foo_module.so
 ```
 
-The important line is at the bottom of above log, from which we can see `foo_module.so` is installed to the default installation location of Fedora Linux provided `httpd`.
+The important line is at the bottom of above log, from which we can see _foo_module.so_ is installed to the default installation location of Fedora Linux provided _httpd_.
 
-The above `apxs` command will just install the `.so` file into httpd module directory, but it won't load it in `httpd` config file for you. If you'd like to activate your module by adding it into `httpd` config file, you can use the following command:
+The above `apxs` command will just install the _.so_ file into httpd module directory, but it won't load it in _httpd_ config file for you. If you'd like to activate your module by adding it into _httpd_ config file, you can use the following command:
 
 ```bash
 $ sudo apxs -ia foo_module.la
