@@ -415,7 +415,7 @@ while (node != null)
 
 In the loop, the function will find the next cheapest node, calculate the path weight, and update the `costs` table. In additon, it will generate the `path`:
 
-```
+```java
 private Map<String, String> path = new HashMap<>(); // to -> from
 ```
 
@@ -425,7 +425,7 @@ Why it's from end to start? It's determined by the algorithm calculation process
 
 During the calculation process, if it finds a cheaper path, the `from` of a `to` will be updated, so we use `to` as _key_ and `from` as _value_. In this way, where is the `to` from is always unique, and some _to -> from_ entries will become orphan and useless. But that doesn't matter, because we get a unique _to <- from <- to <- from_ path. We can clear `path` data easily. Finally let's recheck the usage of the codes:
 
-```
+```java
 Graph g = new Graph();
 g.addEdge("start", "a", 1);
 g.addEdge("start", "b", 1);
@@ -442,19 +442,19 @@ The above codes will create this graph:
 
 Then we execute the algorithm:
 
-```
+```java
 g.dijkstra();
 ```
 
 And finally we print out the path:
 
-```
+```java
 System.out.println(g.generatePath());
 ```
 
 The `generatePath()` is to print the path from _end_ to _start_ by using `path` data:
 
-```
+```java
 private String generatePath() {
 	StringBuffer result = new StringBuffer();
 	String next = null;
@@ -491,7 +491,7 @@ fin <- b <- start
 
 The cheapest path of above graph is _fin <- b <- start_. Now let's try to change the weight of some nodes:
 
-```
+```java
 g.addEdge("start", "a", 1);
 g.addEdge("start", "b", 10);
 g.addEdge("a", "b", 1);
