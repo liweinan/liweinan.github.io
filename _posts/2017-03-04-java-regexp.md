@@ -21,7 +21,7 @@ We have used parentheses to group our pattern into four parts:
 
 The `matcher.find()` method will help to match the text using our `Pattern`:
 
-```
+```java
 for (int i = 0; i <= matcher.groupCount(); i++) {
     System.out.println(i + ": " + matcher.group(i));
 }
@@ -39,19 +39,19 @@ And the `matcher.group()` can help us to print the matched group defined in patt
 
 Please note the `group(0)` is the whole text matched by the pattern. The groups are defined by parentheses in pattern. For example, if we change our pattern from:
 
-```
+```java
 Pattern p = Pattern.compile("(^[A-Za-z]+)( [0-9]+)( [A-Za-z]+)(.*)");
 ```
 
 to:
 
-```
+```java
 Pattern p = Pattern.compile("(^[A-Za-z]+)( [0-9]+)( [A-Za-z]+).*");
 ```
 
 The difference is that this time we don't quote the last `.*` part into parentheses. And let's rerun the matching process:
 
-```
+```java
 for (int i = 0; i <= matcher.groupCount(); i++) {
     System.out.println(i + ": " + matcher.group(i));
 }
