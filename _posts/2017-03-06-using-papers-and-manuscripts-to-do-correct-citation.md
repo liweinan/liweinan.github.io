@@ -17,3 +17,11 @@ The next solution is to convert the _BibTex_ file to _Markdown_ file locally, an
 The third solution is to use _javascript_ library that can convert _BibTex_ formatted text into _HTML_ format on-the-fly. There is a library that can do this[^bipub]. I can't use this because I can't fully control the output.
 
 [^bipub]: _[bib-publication-list to automatically generate an interactive HTML publication list from a BibTeX file](https://github.com/vkaravir/bib-publication-list)_
+
+I want a solution that can fully control the output I need and cite it manually in my article. There are a lot of free tools that can help us to convert `.bib` file to formal citation styles, but I'd like to use some professional tools that can ensure the correctness of the output and can support multiple citation styles like _APA_, _MLA_, _Chicago_, etc[^citestyle].
+
+[^citestyle]: [Citation Styles: APA, MLA, Chicago, Turabian, IEEE: Home](http://pitt.libguides.com/citationhelp)
+
+To achieve this goal, we can use professional academic reference managers such as _Mendeley_ or _Papers_. My favorite tool on Mac is _Papers 3_. It can export paper reference as _BibTex_ library file like this:
+
+![img]({{ site.url }}/assets/bibtexexport.png)
