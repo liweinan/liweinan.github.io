@@ -32,17 +32,15 @@ And I can control the exported citation style in _Papars 3_. After the export is
 exported.bib
 ```
 
-We can use free tools provided by _LaTex_ family to convert above `.bib` file to _PDF_ format, and then copy the generated citation text from the _PDF_ file into our post page. For myself, I have a paper writing software called _Manuscripts_ and feel happy to use it in my daily writing process.
-
-_Manuscripts_ has a feature to import `.bib` file and generate the bibliography for us:
+We can use free tools provided by _LaTex_ family to convert above `.bib` file to _PDF_ format, and then copy the generated citation text from the _PDF_ file into our post page. For myself, I have a paper writing software called _Manuscripts_ that can do this. _Manuscripts_ has a feature to import `.bib` file and generate the bibliography for us:
 
 ![importbib]({{ site.url }}/assets/importbib.png)
 
-It's nice and clean:
+The generated bibliography conforms to formal formats:
 
 ![bib]({{ site.url }}/assets/bib.png)
 
-We can copy the citation text into our blog post and everything is fully under our control. Here is the example how I can use it in this post:
+We can copy the citation text into our post. Here is the example how I can use it in this post:
 
 ```markdown
 (E & Huang 2001)[^Huang2001]
