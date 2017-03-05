@@ -12,11 +12,11 @@ There are several ways we can overcome it. For example, we can fully discard the
 
 The next solution is to convert the _BibTex_ file to _Markdown_ file locally, and add it to our posts. There is a tool that can do it actually[^bibtextomd]. I don't like this solution personally because I don't like the output it generates.
 
-[^bibtextomd]: _[Convert BibTeX entries to formatted Markdown for use with the kramdown processor](https://github.com/bryanwweber/bibtextomd)_
+[^bibtextomd]: [Convert BibTeX entries to formatted Markdown for use with the kramdown processor](https://github.com/bryanwweber/bibtextomd)
 
 The third solution is to use _javascript_ library that can convert _BibTex_ formatted text into _HTML_ format on-the-fly. There is a library that can do this[^bipub]. I can't use this because I can't fully control the output.
 
-[^bipub]: _[bib-publication-list to automatically generate an interactive HTML publication list from a BibTeX file](https://github.com/vkaravir/bib-publication-list)_
+[^bipub]: [bib-publication-list to automatically generate an interactive HTML publication list from a BibTeX file](https://github.com/vkaravir/bib-publication-list)
 
 I want a solution that can fully control the output I need and cite it manually in my article. There are a lot of free tools that can help us to convert `.bib` file to formal citation styles, but I'd like to use some professional tools that can ensure the correctness of the output and can support multiple citation styles like _APA_, _MLA_, _Chicago_, etc[^citestyle].
 
@@ -38,4 +38,20 @@ _Manuscripts_ has a feature to import `.bib` file and generate the bibliography 
 
 ![importbib]({{ site.url }}/assets/importbib.png)
 
+It's nice and clean:
+
 ![bib]({{ site.url }}/assets/bib.png)
+
+We can copy the citation text into our blog post and everything is fully under our control. Here is the example how I can use it in this post:
+
+```
+Ref: [^Erren 2007; E & Huang 2001]
+
+[^Erren 2007; E & Huang 2001]: E, W. & Huang, Z., 2001. Matching Conditions in Atomistic-Continuum Modeling of Materials. arXiv.org, (13), p.135501. Available at: http://arxiv.org/abs/cond-mat/0106615v1.
+```
+
+Here's the output demo:
+
+Ref: [^Erren 2007; E & Huang 2001]
+
+[^Erren 2007; E & Huang 2001]: E, W. & Huang, Z., 2001. Matching Conditions in Atomistic-Continuum Modeling of Materials. arXiv.org, (13), p.135501. Available at: http://arxiv.org/abs/cond-mat/0106615v1.
