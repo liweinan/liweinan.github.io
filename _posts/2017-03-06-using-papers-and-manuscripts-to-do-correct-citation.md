@@ -32,7 +32,7 @@ I can fully control the exported citation style in _Papars 3_ with its help. Aft
 exported.bib
 ```
 
-We can use free tools provided by _LaTex_ family to convert above `.bib` file to _PDF_ format, and then copy the generated citation text from the _PDF_ file into our post page. For myself, I have a paper writing software called _Manuscripts_ that can do this. _Manuscripts_ has a feature to import `.bib` file and generate the bibliography for us:
+We can use free tools provided by _LaTex_ family to convert the above `.bib` file to _PDF_ format, and then copy the generated citation text from the _PDF_ file into our post page. For myself, I have a paper writing software called _Manuscripts_ that can do this. _Manuscripts_ has a feature to import `.bib` file and generate the bibliography for us:
 
 ![importbib]({{ site.url }}/assets/importbib.png)
 
