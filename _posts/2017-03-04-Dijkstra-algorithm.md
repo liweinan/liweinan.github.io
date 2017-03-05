@@ -2,7 +2,9 @@
 title: A Java Implementation of Dijkstra's Algorithm
 ---
 
-I'm reading the book _Grokking Algorithm_ recently, and it introduces _Dijkstra's Algorithm_ in chapter 7. Here is a java implementation I've written:
+I'm reading the book _Grokking Algorithm_[^grok] recently, and it introduces _Dijkstra's Algorithm_ in chapter 7. Here is a java implementation I've written:
+
+[^grok]: Bhargava, Aditya Y.. _Grokking Algorithms: An Illustrated Guide for Programmers and Other Curious People._ Shelter Island: Manning, 2016. Print.
 
 ```java
 import java.util.*;
@@ -513,3 +515,7 @@ fin <- c <- a <- start
 ```
 
 We can see the cheapest path has been changed accordingly. Dijkstra's Algorithm is an interesting algorithm and worth studying.
+
+_References_
+
+---
