@@ -10,6 +10,10 @@ Unfortunately, the _Github Pages_ does not support `jekyll-scholar` by default[^
 
 There are several ways we can overcome it. For example, we can fully discard the built-in support of _Jekyll_ provided by _Github_ and generate our blog site locally. In this way, we can take full control of our own website. But this is even more painful, because _Github_ has eased our maintenance work a lot by generating _HTML_ files on-the-fly from our _Markdown_ files. So I don't want to discard the _Github_ built-in support for _Jekyll_ just for academic citation support.
 
-The next solution is to convert the _BibTex_ file to _Markdown_ file locally, and add it to our posts. There is a tool that can do it actually[^bibtextomd].
+The next solution is to convert the _BibTex_ file to _Markdown_ file locally, and add it to our posts. There is a tool that can do it actually[^bibtextomd]. I don't like this solution personally because I don't like the output it generates.
 
 [^bibtextomd]: _[Convert BibTeX entries to formatted Markdown for use with the kramdown processor](https://github.com/bryanwweber/bibtextomd)_
+
+The third solution is to use _javascript_ library that can convert _BibTex_ formatted text into _HTML_ format on-the-fly. There is a library that can do this[^bipub]. I can't use this because I can't fully control the output.
+
+[^bipub]: _[bib-publication-list to automatically generate an interactive HTML publication list from a BibTeX file](https://github.com/vkaravir/bib-publication-list)_
