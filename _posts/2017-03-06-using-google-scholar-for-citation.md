@@ -1,5 +1,5 @@
 ---
-title: Using Google Scholar for Citation
+title: Using Google Scholar for Citations
 ---
 
 In this article I'd like to show you how to use _Google Scholar_ to search for papers and books and get the citation of them.
