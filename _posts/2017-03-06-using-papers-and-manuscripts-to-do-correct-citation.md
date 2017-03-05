@@ -10,15 +10,15 @@ Unfortunately, the _GitHub Pages_ does not support `jekyll-scholar` plugin by de
 
 Nevertheless, there are several ways we can overcome it. For example, we can fully discard the built-in support of _Jekyll_ provided by _GitHub_ and generate our whole blog site locally and push it online. In this way, we can take full control of our own website, but this is even more painful, because _GitHub_ has eased our maintenance work a lot by generating _HTML_ files on-the-fly from our _Markdown_ files with its built-in _Jekyll_ engine. So I don't want to discard the _GitHub_ built-in support for _Jekyll_ just for academic citation support.
 
-The next solution is to convert the _BibTex_ file into _Markdown_ format locally, and then we can add the converted _Markdown_ text into our posts. There is a tool that can do it actually[^bibtextomd]. I don't like this solution personally because I don't like the output it generates.
+The next solution is to convert the _BibTex_ file into _Markdown_ format locally, and then we can add the converted _Markdown_ text into our posts. There is a tool that can do it actually[^bibtextomd].
 
 [^bibtextomd]: [Convert BibTeX entries to formatted Markdown for use with the kramdown processor](https://github.com/bryanwweber/bibtextomd)
 
-The third solution is to use _javascript_ library that can convert _BibTex_ formatted text into _HTML_ format on-the-fly. There is a library that can do this[^bipub]. I can't use this because I can't fully control the output.
+The third solution is to use _javascript_ library that can convert _BibTex_ formatted text into _HTML_ format on-the-fly. There is a library that can do this[^bipub].
 
 [^bipub]: [bib-publication-list to automatically generate an interactive HTML publication list from a BibTeX file](https://github.com/vkaravir/bib-publication-list)
 
-I want a solution that can fully control the output I need and cite it manually in my article. There are a lot of free tools that can help us to convert `.bib` file to formal citation styles, but I'd like to use some professional tools that can ensure the correctness of the output and can support multiple citation styles like _APA_, _MLA_, _Chicago_, etc[^citestyle].
+However, I want a solution that can fully control the output I need and cite it manually in my article. There are a lot of free tools that can help us to convert `.bib` file to formal citation styles, but I'd like to use some professional tools that can ensure the correctness of the output and can support multiple citation styles like _APA_, _MLA_, _Chicago_, etc[^citestyle].
 
 [^citestyle]: [Citation Styles: APA, MLA, Chicago, Turabian, IEEE: Home](http://pitt.libguides.com/citationhelp)
 
