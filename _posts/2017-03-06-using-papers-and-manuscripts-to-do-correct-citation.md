@@ -6,7 +6,7 @@ In this article I'd like to share with you how to use _Papers 3_ and _Manuscript
 
 Unfortunately, _GitHub Pages_ does not support `jekyll-scholar` plugin by default[^versions], which means you can not use the graceful _BibTex_ support provided by the plugin. This is painful, but this is the reality.
 
-[^versions]: _[GitHub Pages Dependency versions](https://pages.github.com/versions/)_
+[^versions]: [GitHub Pages Dependency versions](https://pages.github.com/versions/)
 
 Nevertheless, there are several ways we can overcome it to some extent. For example, we can fully discard the built-in support of _Jekyll_ provided by _GitHub_ and generate our whole blog site locally and push it online. In this way, we can take full control of our own website, but this is even more painful, because _GitHub_ has eased our maintenance work a lot by generating _HTML_ files on-the-fly from our _Markdown_ files with its built-in _Jekyll_ engine. I don't want to discard the _GitHub_ built-in support for _Jekyll_ just for academic citation support.
 
