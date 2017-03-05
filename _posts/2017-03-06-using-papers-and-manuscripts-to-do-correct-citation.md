@@ -24,4 +24,18 @@ I want a solution that can fully control the output I need and cite it manually 
 
 To achieve this goal, we can use professional academic reference managers such as _Mendeley_ or _Papers_. My favorite tool on Mac is _Papers 3_. It can export paper reference as _BibTex_ library file like this:
 
-![img]({{ site.url }}/assets/bibtexexport.png)
+![bibtexexport]({{ site.url }}/assets/bibtexexport.png)
+
+And I can control the exported citation style in _Papars 3_. After the export is done, we have the exported `.bib` file:
+
+```
+exported.bib
+```
+
+We can use free tools provided by _LaTex_ family to convert above `.bib` file to `PDF` format, and then copy the generated citation text from the pdf. For myself, I have a paper writing software called _Manuscripts_ and feel happy to use it in my daily writing process.
+
+_Manuscripts_ has a feature to import `.bib` file and generate the bibliography for us:
+
+![importbib]({{ site.url }}/assets/importbib.png)
+
+![bib]({{ site.url }}/assets/bib.png)
