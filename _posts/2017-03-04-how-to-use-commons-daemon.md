@@ -85,7 +85,7 @@ public interface Daemon
 
 From the above interface we can see there are several methods related with a server cycle you should implement. How does `commons-daemon` uses the above interface to manage your Java application? The answers lies in `jsvc` part. `jsvc` is written in C, and it provides you three processes[^1], which are called the `Launcher Process`, the `Controller Process`, and the `Controlled Process`.
 
-[^1]: https://commons.apache.org/proper/commons-daemon/jsvc.html
+[^1]: [Jsvc](https://commons.apache.org/proper/commons-daemon/jsvc.html)
 
 The purpose of the launcher process is very straight-forward, which will launch a child process. The child process will be a Java instance and it's called the `controller process`.
 
@@ -95,11 +95,11 @@ The started Java application process is called the `controlled process`, it's yo
 
 How can `jsvc` start JVM? It uses `JNI` to interact with Java Virtual Machine. The fullname of `JNI` is called `Java Native Interface`[^2], and it is a stanard framework to enables Java code running in a Java Virtual Machine (JVM) to call and be called by native applications. You don't have to understand the details of `jsvc`, but if you are interested in the implementation, you can see the usage of `JNI_CreateJavaVM()` method provided by Java in `jsvc` source code as a start point to learn about `jsvc`. In general, the purpose of the `jsvc` is to manage the lifecycle of your Java application by interacting with `Daemon` interface on Java side, and you get the ability to start/stop your Java application by using standard system signals scheme.
 
-[^2]: https://en.wikipedia.org/wiki/Java_Native_Interface
+[^2]: [Java Native Interface](https://en.wikipedia.org/wiki/Java_Native_Interface)
 
 Now let's start to learn how to use `commons-daemon` and `jsvc` to manage the lifecycle of our Java application. There is an article that roughly describes the steps to integrate your Java application with `commons-daemon`[^3] you can check. In this article I'll provide a more detailed explaination.
 
-[^3]: http://stackoverflow.com/questions/7687159/how-to-convert-a-java-program-to-daemon-with-jsvc
+[^3]: [How to convert a java program to daemon with jsvc?](http://stackoverflow.com/questions/7687159/how-to-convert-a-java-program-to-daemon-with-jsvc)
 
 ## Integrate your Java application with `commons-daemon`
 
@@ -137,7 +137,7 @@ From the above code, we can see the Daemon interfaces defines four methods that 
 
 Then we need to compile our Java project properly. I have put above `MyDaemon` into a Gradle project[^4], so you can directly check it out and build a jar from it. You can go to the directory of the project, and then run `./gradlew fatJar`. It will download the `gradle` and build the project for you.
 
-[^4]: https://github.com/liweinan/jboss-webserver-and-eap-high-availability/tree/master/DaemonDemo
+[^4]: [DaemonDemo](https://github.com/liweinan/jboss-webserver-and-eap-high-availability/tree/master/DaemonDemo)
 
 After building it successfully, you can get the jar `build/libs/DaemonDemo-all-1.0.jar`. This jar contains the above `MyDaemon` class, and `commons-daemon` jar as dependency.
 
@@ -162,7 +162,7 @@ As the file list shown above, the core file provided by the package is the binar
 
 Before starting `jsvc`, we need to make sure the Java side, `apache-commons-daemon`, is installed. You can download the jar from the Apache commons website directly[^5]. I will use the one provided by Fedora directly:
 
-[^5]: http://commons.apache.org/proper/commons-daemon/download_daemon.cgi
+[^5]: [Download Commons Daemon](http://commons.apache.org/proper/commons-daemon/download_daemon.cgi)
 
 ```bash
 apache-commons-daemon.noarch : Defines API to support an alternative invocation mechanism
@@ -373,4 +373,8 @@ As the log shown above, we can see how `jsvc` handles the signal properly and gr
 
 Currently the `systemd` can achieve most parts of  the process control function provided by `jsvc`, but `jsvc` can let the server to bind to privileged port and then drop the root access properly. To see more differences between `systemd` and `jsvc`, you can check this page[^6].
 
-[^6]: http://stackoverflow.com/questions/28894008/what-benefit-do-i-get-from-jsvc-over-just-using-systemd
+[^6]: [What benefit do I get from JSVC over just using systemd?](http://stackoverflow.com/questions/28894008/what-benefit-do-i-get-from-jsvc-over-just-using-systemd)
+
+_References_
+
+---
