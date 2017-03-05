@@ -47,12 +47,14 @@ We can copy the citation text into our blog post and everything is fully under o
 ```markdown
 (E & Huang 2001)[^Huang2001]
 
-[^Huang2001]: E, W. & Huang, Z., 2001. Matching Conditions in Atomistic-Continuum Modeling of Materials. arXiv.org, (13), p.135501. Available at: http://arxiv.org/abs/cond-mat/0106615v1.
+[^Huang2001]: E, W. & Huang, Z., 2001. Matching Conditions in Atomistic-Continuum Modeling of Materials. _arXiv.org_, (13), p.135501. Available at: [http://arxiv.org/abs/cond-mat/0106615v1](http://arxiv.org/abs/cond-mat/0106615v1).
 ```
 
 Here's the output demo:
 
 (E & Huang 2001)[^Huang2001]
+
+[^Huang2001]: E, W. & Huang, Z., 2001. Matching Conditions in Atomistic-Continuum Modeling of Materials. _arXiv.org_, (13), p.135501. Available at: [http://arxiv.org/abs/cond-mat/0106615v1](http://arxiv.org/abs/cond-mat/0106615v1).
 
 [^Huang2001]: E, W. & Huang, Z., 2001. Matching Conditions in Atomistic-Continuum Modeling of Materials. arXiv.org, (13), p.135501. Available at: http://arxiv.org/abs/cond-mat/0106615v1.
 
