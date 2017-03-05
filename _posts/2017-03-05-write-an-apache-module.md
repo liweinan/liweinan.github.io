@@ -2,7 +2,9 @@
 title: Write An Apache HTTPD Module - DRAFT
 ---
 
-In this article I'd like to show you how to write a module for _Apache HTTPD_. I'm using _Fedora Linux_, So I can use the _httpd_ and _httpd-devel_ provided by system:
+In this article I'd like to show you how to write a module for _Apache HTTPD_.
+
+I'm using _Fedora Linux_, So I can use the _httpd_ and _httpd-devel_ provided by system:
 
 ![img]({{ site.url }}/assets/httpd_module_01.jpg)
 
