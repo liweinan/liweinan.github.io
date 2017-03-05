@@ -44,14 +44,14 @@ It's nice and clean:
 
 We can copy the citation text into our blog post and everything is fully under our control. Here is the example how I can use it in this post:
 
-```
-Ref: [^Erren 2007; E & Huang 2001]
+```markdown
+(E & Huang 2001)[^Huang2001]
 
-[^Erren 2007; E & Huang 2001]: E, W. & Huang, Z., 2001. Matching Conditions in Atomistic-Continuum Modeling of Materials. arXiv.org, (13), p.135501. Available at: http://arxiv.org/abs/cond-mat/0106615v1.
+[^E & Huang 2001]: E, W. & Huang, Z., 2001. Matching Conditions in Atomistic-Continuum Modeling of Materials. arXiv.org, (13), p.135501. Available at: http://arxiv.org/abs/cond-mat/0106615v1.
 ```
 
 Here's the output demo:
 
-Ref: [^Erren 2007; E & Huang 2001]
+(E & Huang 2001)[^Huang2001]
 
-[^Erren 2007; E & Huang 2001]: E, W. & Huang, Z., 2001. Matching Conditions in Atomistic-Continuum Modeling of Materials. arXiv.org, (13), p.135501. Available at: http://arxiv.org/abs/cond-mat/0106615v1.
+[^E & Huang 2001]: E, W. & Huang, Z., 2001. Matching Conditions in Atomistic-Continuum Modeling of Materials. arXiv.org, (13), p.135501. Available at: http://arxiv.org/abs/cond-mat/0106615v1.
