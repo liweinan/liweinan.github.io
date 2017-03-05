@@ -22,7 +22,7 @@ However, I want a solution that can fully control the output I need and cite it 
 
 [^citestyle]: [Citation Styles: APA, MLA, Chicago, Turabian, IEEE: Home](http://pitt.libguides.com/citationhelp)
 
-To achieve this goal, we can use professional academic reference managers such as _Mendeley_ or _Papers_. My favorite tool on Mac is _Papers 3_. It can export paper reference as _BibTex_ library file like this:
+To achieve this goal, we can use several professional academic reference managers such as _Mendeley_ or _Papers_. My favorite tool on Mac is _Papers 3_. It can export paper reference as _BibTex_ library file like this:
 
 ![bibtexexport]({{ site.url }}/assets/bibtexexport.png)
 
