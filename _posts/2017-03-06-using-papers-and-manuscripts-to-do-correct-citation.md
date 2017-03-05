@@ -13,5 +13,4 @@ There are several ways we can overcome it. For example, we can fully discard the
 The next solution is to convert the _BibTex_ file to _Markdown_ file locally, and add it to our posts. There is a tool that can do it actually[^bibtextomd].
 
 [^bibtextomd]: _[
-Convert BibTeX entries to formatted Markdown for use with the kramdown processor
-](https://github.com/bryanwweber/bibtextomd)_
+Convert BibTeX entries to formatted Markdown for use with the kramdown processor](https://github.com/bryanwweber/bibtextomd)_
