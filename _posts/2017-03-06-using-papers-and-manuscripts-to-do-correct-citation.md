@@ -55,3 +55,7 @@ Here's the output demo:
 [^Huang2001]: E, W. & Huang, Z., 2001. Matching Conditions in Atomistic-Continuum Modeling of Materials. _arXiv.org_, (13), p.135501. Available at: [http://arxiv.org/abs/cond-mat/0106615v1](http://arxiv.org/abs/cond-mat/0106615v1).
 
 In this way, we have added academic citations into this post manually.
+
+_References_
+
+---
