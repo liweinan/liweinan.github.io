@@ -1,2 +1,2 @@
 theme: jekyll-theme-modernist
-title: /404
+title: [/404]({{ site.url }})
