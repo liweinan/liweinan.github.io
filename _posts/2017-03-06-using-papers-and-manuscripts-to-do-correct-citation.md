@@ -26,7 +26,7 @@ To achieve this goal, we can use several professional academic reference manager
 
 ![bibtexexport]({{ site.url }}/assets/bibtexexport.png)
 
-And I can control the exported citation style in _Papars 3_. After the export is done, we have the exported `.bib` file:
+And I can control the exported citation style in _Papars 3_. After the export is done, we get the `.bib` file like:
 
 ```
 exported.bib
