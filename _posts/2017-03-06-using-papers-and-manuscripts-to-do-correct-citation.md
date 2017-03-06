@@ -1,5 +1,4 @@
 ---
-layout: post
 title: Using Papers And Manuscripts To Add Academic Citations into GitHub Pages
 ---
 
