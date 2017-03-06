@@ -1,6 +1,6 @@
 ---
 title: An Introduction to Visual Paradigm
-abstract: There are many UML modeling tools on the market. In this article, I'd like to introduce the one I used in my daily work called VP-UML.
+abstract: There are many UML modeling tools on the market. In this article, I'd like to introduce the one I used in my daily work called Visual Paradigm.
 ---
 
 ## _{{ page.title }}_
@@ -13,7 +13,7 @@ I have used many UML and modeling tools in my career, some are open-sourced and 
 [^star]: [StarUML 2](http://staruml.io/)
 [^omni]: [OmniGraffle 7 for Mac](https://www.omnigroup.com/omnigraffle)
 
-The tool I used in my daily work is called _VP_[^vpuml], and the full name is called _Visual Paradigm_. Here is the introduction of this tool[^vpintro]:
+The tool I used in my daily work is called  _Visual Paradigm_[^vpuml](abbviated as VP). Here is the introduction of this tool[^vpintro]:
 
 > This software is a UML CASE Tool supporting UML 2, SysML and Business Process Modeling Notation (BPMN)
 
