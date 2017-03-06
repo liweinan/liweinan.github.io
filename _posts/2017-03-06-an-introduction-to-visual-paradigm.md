@@ -24,7 +24,7 @@ There are many features provided by _VP_, not limited to _UML_ diagrams:
 
 ![VP Features]({{ site.url }}/assets/2017-03-06-vp-features.png)
 
-I use this tool mainly for its reversing engineering capabilities to generate UML class diagrams and sequence diagrams from _Java_ or _C++_ codes. As you can see in the following diagram, _VP_ can generate _UML 2 Class Diagram_ directly from _Java Class File_:
+As the diagram shown above, you can see there are a lot of features provided by the tool. I use this tool mainly for its reversing engineering capabilities to generate UML class diagrams and sequence diagrams from _Java_ or _C++_ codes. As you can see in the following diagram, _VP_ can generate _UML 2 Class Diagram_ directly from _Java Class File_:
 
 ![VP Reverse Class]({{ site.url }}/assets/2017-03-06-vp-reverse-class.png)
 
