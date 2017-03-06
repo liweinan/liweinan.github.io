@@ -8,7 +8,7 @@ _Google Scholar_[^scholar] is a very convenient tool to search for publications 
 
 ![grokking]({{ site.url }}/assets/grokking.png)
 
-As the screenshot shown above, you can see there is a `cite` link under the book search entry. If you click the `cite` link, it will popup a dialog window that show you several different citation styles of text you can use for reference:
+As the screenshot shown above, you can see there is a `cite` link under the searched book entry. If you click the `cite` link, it will popup a dialog window that show you several different citation styles of text you can use for reference:
 
 ![2017-03-06-cite.png]({{ site.url }}/assets/2017-03-06-cite.png)
 
