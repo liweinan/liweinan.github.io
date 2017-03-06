@@ -382,7 +382,11 @@ The authentication is passed and we entered the manager page:
 
 ![Manager Page]({{ site.url }}/assets/vault04.png)
 
-Till now we have gone through all the steps to integrate Tomcat-Vault into Tomcat. I have put a complete tomcat server into this repository, and it contains all the configuration files and keystore files we have used in this article. You can check it out and play with it.
+Till now we have gone through all the steps to integrate Tomcat-Vault into Tomcat. I have put a complete tomcat server into this repository, and it contains all the configuration files and keystore files we have used in this article. You can check it out and play with it
 
-[^1]: http://tomcat.apache.org/
-[^2]: https://github.com/picketbox/tomcat-vault
+[^1]: [http://tomcat.apache.org/](http://tomcat.apache.org/)
+[^2]: [https://github.com/picketbox/tomcat-vault](https://github.com/picketbox/tomcat-vault)
+
+_References_
+
+---
