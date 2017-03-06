@@ -2,6 +2,8 @@
 title: Using Papers And Manuscripts To Add Academic Citations into GitHub Pages
 ---
 
+# _{{ post.title }}_
+
 In this article I'd like to share with you how to use _Papers 3_ and _Manuscripts_ under _MacOS_ to add academic citations into your GitHub Pages.
 
 Unfortunately, _GitHub Pages_ does not support `jekyll-scholar` plugin by default[^versions], which means you can not use the graceful _BibTex_ support provided by the plugin. This is painful, but this is the reality.
