@@ -42,7 +42,11 @@ _VP_ can also generate sequence diagram directly from class methods:
 
 Here is the generated sequence diagram that can be helpful to analyze the program logic:
 
-![VP Reverse Sequence]({{ site.url }}/assets/2017-03-06-vp-generated-sequence.png)
+![VP Generated Reverse Sequence]({{ site.url }}/assets/2017-03-06-vp-generated-sequence.png)
+
+In addition, the diagram can be exported as different format for usages:
+
+![VP Export]({{ site.url }}/assets/2017-03-06-vp-export.png)
 
 In this article, I have shown the basic usages of _Visual Paradigm_ from a programmer's perspecitve. For project managers and designers, I believe they can dig out more values from the tool.
 
