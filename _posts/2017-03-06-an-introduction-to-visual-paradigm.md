@@ -44,7 +44,7 @@ Here is the generated sequence diagram that can be helpful to analyze the progra
 
 ![VP Reverse Sequence]({{ site.url }}/assets/2017-03-06-vp-generated-sequence.png)
 
-In this article, I have shown the basic usages of _Visual Paradigm_ from a programmer's perspecitve. For project managers and designers, I believe these customers can explore more values from the tool.
+In this article, I have shown the basic usages of _Visual Paradigm_ from a programmer's perspecitve. For project managers and designers, I believe they can dig out more values from the tool.
 
 _References_
 
