@@ -7,7 +7,7 @@ abstract: There are many UML modeling tools on the market. In this article, I'd 
 
 {{ page.abstract }}
 
-I have used many UML and modeling tools in my career, some are open-sourced and some are commercial softwares. There are many options in this field you can choose from, such as _ArgoUML_[^argo], StarUML[^star], OmniGraffle[^omni], etc. You can check the links of these tools I've provided to you to see if they can fit your requirements.
+I have used many UML and modeling tools in my career, some are open-sourced and some are commercial softwares. There are many options in this field you can choose from, such as _ArgoUML_[^argo], StarUML[^star], OmniGraffle[^omni], or etc. You can check the links of these tools I've provided to you to see if they can fit your requirements.
 
 [^argo]: [ArgoUML](http://argouml.tigris.org/)
 [^star]: [StarUML 2](http://staruml.io/)
