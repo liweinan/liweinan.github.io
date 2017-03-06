@@ -48,7 +48,7 @@ In addition, the diagram can be exported as different formats for future usages:
 
 ![VP Export]({{ site.url }}/assets/2017-03-06-vp-export.png)
 
-Till now, I have shown the basic usages of _Visual Paradigm_ from a programmer's perspecitve. For project managers and designers, I believe they can dig out more values from the tool.
+Till now, I have shown you the basic usages of _Visual Paradigm_ from a programmer's perspecitve. For project managers and designers, I believe they can dig out more values from the tool.
 
 _References_
 
