@@ -3,7 +3,7 @@ title: Write An Apache HTTPD Module - DRAFT
 abstract: In this article I'd like to show you how to write a module for Apache HTTPD.
 ---
 
-# _{{ page.title }}_
+## _{{ page.title }}_
 
 {{ page.abstract }}
 
