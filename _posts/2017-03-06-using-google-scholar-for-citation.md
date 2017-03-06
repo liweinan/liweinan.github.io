@@ -14,7 +14,7 @@ As the screenshot shown above, you can see there is a `cite` link under the sear
 
 You can choose from one of the styles and copy the text directly into your paper or post. From the above screenshot, you can see there are several different formats we can use to export the citation text, such as `BibTeX`, `EndNote`, `RefMan` and `RefWorks`.
 
-You can choose your favorite format and save the citation text locally. For myself, I prefer to save the citation text as `BibTeX` format locally, so I clicked `BibTeX` link, and then I can get the exported `BibTeX` formatted text like this:
+You can choose one of your favorite formats and save the citation locally. For myself, I prefer to save the citation as `BibTeX` format, so I clicked the `BibTeX` link, and then I can get the exported `BibTeX` formatted text like this:
 
 ![2017-03-06-bibtex.png]({{ site.url }}/assets/2017-03-06-bibtex.png)
 
