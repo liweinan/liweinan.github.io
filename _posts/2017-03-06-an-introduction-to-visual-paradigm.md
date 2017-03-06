@@ -44,7 +44,7 @@ Here is the generated sequence diagram that can be helpful to analyze the progra
 
 ![VP Generated Reverse Sequence]({{ site.url }}/assets/2017-03-06-vp-generated-sequence.png)
 
-In addition, the diagram can be exported as different format for usages:
+In addition, the diagram can be exported as different formats for future usages:
 
 ![VP Export]({{ site.url }}/assets/2017-03-06-vp-export.png)
 
