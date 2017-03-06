@@ -2,6 +2,8 @@
 title: Using Google Scholar for Citations
 ---
 
+_{{ page.title }}_
+
 In this article I'd like to show you how to use _Google Scholar_ to search for papers and books and get their citations, and I will also show you how to export `BibTeX` formatted text from _Google Scholar_ and save it locally for future references.
 
 _Google Scholar_[^scholar] is a very convenient tool to search for publications and citations of these publications. Here is an example to search the book _Grokking Algorithms_[^grokking]:
@@ -26,7 +28,7 @@ In my local computer, I can use the tools that can support `.bib` file to manage
 
 ![2017-03-06-bibdesk.png]({{ site.url }}/assets/2017-03-06-bibdesk.png)
 
-By maintaining the local `.bib` file properly, I can use these citations for future usage.
+By maintaining the local `.bib` file properly, I can use these citations for future usages.
 
 As you can see in this article, with the help of _Google Scholar_ and _BibDesk_, I didn't use any commercial softwares to fetch and manage these citations.
 
