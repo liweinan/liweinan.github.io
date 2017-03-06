@@ -3,7 +3,7 @@ title: A Test to Github Math Engine
 abstract: This article is for testing the MathJax support in posts.
 ---
 
-# _{{ page.title }}_
+## _{{ page.title }}_
 
 {{ page.abstract }}
 
