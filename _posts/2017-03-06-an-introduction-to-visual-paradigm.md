@@ -36,7 +36,7 @@ And I can also generate class diagram for multiple classes to analyze their rela
 
 ![VP Generated Classes]({{ site.url }}/assets/2017-03-06-vp-generated-multiple-classes.png)
 
-_VP_ can also generate sequence diagram directly from method codes:
+_VP_ can also generate sequence diagram directly from class methods:
 
 ![VP Reverse Sequence]({{ site.url }}/assets/2017-03-06-vp-reverse-sequence.png)
 
