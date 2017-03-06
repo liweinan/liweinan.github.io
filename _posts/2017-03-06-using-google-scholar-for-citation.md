@@ -24,13 +24,13 @@ Now I can copy the formatted text and paste it into my local `.bib` file:
 
 ![2017-03-06-bibfile.png]({{ site.url }}/assets/2017-03-06-bibfile.png)
 
-In my local computer, I can use the tools that can support `.bib` file to manage it for future usage. For example, I can use the popular open-sourced tool, _BibDesk_, to view and manage the citations:
+In my local computer, I can use the tools that can support `.bib` file to manage it for future usage. For example, I can use the popular open-sourced tool, _BibDesk_[^bibdesk], to view and manage the citations:
 
 ![2017-03-06-bibdesk.png]({{ site.url }}/assets/2017-03-06-bibdesk.png)
 
 By maintaining the local `.bib` file properly, I can use these citations for future usages.
 
-As you can see in this article, with the help of _Google Scholar_ and _BibDesk_[^bibdesk], I didn't use any commercial softwares to fetch and manage these citations.
+As you can see in this article, with the help of _Google Scholar_ and _BibDesk_, I didn't use any commercial softwares to fetch and manage these citations.
 
 [^scholar]: [https://scholar.google.com/](https://scholar.google.com/)
 [^grokking]: [Bhargava, A. (2016). Grokking algorithms.](https://scholar.google.com/scholar?hl=en&q=grokking+algorithms&btnG=&as_sdt=1%2C34&as_sdtp=)
