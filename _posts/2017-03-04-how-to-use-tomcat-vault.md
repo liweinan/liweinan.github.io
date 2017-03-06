@@ -17,7 +17,7 @@ As we can see above, the password is stored as plaintext and it's a security ris
 
 Tomcat Vault is created to solve this problem, it will encrypt your password and store it in standard Java keystore, and let tomcat access the password in a safe way. In this article, I'd like to show you how to use it with Tomcat.
 
-## Installation of Apache Tomcat and Tomcat Vault
+### Installation of Apache Tomcat and Tomcat Vault
 
 First we need to have Apache Tomcat[^1] and Tomcat-Vault[^2] installed on our machine. For Tomcat, I am using 8.0.39 for this article. For Tomcat Vault, I just clone the project from GitHub into my local machine and build it from master branch:
 
@@ -92,7 +92,7 @@ $ cp ~/projs/tomcat-vault/target/tomcat-vault-1.0.8.Final-jar-with-dependencies.
 
 As the command shown above, we have the tomcat-vault jar with dependecies copied into tomcat lib directory. Till now, the installation step is finished, and next we can start to integrate tomcat-vault with tomcat.
 
-## Generating Java Keystore for Tomcat Vault
+### Generating Java Keystore for Tomcat Vault
 
 Tomcat Vault relies on Java Keystore to store the passwords, so the first step is to use `keytool` command provided by JDK to generate a keystore. Here is the command to generate keystore:
 
@@ -130,7 +130,7 @@ Entry type: SecretKeyEntry
 
 As the command output shown above, we can see our keystore contains one `SecretKeyEntry` named `my_vault`. Till now, we have generated the keystore for tomcat vault to use. The next step is to invoke tomcat vault to initialize the keystore for us.
 
-## Initializing Tomcat Vault
+### Initializing Tomcat Vault
 
 Now we can invoke tomcat vault to initialize the keystore so it can be used to store tomcat username and password information. First we need to go to the `lib` directory of tomcat, because in previous steps we have put tomcat-vault jar into it:
 
@@ -268,7 +268,7 @@ $ find . | grep -i vault
 
 In production environment, you should put above files into a safer place. Now we have finished initializing tomcat vault, the next step is to configure the tomcat to use the vault.
 
-## Configuring Tomcat To Use Vault
+### Configuring Tomcat To Use Vault
 
 Now we can configure Tomcat to use Tomcat-Vault. For the first step, we need to put one line configuration into `conf/catalina.properties`:
 
@@ -339,7 +339,7 @@ Now let's use the `manager_password` in Tomcat configuration. We can use it as t
 
 As the configuration shown above, we can see the password of `manager` is no longer plaintext, but a reference to the entry in VAULT. Till now, all the configurations are done and we are ready to start the Tomcat server for testing.
 
-## Testing Tomcat-Vault Integration
+### Testing Tomcat-Vault Integration
 
 Now we can start the Tomcat server to test our configuration. Firstly, we need to start the server using the script `startup.sh` in `bin`:
 

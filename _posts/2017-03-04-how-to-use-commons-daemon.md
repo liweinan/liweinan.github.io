@@ -104,7 +104,7 @@ Now let's start to learn how to use `commons-daemon` and `jsvc` to manage the li
 
 [^3]: [How to convert a java program to daemon with jsvc?](http://stackoverflow.com/questions/7687159/how-to-convert-a-java-program-to-daemon-with-jsvc)
 
-### Integrate your Java application with `commons-daemon`
+### Integrate your Java application with commons-daemon
 
 Firstly, write a Java class that implements the `Daemon` interface:
 
@@ -372,7 +372,7 @@ Service shut down
 
 As the log shown above, we can see how `jsvc` handles the signal properly and gracefully shutdown our `MyDaemon`. So it's our responsibility to implement `Daemon` interface correctly, so `jsvc` can use our implementation properly.
 
-## What's the difference between `systemd` and `jsvc`
+### What's the difference between systemd and jsvc
 
 Currently the `systemd` can achieve most parts of  the process control function provided by `jsvc`, but `jsvc` can let the server to bind to privileged port and then drop the root access properly. To see more differences between `systemd` and `jsvc`, you can check this page[^6].
 
