@@ -32,7 +32,19 @@ The generated class diagram is like this:
 
 ![VP Generated Class]({{ site.url }}/assets/2017-03-06-vp-generated-class.png)
 
+And I can also generate class diagram for multiple classes to analyze their relationships:
 
+![VP Generated Classes]({{ site.url }}/assets/2017-03-06-vp-generated-multiple-classes.png)
+
+_VP_ can also generate sequence diagram directly from method codes:
+
+![VP Reverse Sequence]({{ site.url }}/assets/2017-03-06-vp-reverse-sequence.png)
+
+Here is the generated sequence diagram that can be helpful to analyze the program logic:
+
+![VP Reverse Sequence]({{ site.url }}/assets/2017-03-06-vp-generated-sequence.png)
+
+In this article, I have shown the basic usages of _Visual Paradigm_ from a programmer's perspecitve. For project managers and designers, I believe these customers can explore more values from the tool.
 
 _References_
 
