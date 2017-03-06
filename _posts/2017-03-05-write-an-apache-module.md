@@ -1,8 +1,11 @@
 ---
 title: Write An Apache HTTPD Module - DRAFT
+abstract: In this article I'd like to show you how to write a module for Apache HTTPD.
 ---
 
-In this article I'd like to show you how to write a module for _Apache HTTPD_.
+# _{{ page.title }}_
+
+{{ page.abstract }}
 
 I'm using _Fedora Linux_, So I can use the _httpd_ and _httpd-devel_ provided by system:
 

@@ -5,7 +5,7 @@ excerpt: In this article I'd like to show you how to use Google Scholar to searc
 
 # _{{ page.title }}_
 
-{{ page.excerpt }}
+{{ page.abstract }}
 
 _Google Scholar_[^scholar] is a very convenient tool to search for publications and citations of these publications. Here is an example to search the book _Grokking Algorithms_[^grokking]:
 
