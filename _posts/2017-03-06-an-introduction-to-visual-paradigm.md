@@ -13,7 +13,7 @@ I have used many UML and modeling tools in my career, some are open-sourced and 
 [^star]: [StarUML 2](http://staruml.io/)
 [^omni]: [OmniGraffle 7 for Mac](https://www.omnigroup.com/omnigraffle)
 
-The tool I used in my daily work is called  _Visual Paradigm_[^vpuml](abbviated as _VP_). Here is the introduction of this tool[^vpintro]:
+The tool I used in my daily work is called  _Visual Paradigm_[^vpuml](abbviated as _VP_). Here is a brief introduction of this tool[^vpintro]:
 
 > This software is a UML CASE Tool supporting UML 2, SysML and Business Process Modeling Notation (BPMN)
 
