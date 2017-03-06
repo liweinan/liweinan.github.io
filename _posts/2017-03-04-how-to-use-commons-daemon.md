@@ -104,7 +104,7 @@ Now let's start to learn how to use `commons-daemon` and `jsvc` to manage the li
 
 [^3]: [How to convert a java program to daemon with jsvc?](http://stackoverflow.com/questions/7687159/how-to-convert-a-java-program-to-daemon-with-jsvc)
 
-## Integrate your Java application with `commons-daemon`
+### Integrate your Java application with `commons-daemon`
 
 Firstly, write a Java class that implements the `Daemon` interface:
 
