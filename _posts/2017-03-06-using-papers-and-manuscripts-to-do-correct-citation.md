@@ -1,6 +1,6 @@
 ---
 title: Using Papers And Manuscripts To Add Academic Citations into GitHub Pages
-excerpt: In this article I'd like to share with you how to use _Papers 3_ and _Manuscripts_ under _MacOS_ to add academic citations into your GitHub Pages.
+excerpt: In this article I'd like to share with you how to use Papers 3 and Manuscripts under MacOS to add academic citations into your GitHub Pages.
 ---
 
 # _{{ page.title }}_
