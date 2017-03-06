@@ -2,8 +2,6 @@
 title: How To Use Apache Commons Daemon
 ---
 
-# _{{ page.title }}_
-
 _Apache Commons Daemon_ is a tool provided by _Apache_ community which can help you to manage your Java application as a standard system daemon. In this article I'd like to show you the basic usage of it.
 
 The Apache Commons Daemon consists of two parts: One part is written in Java called `commons-daemon`, the other part is called `jsvc` which is written in C.
