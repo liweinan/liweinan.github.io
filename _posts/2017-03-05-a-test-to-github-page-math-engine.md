@@ -2,6 +2,8 @@
 title: A Test to Github Math Engine
 ---
 
+# _{{ page.title }}_
+
 This article is for testing the _MathJax_ support in posts.
 
 {% include mathjax.html %}
