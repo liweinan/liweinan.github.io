@@ -37,11 +37,11 @@ Here is a screenshot of using _FiraCode_ in _Atom_[^atom]:
 
 As the screenshot shown above, we can see how the symbols like `==`, `!=`, `>=` are displayed with ligatures enabled.
 
-Not only _Atom_, but many coding tools and text editors are supporting nowadays, such as _IntelliJ_[^intellij] and _Emacs_. You can check your editors to see if it supports ligatures or not. Finally, I'd like to provide you an interesting article to read related with ligatures[^decline-and-fall-of-the-ligature].
+Not only _Atom_, but many coding tools and text editors are supporting nowadays, such as _IntelliJ_[^intellij] and _Emacs_. You can check your editors to see if it supports ligatures or not. Finally, I'd like to recommend an interesting article related with ligatures[^article] for reading.
 
 [^intellij]: [IntelliJ IDEA: Support for Ligatures in Editor](https://confluence.jetbrains.com/display/IDEADEV/Support+for+Ligatures+in+Editor)
 
-[^decline-and-fall-of-the-ligature]:(http://ilovetypography.com/2007/09/09/decline-and-fall-of-the-ligature/)
+[^article]:(http://ilovetypography.com/2007/09/09/decline-and-fall-of-the-ligature/)
 
 _References_
 
