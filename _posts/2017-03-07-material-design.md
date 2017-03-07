@@ -27,7 +27,7 @@ In _Atom_[^atom], there are relative themes and highlight syntaxs that conforms 
 
 ![2017-03-07-atom-theme.png]({{ site.url }}/assets/2017-03-07-atom-theme.png)
 
-As the screenshot shown above, I have installed `atom-material-syntax` and `atom-material-ui` and enable them in `UI Theme` and `Syntax Theme` settings. Here is a screenshot of the _Atom_ appearance after the above two themes are applied:
+As the screenshot shown above, I have installed `atom-material-syntax` and `atom-material-ui` and enabled them in `UI Theme` and `Syntax Theme` settings. Here is a screenshot of the _Atom_ appearance after the above two themes are applied:
 
 ![2017-03-07-atom-appearance.png]({{ site.url }}/assets/2017-03-07-atom-appearance.png)
 
