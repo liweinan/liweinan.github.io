@@ -1,5 +1,5 @@
 ---
-title: Using Ligatures Fonts in Coding
+title: Using Typographic Ligature in Coding
 abstract: In writing and typography, a ligature occurs where two or more graphemes or letters are joined as a single glyph. In this article, I'd like to introduce several fonts that supports ligatures you can use in various coding tools.
 ---
 
