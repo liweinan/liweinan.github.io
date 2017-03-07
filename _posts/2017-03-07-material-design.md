@@ -17,11 +17,22 @@ And:
 
 > Designer Matías Duarte explained that, "unlike real paper, our digital material can expand and reform intelligently. Material has physical surfaces and edges. Seams and shadows provide meaning about what you can touch." Google states that their new design language is based on paper and ink.
 
-Here is a diagram copied from Wikipedia that shows some typical Material Design UI components[^ui]:
+Here is a diagram copied from _Wikipedia_ that shows some typical _Material Design_ UI components[^ui]:
 
 [^ui]: [Some typical Material Design UI components](https://en.wikipedia.org/wiki/Material_Design#/media/File:Material_Design.svg)
 
-![Material_Design.png]({{ site.url }}/assets/Material_Design.png)
+![Material Design]({{ site.url }}/assets/Material_Design.png)
+
+In _Atom_[^atom], there are relative themes and highlight syntaxs that applied the _Material Design Guideline_ for your usage. Here is the screenshot about the themes:
+
+[^atom]: [Atom: A hackable text editor for the 21st Century](https://atom.io/)
+
+![2017-03-07-atom-theme.png]({{ site.url }}/assets/2017-03-07-atom-theme.png)
+
+As the screenshot shown above, I have installed `atom-material-syntax` and `atom-material-ui` and enable them in `UI Theme` and `Syntax Theme` settings. Here is a screenshot of the _Atom_ appearance after the above two themes are applied:
+
+![2017-03-07-atom-appearance.png]({{ site.url }}/assets/2017-03-07-atom-appearance.png)
+
 
 
 
