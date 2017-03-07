@@ -21,13 +21,15 @@ The benefit of ligatures is the improvement of the readability of the symbols. H
 
 ![all_ligatures]({{ site.url }}/assets/all_ligatures.png)
 
-As the diagram shown above, the ligatures greatly improved the conciseness and readability of the symbols. There are many monospaced fonts that supports ligatures that we can use in our daily coding work. Here are some popular ones: _FiraCode_, _Hasklig_[^haskig], _PragmataPro_[^pragmatapro].
+As the diagram shown above, the ligatures greatly improved the conciseness and readability of the symbols. There are many monospaced fonts that supports ligatures that we can use in our daily coding work. Here are some popular ones: _FiraCode_, _Hasklig_[^hasklig], _PragmataPro_[^pragmatapro].
 
 [^hasklig]: [Hasklig - a code font with monospaced ligatures](https://github.com/i-tu/Hasklig)
 
 [^monoid]: [monoid: Customisable coding font with alternates, ligatures and contextual positioning. Crazy crisp at 12px/9pt. http://larsenwork.com/monoid/](https://github.com/JB-Dmitry/monoid)
 
 [^pragmatapro]: [PragmataPro™ is a condensed monospaced font optimized for screen, designed to be the ideal font for coding, math and engineering](https://www.fsd.it/shop/fonts/pragmatapro/)
+
+
 
 _References_
 
