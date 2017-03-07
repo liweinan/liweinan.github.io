@@ -29,7 +29,17 @@ As the diagram shown above, the ligatures greatly improved the conciseness and r
 
 [^pragmatapro]: [PragmataPro™ is a condensed monospaced font optimized for screen, designed to be the ideal font for coding, math and engineering](https://www.fsd.it/shop/fonts/pragmatapro/)
 
+Here is a screenshot of using _FiraCode_ in _Atom_[^atom]:
 
+[^atom]: [Atom: A hackable text editor for the 21st Century](https://atom.io/)
+
+![atom]({{ site.url }}/assets/2017-03-07-atom.png)
+
+As the screenshot shown above, we can see how the symbols like `==`, `!=`, `>=` are displayed with ligatures enabled.
+
+Not only _Atom_, but many coding tools and text editors are supporting nowadays, such as _IntelliJ_[^intellij] and _Emacs_.
+
+[^intellij]: [IntelliJ IDEA: Support for Ligatures in Editor](https://confluence.jetbrains.com/display/IDEADEV/Support+for+Ligatures+in+Editor)
 
 _References_
 
