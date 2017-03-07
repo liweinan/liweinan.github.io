@@ -43,6 +43,6 @@ Not only _Atom_, but many coding tools and text editors are supporting ligatures
 
 [^decline-and-fall-of-the-ligature]: [Decline And Fall Of The Ligature](http://ilovetypography.com/2007/09/09/decline-and-fall-of-the-ligature/)
 
-_References_
+### _References_
 
 ---

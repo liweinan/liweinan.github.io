@@ -521,6 +521,6 @@ fin <- c <- a <- start
 
 We can see the cheapest path has been changed accordingly. Dijkstra's Algorithm is an interesting algorithm and worth studying.
 
-_References_
+### _References_
 
 ---

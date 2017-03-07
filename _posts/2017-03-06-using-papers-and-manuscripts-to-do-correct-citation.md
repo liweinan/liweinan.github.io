@@ -59,6 +59,6 @@ Here's the output demo:
 
 In this way, we have added academic citations into this post manually.
 
-_References_
+### _References_
 
 ---
