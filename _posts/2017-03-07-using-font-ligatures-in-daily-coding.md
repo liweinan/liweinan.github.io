@@ -41,7 +41,7 @@ Not only _Atom_, but many coding tools and text editors are supporting nowadays,
 
 [^intellij]: [IntelliJ IDEA: Support for Ligatures in Editor](https://confluence.jetbrains.com/display/IDEADEV/Support+for+Ligatures+in+Editor)
 
-[^decline-and-fall-of-the-ligature]: [^Decline And Fall Of The Ligature](http://ilovetypography.com/2007/09/09/decline-and-fall-of-the-ligature/)
+[^decline-and-fall-of-the-ligature]: [Decline And Fall Of The Ligature](http://ilovetypography.com/2007/09/09/decline-and-fall-of-the-ligature/)
 
 _References_
 
