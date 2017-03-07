@@ -19,7 +19,7 @@ And:
 
 Here is a diagram copied from Wikipedia that shows some typical Material Design UI components[^ui]:
 
-^[ui]: [Some typical Material Design UI components](https://en.wikipedia.org/wiki/Material_Design#/media/File:Material_Design.svg)
+[^ui]: [Some typical Material Design UI components](https://en.wikipedia.org/wiki/Material_Design#/media/File:Material_Design.svg)
 
 ![Material_Design.png]({{ site.url }}/assets/Material_Design.png)
 
