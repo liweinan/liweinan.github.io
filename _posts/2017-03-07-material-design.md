@@ -17,7 +17,7 @@ And:
 
 > Designer Matías Duarte explained that, "unlike real paper, our digital material can expand and reform intelligently. Material has physical surfaces and edges. Seams and shadows provide meaning about what you can touch." Google states that their new design language is based on paper and ink.
 
-Here is a diagram refered from Wikipedia that shows some typical Material Design UI components[^ui]:
+Here is a diagram copied from Wikipedia that shows some typical Material Design UI components[^ui]:
 
 ^[ui]: [Some typical Material Design UI components](https://en.wikipedia.org/wiki/Material_Design#/media/File:Material_Design.svg)
 
