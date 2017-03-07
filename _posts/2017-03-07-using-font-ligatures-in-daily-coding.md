@@ -13,7 +13,7 @@ The concept of _Typographic ligature_ is defined like this[^ligature]:
 
 > In writing and typography, a ligature occurs where two or more graphemes or letters are joined as a single glyph. An example is the character æ as used in English, in which the letters a and e are joined. The common ampersand (&) developed from a ligature in which the handwritten Latin letters e and t (spelling et, from the Latin for "and") were combined.
 
-The benefit of ligatures is the improvement of the readability of the symbols. Here is a comparison of the fonts that supports ligatures versus the ordinary monospaced[monospace] one[^firacode]:
+The benefit of ligatures is the improvement of the readability of the symbols. Here is a comparison of the fonts that supports ligatures versus the ordinary monospaced[^monospace] one[^firacode]:
 
 [^firacode]: [FiraCode: Monospaced font with programming ligatures](https://github.com/tonsky/FiraCode)
 
