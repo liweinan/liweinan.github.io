@@ -7,7 +7,7 @@ abstract: Material Design is a design guideline developed by Google, and in Atom
 
 {{ page.abstract }}
 
-Here is the explanation of _Material Design_ from _Wikipedia_[^wiki]:
+Firstly, here is an explanation of _Material Design_ from _Wikipedia_[^wiki]:
 
 [^wiki]: [https://en.wikipedia.org/wiki/Material_Design](https://en.wikipedia.org/wiki/Material_Design)
 
