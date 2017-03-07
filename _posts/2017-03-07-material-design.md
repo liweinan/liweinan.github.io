@@ -33,7 +33,9 @@ As the screenshot shown above, I have installed `atom-material-syntax` and `atom
 
 ![2017-03-07-atom-appearance.png]({{ site.url }}/assets/2017-03-07-atom-appearance.png)
 
+Please note there are some dynamic behaviors that cannot be shown from above screenshot. In addition, I'd like to recommend you to install a font that supports ligatures, and here is an explanation[ligatures].
 
+[^ligatures]: [Usage Of Typographic Ligature In Coding](http://weinan.io/2017/03/07/using-font-ligatures-in-daily-coding.html)
 
 
 
