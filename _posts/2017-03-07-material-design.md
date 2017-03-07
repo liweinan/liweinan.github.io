@@ -19,7 +19,7 @@ Here is a diagram copied from _Wikipedia_ that shows some typical _Material Desi
 
 [^ui]: [Some typical Material Design UI components](https://en.wikipedia.org/wiki/Material_Design#/media/File:Material_Design.svg)
 
-<center>![Material Design]({{ site.url }}/assets/Material_Design.png)</center>
+![Material Design]({{ site.url }}/assets/Material_Design.png)
 
 In _Atom_[^atom], there are relative themes and highlight syntaxs that applied the _Material Design Guideline_. Here is the screenshot about the themes:
 
