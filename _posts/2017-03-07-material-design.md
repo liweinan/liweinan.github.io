@@ -21,7 +21,7 @@ Here is a diagram copied from _Wikipedia_ that shows some typical _Material Desi
 
 ![Material Design]({{ site.url }}/assets/Material_Design.png)
 
-In _Atom_[^atom], there are relative themes and highlight syntaxs that applied the _Material Design Guideline_. Here is the screenshot about the themes:
+In _Atom_[^atom], there are relative themes and highlight syntaxs that conforms to the _Material Design Guideline_. Here is the screenshot about the themes:
 
 [^atom]: [Atom: A hackable text editor for the 21st Century](https://atom.io/)
 
