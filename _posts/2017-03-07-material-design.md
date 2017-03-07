@@ -12,9 +12,7 @@ Firstly, here is an explanation of _Material Design_ from _Wikipedia_[^wiki]:
 [^wiki]: [https://en.wikipedia.org/wiki/Material_Design](https://en.wikipedia.org/wiki/Material_Design)
 
 > Material Design (codenamed Quantum Paper) is a design language developed in 2014 by Google. Expanding upon the "card" motifs that debuted in Google Now, Material Design makes more liberal use of grid-based layouts, responsive animations and transitions, padding, and depth effects such as lighting and shadows.
-
-And:
-
+> 
 > Designer Matías Duarte explained that, "unlike real paper, our digital material can expand and reform intelligently. Material has physical surfaces and edges. Seams and shadows provide meaning about what you can touch." Google states that their new design language is based on paper and ink.
 
 Here is a diagram copied from _Wikipedia_ that shows some typical _Material Design_ UI components[^ui]:
