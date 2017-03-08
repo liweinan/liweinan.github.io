@@ -37,6 +37,6 @@ As you can see in this article, with the help of _Google Scholar_ and _BibDesk_,
 [^grokking]: [Bhargava, A. (2016). Grokking algorithms.](https://scholar.google.com/scholar?hl=en&q=grokking+algorithms&btnG=&as_sdt=1%2C34&as_sdtp=)
 [^bibdesk]: [BibDesk](http://bibdesk.sourceforge.net/)
 
-_References_
+### _References_
 
 ---

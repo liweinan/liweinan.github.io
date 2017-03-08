@@ -1,6 +1,6 @@
 ---
 title: Usage Of Typographic Ligature In Coding
-abstract: In writing and typography, a ligature occurs where two or more graphemes or letters are joined as a single glyph. In this article, I'd like to introduce several fonts that supports ligatures you can use in various coding tools.
+abstract: In writing and typography, a ligature occurs where two or more graphemes or letters are joined as a single glyph. In this article, I'd like to introduce several fonts that supports ligatures you can use in various coding tools and text editors.
 ---
 
 ## _{{ page.title }}_
@@ -37,10 +37,16 @@ Here is a screenshot of using _FiraCode_ in _Atom_[^atom]:
 
 As the screenshot shown above, we can see how the symbols like `==`, `!=`, `>=` are displayed with ligatures enabled.
 
-Not only _Atom_, but many coding tools and text editors are supporting nowadays, such as _IntelliJ_[^intellij] and _Emacs_.
+Not only _Atom_, but many coding tools and text editors are supporting ligatures nowadays, such as _IntelliJ_[^intellij] and _Emacs_. You can check your editors to see if it supports ligatures or not. Here is a screenshot that shows how to enable font ligatures in _IntelliJ_:
+
+![2017-03-08-intellij-ligature.png]({{ site.url }}/assets/2017-03-08-intellij-ligature.png)
+
+Finally, I'd like to recommend an interesting article related with ligatures[^decline-and-fall-of-the-ligature] for reading.
 
 [^intellij]: [IntelliJ IDEA: Support for Ligatures in Editor](https://confluence.jetbrains.com/display/IDEADEV/Support+for+Ligatures+in+Editor)
 
-_References_
+[^decline-and-fall-of-the-ligature]: [Decline And Fall Of The Ligature](http://ilovetypography.com/2007/09/09/decline-and-fall-of-the-ligature/)
+
+### _References_
 
 ---

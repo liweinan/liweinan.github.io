@@ -387,6 +387,6 @@ Till now we have gone through all the steps to integrate Tomcat-Vault into Tomca
 [^1]: [http://tomcat.apache.org/](http://tomcat.apache.org/)
 [^2]: [https://github.com/picketbox/tomcat-vault](https://github.com/picketbox/tomcat-vault)
 
-_References_
+### _References_
 
 ---

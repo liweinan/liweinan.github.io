@@ -50,6 +50,6 @@ In addition, the diagram can be exported as different formats for future usages:
 
 Till now, I have shown you the basic usages of _Visual Paradigm_ from a programmer's perspecitve. For project managers and designers, I believe they can dig out more values from the tool.
 
-_References_
+### _References_
 
 ---
