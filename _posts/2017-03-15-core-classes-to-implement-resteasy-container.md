@@ -11,9 +11,9 @@ Here is the class diagram that shows the core classes of RESTEasy:
 
 ![2017-03-15-resteasy-core.png]({{ site.url }}/assets/2017-03-15-resteasy-core.png)
 
-As the diagram shown above, there are three core classes that forms the RESTEasy basic structure: `ReseteasyDeployment`, `ResteasyProviderFactory`, and `ResourceMethodRegistry`. I have written _RESTEasy Implementation of JAX-RS SPEC 2.0 Section 3.7._[^jaxrs-spec3_7] to explain the design of `ResourceMethodRegistry` and the following URL matching classes. You may want to check the article for more details on RESTEasy implementation of URL matching process and method invoking process.
+As the diagram shown above, there are three core classes that forms the RESTEasy basic structure: `ReseteasyDeployment`, `ResteasyProviderFactory`, and `ResourceMethodRegistry`. I have written [RESTEasy Implementation of JAX-RS SPEC 2.0 Section 3.7](http://weinan.io/2017/03/04/jaxrs-spec3_7.html)[^jaxrs-spec3_7] to explain the design of `ResourceMethodRegistry` and the following URL matching classes. You may want to check the article for more details on RESTEasy implementation of URL matching process and method invoking process.
 
-[^jaxrs-spec3_7]: [RESTEasy Implementation of JAX-RS SPEC 2.0 Section 3.7.](http://weinan.io/2017/03/04/jaxrs-spec3_7.html)
+[^jaxrs-spec3_7]: [RESTEasy Implementation of JAX-RS SPEC 2.0 Section 3.7](http://weinan.io/2017/03/04/jaxrs-spec3_7.html).
 
 Now let's check the `ReseteasyDeployment` class. This is the basic container of the RESTEasy, and it contains `ResteasyProviderFactory` and `ResourceMethodRegistry` classes. The `ResteasyProviderFactory` contains many basic data that will be used during RESTEasy runtime. You can see from the diagram it is a very big class that contains a lot of data. For example, it contains multiple `MessageReader` classes, `MessageWriter` classes, `Filter` classes and `Interceptor` classes.
 
@@ -21,7 +21,7 @@ We can see from the diagram that `ResourceMethodRegistry` uses the `ResteasyProv
 
 ![2017-03-15-call-digram.png]({{ site.url }}/assets/2017-03-15-call-digram.png)
 
-From the above diagram, we can see how does `ResourceMethodRegistry` integrates mutliple parts together to prepare RESTEasy container for dealing with requests. We can the info are fetched from `ResteasyProviderFactory`, and we can see `ResourceMethodInvoker` and `ResourceLocatorInvoker` are added into multiple `Node` classes. In this way, the `Node` classes with its `Invoker` classes can be used for later requests matching and processing work. For more details on this part, you can refer to the _RESTEasy Implementation of JAX-RS SPEC 2.0 Section 3.7_.
+From the above diagram, we can see how does `ResourceMethodRegistry` integrates mutliple parts together to prepare RESTEasy container for dealing with requests. We can the info are fetched from `ResteasyProviderFactory`, and we can see `ResourceMethodInvoker` and `ResourceLocatorInvoker` are added into multiple `Node` classes. In this way, the `Node` classes with its `Invoker` classes can be used for later requests matching and processing work. For more details on this part, you can refer to the [RESTEasy Implementation of JAX-RS SPEC 2.0 Section 3.7](http://weinan.io/2017/03/04/jaxrs-spec3_7.html).
 
 Now we should check the `ResteasyDeployment` start process. The `ResteasyDeployment.start()` method is the initialisation method of the RESTEasy container. Here is the sequence diagram of the method:
 
@@ -49,7 +49,7 @@ From the above diagram we can see the main logic is to get the invoker and call 
 
 ![{{ site.url }}/assets/2017-03-15-getinvoker.png]({{ site.url }}/assets/2017-03-15-getinvoker.png)
 
-From the above diagram we can see the main logic is `registry.getResourceInvoker(request)`. We have discussed the details about RESTEasy implementation on URL matching in _RESTEasy Implementation of JAX-RS SPEC 2.0 Section 3.7._. Yo can check the article to learn about `Registry` and matching process.
+From the above diagram we can see the main logic is `registry.getResourceInvoker(request)`. We have discussed the details about RESTEasy implementation on URL matching in [RESTEasy Implementation of JAX-RS SPEC 2.0 Section 3.7](http://weinan.io/2017/03/04/jaxrs-spec3_7.html) You can check the article to learn about `Registry` and matching process.
 
 After getting the invoker, the dispatcher will run `invoker.invoke()` method to call the real method matches the incoming request. The discussion on invoker is out of the scope in this article, and I'll write another article to introduce the design on invoker.
 
