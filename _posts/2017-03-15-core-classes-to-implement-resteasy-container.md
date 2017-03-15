@@ -21,9 +21,9 @@ We can see from the diagram that `ResourceMethodRegistry` uses the `ResteasyProv
 
 ![2017-03-15-call-digram.png]({{ site.url }}/assets/2017-03-15-call-digram.png)
 
-From the above diagram, we can see how does `ResourceMethodRegistry` integrates mutliple parts together to prepare RESTEasy container for dealing with requests. We can the info are fetched from `ResteasyProviderFactory`, and we can see `ResourceMethodInvoker` and `ResourceLocatorInvoker` are added into multiple `Node` classes. In this way, the `Node` classes with its `Invoker` classes can be used for later requests matching and processing work. For more details on this part, you can refer to the [sec3.7].
+From the above diagram, we can see how does `ResourceMethodRegistry` coordinating various components to form a RESTEasy container for dealing with requests. We can see the info is fetched from `ResteasyProviderFactory`, and we can see `ResourceMethodInvoker` and `ResourceLocatorInvoker` are added into multiple `Node` classes. In this way, the `Node` classes with its `Invoker` classes can be used for later requests matching and processing work. For more details on this part, you can refer to the [sec3.7].
 
-Now we should check the `ResteasyDeployment` start process. The `ResteasyDeployment.start()` method is the initialisation method of the RESTEasy container. Here is the sequence diagram of the method:
+Now we should check the `ResteasyDeployment` start process. The `ResteasyDeployment.start()` method is the initialization method of the RESTEasy container. Here is the sequence diagram of the method:
 
 ![ResteasyProviderFactory.start.png]({{ site.url }}/assets/ResteasyProviderFactory.start.png)
 
