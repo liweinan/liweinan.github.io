@@ -21,9 +21,9 @@ We can see from the diagram that `ResourceMethodRegistry` uses the `ResteasyProv
 
 ![2017-03-15-call-digram.png]({{ site.url }}/assets/2017-03-15-call-digram.png)
 
-From the above diagram, we can see how does `ResourceMethodRegistry` integrates mutliple parts together to prepare RESTEasy container for dealing with requests. We can the info are fetched from `ResteasyProviderFactory`, and we can see `ResourceMethodInvoker` and `ResourceLocatorInvoker` are added into multiple `Node` classes. In this way, the `Node` classes with its `Invoker` classes can be used for later request matching and processing. For more details on this part, you can refer to the _RESTEasy Implementation of JAX-RS SPEC 2.0 Section 3.7_.
+From the above diagram, we can see how does `ResourceMethodRegistry` integrates mutliple parts together to prepare RESTEasy container for dealing with requests. We can the info are fetched from `ResteasyProviderFactory`, and we can see `ResourceMethodInvoker` and `ResourceLocatorInvoker` are added into multiple `Node` classes. In this way, the `Node` classes with its `Invoker` classes can be used for later requests matching and processing work. For more details on this part, you can refer to the _RESTEasy Implementation of JAX-RS SPEC 2.0 Section 3.7_.
 
-Now we should check the `ResteasyDeployment` start process. The `ResteasyDeployment.start()` method is the entry point of the RESTEasy container. Here is the sequence diagram of the method:
+Now we should check the `ResteasyDeployment` start process. The `ResteasyDeployment.start()` method is the initialisation method of the RESTEasy container. Here is the sequence diagram of the method:
 
 ![ResteasyProviderFactory.start.png]({{ site.url }}/assets/ResteasyProviderFactory.start.png)
 
@@ -31,4 +31,10 @@ From the above diagram, we can see `ResteasyDeployment.start()` method will crea
 
 ![ResteasyProviderFactory.registration.png]({{ site.url }}/assets/ResteasyProviderFactory.registration.png)
 
-After the `ResteasyDeployment.start()` is done, the provider factory and the registry is prepared to use for processing requests. Now let's check the dispatchers.
+After the `ResteasyDeployment.start()` is done, the provider factory and the registry is prepared to use for processing requests. Now let's check the dispatchers. The `Dispatcher` interface is the runtime entry of the RESTEasy container. If you check the `ResteasyHttpHandler`[^handler], then you can see how does it handles the incoming request in its `handle` method:
+
+[^handler]: [ResteasyHttpHandler.java](https://github.com/resteasy/Resteasy/blob/master/server-adapters/resteasy-jdk-http/src/main/java/org/jboss/resteasy/plugins/server/sun/http/ResteasyHttpHandler.java)
+
+![{{ site.url }}/assets/2017-03-15-ResteasyHttpHandler.handle.png]({{ site.url }}/assets/2017-03-15-ResteasyHttpHandler.handle.png)
+
+As the screenshot shown above, the `dispatcher.invoke()` method is the entry of whole processing work. The `ResteasyHttpHandler` class is the request handler of `resteasy-jdk-http` embedded server which uses _Sun JDK HTTP Server_ as the webserver.
