@@ -7,8 +7,7 @@ abstract: RESTEasy has some embedded containers, such as the Netty container, th
 
 {{ page.abstract }}
 
-
-Here is the class diagram that shows the core part of RESTEasy:
+Here is the class diagram that shows the core classes of RESTEasy:
 
 ![2017-03-15-resteasy-core.png]({{ site.url }}/assets/2017-03-15-resteasy-core.png)
 
@@ -22,4 +21,14 @@ We can see from the diagram that `ResourceMethodRegistry` uses the `ResteasyProv
 
 ![2017-03-15-call-digram.png]({{ site.url }}/assets/2017-03-15-call-digram.png)
 
-From the above diagram, we can see how does `ResourceMethodRegistry` integrates mutliple parts together to prepare RESTEasy container for dealing with requests. We can the info are fetched from `ResteasyProviderFactory`, and we can see `ResourceMethodInvoker` and `ResourceLocatorInvoker` are added into multiple `Node` classes. In this way, the `Node` classes with its `Invoker` classes can be used for later request matching and processing. For more details on this part, you can refer to the _RESTEasy Implementation of JAX-RS SPEC 2.0 Section 3.7._.
+From the above diagram, we can see how does `ResourceMethodRegistry` integrates mutliple parts together to prepare RESTEasy container for dealing with requests. We can the info are fetched from `ResteasyProviderFactory`, and we can see `ResourceMethodInvoker` and `ResourceLocatorInvoker` are added into multiple `Node` classes. In this way, the `Node` classes with its `Invoker` classes can be used for later request matching and processing. For more details on this part, you can refer to the _RESTEasy Implementation of JAX-RS SPEC 2.0 Section 3.7_.
+
+Now we should check the `ResteasyDeployment` start process. The `ResteasyDeployment.start()` method is the entry point of the RESTEasy container. Here is the sequence diagram of the method:
+
+![ResteasyProviderFactory.start.png]({{ site.url }}/assets/ResteasyProviderFactory.start.png)
+
+From the above diagram, we can see `ResteasyDeployment.start()` method will create and initialize `ResteasyProviderFactory`. In addition, it will initialize multiple dispatcher classes. In addition, we can see _Step 1.44_ is a call to `registration()`. This method is to add providers into `ResteasyProviderFactory`, and to add resource classes into `ResourceMethodRegistry`. Here is the sequence diagram of the `registration` method:
+
+![ResteasyProviderFactory.registration.png]({{ site.url }}/assets/ResteasyProviderFactory.registration.png)
+
+After the `ResteasyDeployment.start()` has been done, the provider factory and the registry has been provided to use for processing requests. Now let's check the dispatchers.
