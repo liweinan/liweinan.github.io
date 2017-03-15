@@ -49,7 +49,7 @@ From the above diagram we can see the main logic is to get the invoker and call 
 
 ![{{ site.url }}/assets/2017-03-15-getinvoker.png]({{ site.url }}/assets/2017-03-15-getinvoker.png)
 
-From the above diagram we can see the main logic is `registry.getResourceInvoker(request)`. We have discussed the details about RESTEasy implementation on URL matching in [sec3.7] You can check the article to learn about `Registry` and matching process.
+From the above diagram we can see the main logic is `registry.getResourceInvoker(request)`. We have discussed the details about RESTEasy implementation on URL matching process in [sec3.7].
 
 After getting the invoker, the dispatcher will run `invoker.invoke()` method to call the real method matches the incoming request. The discussion on invoker is out of the scope in this article, and I'll write another article to introduce the design on invoker.
 
