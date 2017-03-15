@@ -31,4 +31,4 @@ From the above diagram, we can see `ResteasyDeployment.start()` method will crea
 
 ![ResteasyProviderFactory.registration.png]({{ site.url }}/assets/ResteasyProviderFactory.registration.png)
 
-After the `ResteasyDeployment.start()` has been done, the provider factory and the registry has been provided to use for processing requests. Now let's check the dispatchers.
+After the `ResteasyDeployment.start()` is done, the provider factory and the registry is prepared to use for processing requests. Now let's check the dispatchers.
