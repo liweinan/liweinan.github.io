@@ -1,5 +1,5 @@
 ---
-title: An Analysis Of RESTEasy Core Classes - DRAFT
+title: An Analysis Of RESTEasy Core Classes
 abstract: RESTEasy has some embedded containers, such as the Netty container, the Sun JDK HTTP Server container, and the Undertow container. For each container, their basic requirement is to initialize the RESTEasy core classes properly so RESTEasy can provide resource classes and URL to method matching properly. In this article, I'd like to show you my researches on RESTEasy core classes.
 ---
 
@@ -37,4 +37,22 @@ After the `ResteasyDeployment.start()` is done, the provider factory and the reg
 
 ![{{ site.url }}/assets/2017-03-15-ResteasyHttpHandler.handle.png]({{ site.url }}/assets/2017-03-15-ResteasyHttpHandler.handle.png)
 
-As the screenshot shown above, the `dispatcher.invoke()` method is the entry of whole processing work. The `ResteasyHttpHandler` class is the request handler of `resteasy-jdk-http` embedded server which uses _Sun JDK HTTP Server_ as the webserver.
+As the screenshot shown above, the `dispatcher.invoke()` method is the entry of whole processing work. The `ResteasyHttpHandler` class is the request handler of `resteasy-jdk-http` embedded server which uses _Sun JDK HTTP Server_ as the webserver. Here is the class diagram show the dispatcher classes and the relationship with `Registry` and `ResteasyProviderFactory`:
+
+![{{ site.url }}/assets/2017-03-15-dispatchers.png]({{ site.url }}/assets/2017-03-15-dispatchers.png)
+
+Please check there are two kinds of dispatchers: one is synchronous and the other is asynchronous. You can guess the `AsynchronousDispatcher` is to support some asynchronous requests, and the `SynchronousDispatcher` is used for traditional request handlings. We won't dive into the details of two kinds of dispatchers in this article. Now let's see sequence diagram of the `SynchronousDispatcher.invoke()` method:
+
+![{{ site.url }}/assets/2017-03-15-invoke.png]({{ site.url }}/assets/2017-03-15-invoke.png)
+
+From the above diagram we can see the main logic is to get the invoker and call the `invoke()` method of the invoker. Here is the sequence diagram of the `SynchronousDispatcher.getInvoker()` method:
+
+![{{ site.url }}/assets/2017-03-15-getinvoker.png]({{ site.url }}/assets/2017-03-15-getinvoker.png)
+
+From the above diagram we can see the main logic is `registry.getResourceInvoker(request)`. We have discussed the details about RESTEasy implementation on URL matching in _RESTEasy Implementation of JAX-RS SPEC 2.0 Section 3.7._. Yo can check the article to learn about `Registry` and matching process.
+
+After getting the invoker, the dispatcher will run `invoker.invoke()` method to call the real method matches the incoming request. The discussion on invoker is out of the scope in this article, and I'll write another article to introduce the design on invoker.
+
+_References_
+
+---
