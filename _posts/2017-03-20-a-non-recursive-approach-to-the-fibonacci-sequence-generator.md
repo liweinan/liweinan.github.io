@@ -7,7 +7,7 @@ abstract: We usually know the Fibonacci sequence generator for learning the recu
 
 {{ page.abstract }}
 
-Here is the recursive version of the Fibonacci sequence generator we usually learn from the text book:
+Here is the recursive version of the Fibonacci sequence generator we usually learn from the text book[^fibrec]:
 
 ```java
 public static long fibonacci(int n) {
