@@ -47,6 +47,8 @@ System.out.println("result: " + result);
 System.out.println("Time consumed by `fibonacci` method:" + (end - start));
 ```
 
+And this is for the non-recursive implementation benchmark:
+
 ```java
 start = System.currentTimeMillis();
 result = nonrecursiveFibonacci(40);
@@ -62,14 +64,16 @@ result: 165580141
 Time consumed by `fibonacci` method:756
 ```
 
+Here's the result for the non-recursive implementation:
+
 ```
 result: 165580141
 Time consumed by `nonrecursiveFibonacci` method:0
 ```
 
-We can see the recursive version used 756 milliseconds to complete the calculation, and the time used by the non-recursive version can be neglected at millisecond level. The bigger the fibonacci number we want to calculate, the more performance difference between two implementations we'll get. More seriously, the recursive version will fail because it will throw stack memory overflow exception for its exponentially grown stack memory usage.
+We can see the recursive implementation used 756 milliseconds to complete the calculation, and the time used by the non-recursive implementation can be neglected at millisecond level. In addition, the bigger the fibonacci number we want to calculate, the more performance difference between two implementations we'll get. More seriously, the recursive version will finally fail as the argument `n` grows, because it will throw stack memory overflow exception for its exponentially grown stack memory usage.
 
-In conclusion, though the recursive implementation is clean in design, but sometimes it's not as efficient as the loop alternative. From the practical perspective, we should sometimes fine-tune our implementation to maximize the performance.
+In conclusion, though the recursive implementation is clean in design, but sometimes it's not as efficient as the loop alternative. From the practical perspective, we should fine-tune our implementation to maximize the performance.
 
 ### _References_
 
