@@ -16,7 +16,7 @@ public static long fibonacci(int n) {
 }
 ```
 
-The disadvantage of the above implementation is that the stack memory usage will increase exponentially as the argument `n` increases. In addition, this recursion is not a tail-recursion, so it can't be optimized easily by compiler.
+The disadvantage of the above implementation is that the stack memory usage will increase exponentially as the argument `n` increases. In addition, this recursion is not a tail-recursion[^tail], so it can't be optimized easily by compiler.
 
 Actually we can use loop instead of recursion to implement the fibonacci sequence more efficiently. Here is the one I wrote for example:
 
@@ -76,3 +76,5 @@ In conclusion, though the recursive implementation is clean in design, but somet
 ---
 
 [^fibrec]: [http://introcs.cs.princeton.edu/java/23recursion/Fibonacci.java.html](http://introcs.cs.princeton.edu/java/23recursion/Fibonacci.java.html)
+
+[^tail]: [https://en.wikipedia.org/wiki/Tail_call](https://en.wikipedia.org/wiki/Tail_call)
