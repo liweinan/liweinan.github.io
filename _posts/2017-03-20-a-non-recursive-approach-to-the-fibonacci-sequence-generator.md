@@ -37,7 +37,7 @@ public static long nonrecursiveFibonacci(int n) {
 }
 ```
 
-As the codes shown above, I used a loop and some fine-grained boundary conditions to replace the recursion. In this way we totally eliminate the exponentially grown stack memory usages of the recursive version of the implementation. Now let's wrote some codes for benchmark:
+As the codes shown above, I used a loop and some fine-grained boundary conditions to replace the recursion. In this way we totally eliminate the exponentially grown stack memory usages of the recursive version of the implementation. Now let's write some codes for benchmark:
 
 ```java
 long start = System.currentTimeMillis();
