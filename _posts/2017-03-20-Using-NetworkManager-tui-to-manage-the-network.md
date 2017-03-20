@@ -50,7 +50,7 @@ After I entered my password, the connection is activated like this:
 
 ![2017-03-20-020.png]({{ site.url }}/assets/2017-03-20-020.png)
 
-From the above screenshot, we can see there is a `*` before the activated connection to show its active status. Until now, we have seen the basic usages of `nmtui` tool. Actually this curses-based[^curses] tool is a wrapper of a command line tool called `nmcli`. All your operations in `nmtui` interface will be converted the command calls to `nmcli`. For example, here is the command to show all the active connections by using `nmcli` command:
+From the above screenshot, we can see there is a `*` before the activated connection to show its active status. Until now, we have seen the basic usages of `nmtui` tool. Actually this curses-based[^curses] tool is a wrapper of a command line tool called `nmcli`. All your operations in `nmtui` interface will be converted to the command calls to `nmcli`. For example, here is the command to show all the active connections by using `nmcli` command:
 
 ```
 $ nmcli connection show --active
