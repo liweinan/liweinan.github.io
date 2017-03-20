@@ -7,7 +7,7 @@ abstract: Sometimes it's more convenient to manage the network from text user in
 
 {{ page.abstract }}
 
-This package is provided in Fedora Linux[^fedora] distributions, and I'm using Fedora Version 24 in my local machine, so I can check it with the `dnf` command. Here is the info of this package:
+This package is provided by Fedora Linux[^fedora] distributions, and I'm using Fedora Version 24 in my local machine, so I can check it with the `dnf` command. Here is the info of this package:
 
 [^fedora]: [https://getfedora.org.](https://getfedora.org/)
 
@@ -48,7 +48,7 @@ As the screenshot shown above, it entered into the connection selection page. I 
 
 After I entered my password, the connection is activated like this:
 
-![2017-03-20-020.png]({{ site.url }}/assets/2017-03-20-017.png)
+![2017-03-20-020.png]({{ site.url }}/assets/2017-03-20-020.png)
 
 From the above screenshot, we can see there is a `*` before the activated connection to show its active status. Until now, we have seen the basic usages of `nmtui` tool. Actually this curses-based[^curses] tool is a wrapper of a command line tool called `nmcli`. All your operations in `nmtui` interface will be converted the command calls to `nmcli`. For example, here is the command to show all the active connections by using `nmcli` command:
 
