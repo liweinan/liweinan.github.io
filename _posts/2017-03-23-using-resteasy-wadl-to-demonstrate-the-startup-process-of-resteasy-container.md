@@ -50,20 +50,21 @@ From the above implementation, we can see the `ResourceMethodRegistry` and `Rest
 
 ![2017-03-23-ResteasyWadlServiceRegistry.png]({{ site.url }}/assets/2017-03-23-ResteasyWadlServiceRegistry.png)
 
-From the above diagram, we can see `ResteasyWadlServiceRegistry` contains `ResourceMethodRegistry` and `ResteasyProviderFactory`, and we these two classes, it can later fetch all the following classes it needs. 
-
+From the above diagram, we can see `ResteasyWadlServiceRegistry` contains `ResourceMethodRegistry` and `ResteasyProviderFactory`, and we these two classes, it can later fetch all the following classes it needs. Please note `ResteasyWadlServiceRegistry` stores two kinds of resources. The first kind is `resources`:
 
 ```java
-public class ResteasyWadlGenerator {
-
-    public static ResteasyWadlServiceRegistry generateServiceRegistry(ResteasyDeployment deployment) {
-        ResourceMethodRegistry registry = (ResourceMethodRegistry) deployment.getRegistry();
-        ResteasyProviderFactory providerFactory = deployment.getProviderFactory();
-        ResteasyWadlServiceRegistry service = new ResteasyWadlServiceRegistry(null, registry, providerFactory, null);
-        return service;
-    }
-}
+private Map<String, ResteasyWadlResourceMetaData> resources;
 ```
+
+From the above `Map` data structure, we can guess the resources contains url <-> class entries, and `ResteasyWadlResourceMetaData` is used to store resource class information. The second kind is `locators`:
+
+```java
+private List<ResteasyWadlServiceRegistry> locators;
+```
+
+This one contains resource locators, because resource locators are actually nested resources, so they are a list of `ResteasyWadlServiceRegistry` itself. Now let's check `ResteasyWadlResourceMetaData` and `ResteasyWadlMethodMetaData`:
+
+![ResteasyWadlMethodMetaData.png]({{ site.url }}/assets/ResteasyWadlMethodMetaData.png)
 
 ### _References_
 
