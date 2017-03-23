@@ -50,6 +50,8 @@ From the above implementation, we can see the `ResourceMethodRegistry` and `Rest
 
 ![2017-03-23-ResteasyWadlServiceRegistry.png]({{ site.url }}/assets/2017-03-23-ResteasyWadlServiceRegistry.png)
 
+From the above diagram, we can see `ResteasyWadlServiceRegistry` contains `ResourceMethodRegistry` and `ResteasyProviderFactory`, and we these two classes, it can later fetch all the following classes it needs. 
+
 
 ```java
 public class ResteasyWadlGenerator {
