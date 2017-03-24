@@ -62,7 +62,43 @@ From the above `Map` data structure, we can guess the resources contains url <->
 private List<ResteasyWadlServiceRegistry> locators;
 ```
 
-This one contains resource locators, because resource locators are actually nested resources, so they are a list of `ResteasyWadlServiceRegistry` itself. Now let's check `ResteasyWadlResourceMetaData` and `ResteasyWadlMethodMetaData`:
+This one contains resource locators, because resource locators are actually nested resources, so they are a list of `ResteasyWadlServiceRegistry` itself. We can check the `scanRegistry()` method of `ResteasyWadlServiceRegistry` to see how does it fetch, process and store the resources information:
+
+![2017-03-24-scanRegistry.png]({{ site.url }}/assets/2017-03-24-scanRegistry.png)
+
+From the above sequence diagram we can see how does `ResteasyWadlServiceRegistry` deals with two types of resources. If the resource type is `ResourceMethodInvoker`[^warn], then it will create `ResteasyWadlMethodMetaData` and `ResteasyWadlResourceMetaData` to store the resource classes and methods information. Here are the relative codes in `scanRegistry()` method:
+
+[^warn]: The name of this class is misleading, it should be called `ResourceClassAndMethodInvoker`, because it contains both resource class their methods information.
+
+```java
+if (invoker instanceof ResourceMethodInvoker) {
+		ResteasyWadlMethodMetaData methodMetaData = new ResteasyWadlMethodMetaData(this, (ResourceMethodInvoker) invoker);
+		ResteasyWadlResourceMetaData resourceMetaData = resources.get(methodMetaData.getKlassUri());
+		if (resourceMetaData == null) {
+				resourceMetaData = new ResteasyWadlResourceMetaData(methodMetaData.getKlassUri());
+				resources.put(methodMetaData.getKlassUri(), resourceMetaData);
+		}
+		resourceMetaData.addMethodMetaData(methodMetaData);
+}
+```
+
+On other hand, if the resource type is `ResourceLocator`, then it will add the locator into the `locators` array. Here is the relative code:
+
+```java
+else if (invoker instanceof ResourceLocator) {
+	ResourceMethodRegistry locatorRegistry = new ResourceMethodRegistry(providerFactory);
+	locatorRegistry.addResourceFactory(null, null, locatorResourceType);
+	locators.add(new ResteasyWadlServiceRegistry(this, locatorRegistry, providerFactory, locator));
+}
+```
+
+The name of `ResourceMethodRegistry` is also misleading, it might be better called `ResourceClassAndMethodRegistry` because it also contains both resource classes and methods information. The instance of `ResourceMethodRegistry` is `locatorRegistry`, and it is passed to the constructor of `ResteasyWadlServiceRegistry`, and the created `ResteasyWadlServiceRegistry` is added into `locators`. This is the line of code that does this:
+
+```java
+locators.add(new ResteasyWadlServiceRegistry(this, locatorRegistry, providerFactory, locator));
+```
+
+Please note the constructor of `ResteasyWadlServiceRegistry` will call the `scanRegistry()` method, so here we have a recursive call of `scanRegistry()` for resource locators. This implementation reflects the fact that resource locator is a kind of nested resource. Now let's check the `ResteasyWadlResourceMetaData` and `ResteasyWadlMethodMetaData`:
 
 ![ResteasyWadlMethodMetaData.png]({{ site.url }}/assets/ResteasyWadlMethodMetaData.png)
 
@@ -90,7 +126,7 @@ for (ResteasyWadlServiceRegistry subService : serviceRegistry.getLocators())
 		processWadl(subService, root);
 ```
 
-We can see the resource locators are really just a subset of resources.
+We can see the resource locators are really just nested resources.
 
 ### _References_
 
