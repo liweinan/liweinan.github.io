@@ -126,7 +126,7 @@ for (ResteasyWadlServiceRegistry subService : serviceRegistry.getLocators())
 		processWadl(subService, root);
 ```
 
-We can see the resource locators are really just nested resources.
+We can see again the resource locators are just nested resources.
 
 ### _References_
 
