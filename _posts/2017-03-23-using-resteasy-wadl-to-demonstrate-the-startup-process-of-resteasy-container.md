@@ -68,9 +68,29 @@ This one contains resource locators, because resource locators are actually nest
 
 From the above diagram, we can see `ResteasyWadlResourceMetaData` has a list of `ResteasyWadlMethodMetaData`, and `ResteasyWadlMethodMetaData` contains the `ResourceMethodInvoker`, and the `ResourceMethodInvoker` is the implementation class to do the actual resource method invocations. Now we can check how does `ResteasyWadlWriter` uses `ResteasyWadlResourceMetaData` and `ResteasyWadlMethodMetaData` to convert resource classes and methods to WADL data:
 
+![2017-03-24-processWadl.png]({{ site.url }}/assets/2017-03-24-processWadl.png)
 
+From the above sequence diagram we can see how does `resourceMetaDataEntry` and `methodMetaData` used in `processWadl` method. Here are the relative codes:
 
+```java
+for (Map.Entry<String, ResteasyWadlResourceMetaData> resourceMetaDataEntry : serviceRegistry.getResources().entrySet()) {
+	resourceClass.setPath(resourceMetaDataEntry.getKey());
+	root.getResource().add(resourceClass);
 
+	for (ResteasyWadlMethodMetaData methodMetaData : resourceMetaDataEntry.getValue().getMethodsMetaData()) {
+		Method method = new Method();
+	}
+}
+```
+
+In addition, at the end of the `processWadl` method, it deals with the resource locators in a recursive way:
+
+```java
+for (ResteasyWadlServiceRegistry subService : serviceRegistry.getLocators())
+		processWadl(subService, root);
+```
+
+We can see the resource locators are really just a subset of resources.
 
 ### _References_
 
