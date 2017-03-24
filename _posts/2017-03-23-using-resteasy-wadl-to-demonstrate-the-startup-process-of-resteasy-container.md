@@ -19,7 +19,7 @@ contextBuilder.getDeployment().getActualResourceClasses()
 	.add(ResteasyWadlDefaultResource.class);
 ```
 
-The above codes show us how the resource classes are added into the `ResteasyDeployment`. The `HttpContextBuilder` is a RESTEasy wrapper class for the Sun JDK HTTP Server, and we don't need to care about its details in this article. We need to understand the `ResteasyWadlDefaultResource` is added into `ResteasyDeployment` from above codes. This tells us the `ResteasyDeployment` class stores all the resource classes. I won't dive into the `ResteasyDeployment` in this article, but you may want to check this article[^core] I've written to have an understanding on RESTEasy core classes.
+The above codes show us how the resource classes are added into the `ResteasyDeployment`. The `HttpContextBuilder` is a RESTEasy wrapper class for the Sun JDK HTTP Server, and we don't need to care about its details in this article. We need to understand the `ResteasyWadlDefaultResource` is added into `ResteasyDeployment` from above codes. This tells us the `ResteasyDeployment` class stores all the resource classes. I won't dive into the `ResteasyDeployment` in this article, but if you'd like to learn more about the core classes of RESTEasy you can check this[^core].
 
 [^core]: [http://weinan.io.](http://weinan.io/2017/03/15/core-classes-to-implement-resteasy-container.html)
 
