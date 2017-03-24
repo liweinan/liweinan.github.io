@@ -66,9 +66,7 @@ This one contains resource locators, because resource locators are actually nest
 
 ![2017-03-24-scanRegistry.png]({{ site.url }}/assets/2017-03-24-scanRegistry.png)
 
-From the above sequence diagram we can see how does `ResteasyWadlServiceRegistry` deals with two types of resources. If the resource type is `ResourceMethodInvoker`[^warn], then it will create `ResteasyWadlMethodMetaData` and `ResteasyWadlResourceMetaData` to store the resource classes and methods information. Here are the relative codes in `scanRegistry()` method:
-
-[^warn]: The name of this class is misleading, it should be called `ResourceClassAndMethodInvoker`, because it contains both resource class their methods information.
+From the above sequence diagram we can see how does `ResteasyWadlServiceRegistry` deals with two types of resources. If the resource type is `ResourceMethodInvoker`, then it will create `ResteasyWadlMethodMetaData` and `ResteasyWadlResourceMetaData` to store the resource classes and methods information. The name of this class is misleading, it should be called `ResourceClassAndMethodInvoker`, because it contains both resource class their methods information. Here are the relative codes in `scanRegistry()` method:
 
 ```java
 if (invoker instanceof ResourceMethodInvoker) {
