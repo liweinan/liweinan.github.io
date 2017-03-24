@@ -66,6 +66,12 @@ This one contains resource locators, because resource locators are actually nest
 
 ![ResteasyWadlMethodMetaData.png]({{ site.url }}/assets/ResteasyWadlMethodMetaData.png)
 
+From the above diagram, we can see `ResteasyWadlResourceMetaData` has a list of `ResteasyWadlMethodMetaData`, and `ResteasyWadlMethodMetaData` contains the `ResourceMethodInvoker`, and the `ResourceMethodInvoker` is the implementation class to do the actual resource method invocations. Now we can check how does `ResteasyWadlWriter` uses `ResteasyWadlResourceMetaData` and `ResteasyWadlMethodMetaData` to convert resource classes and methods to WADL data:
+
+
+
+
+
 ### _References_
 
 ---
