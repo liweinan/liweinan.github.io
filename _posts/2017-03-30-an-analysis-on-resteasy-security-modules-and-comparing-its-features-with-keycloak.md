@@ -1,5 +1,5 @@
 ---
-title: An analysis on RESTEasy security modules and comparing its features with Keycloak
+title: An Analysis On RESTEasy Security Modules And Comparing Its Features With Keycloak
 abstract: In this article I'd like to share with you my study on RESTEasy security modules and Keycloak features.
 ---
 
