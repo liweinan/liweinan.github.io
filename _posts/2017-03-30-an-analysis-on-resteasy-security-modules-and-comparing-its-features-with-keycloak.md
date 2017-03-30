@@ -138,31 +138,66 @@ system/layers/base/org/jboss/resteasy/jose-jwt/main/jose-jwt-3.0.19.Final.jar
 system/layers/base/org/jboss/resteasy/jose-jwt/main/module.xml
 ```
 
-And `resteasy-crypto` is shipped by default:
+Now let's check the `resteasy-crypto` module.
+
+### resteasy-crypto
+
+`resteasy-crypto` provides a basic toolset for common encryption work. For example, it contains classes like `DKIMSignature` for dealing with DKIM headers[^6], and it contains `KeyTools`, `PemUtils` and `DerUtils` for processing JSSE[^7] classes like `PrivateKey`, `PublicKey`, and `X509Certificate`. Same like `jose-jwt`, `resteasy-crypto` is shipped by default by Wildfly:
 
 ```
 system/layers/base/org/jboss/resteasy/resteasy-crypto/main/module.xml
 system/layers/base/org/jboss/resteasy/resteasy-crypto/main/resteasy-crypto-3.0.19.Final.jar
 ```
 
-Now let's check the `resteasy-crypto` module.
+`Keycloak` has simliar classes, some are same, but they are not equal:
 
-### resteasy-crypto
+```
+$ ls -1 ./common/src/main/java/org/keycloak/common/util | grep -i util
+CRLUtils.java
+CertificateUtils.java
+CollectionUtil.java
+DerUtils.java
+EnvUtil.java
+HostUtils.java
+HtmlUtils.java
+KerberosSerializationUtils.java
+KeyUtils.java
+KeystoreUtil.java
+MimeTypeUtil.java
+NetworkUtils.java
+OCSPUtils.java
+ObjectUtil.java
+PemUtils.java
+StreamUtil.java
+UriUtils.java
+```
 
-### keystone
-
-### login-module-authenticator
+In the future maybe we should try to maintain the shared part of classes between Keycloak and RESTEasy.
 
 ### resteasy-oauth
 
+`resteasy-oauth` is a restful adapter to support OAuth protocol. I haven't checked the detail implementation in Keycloak side, but I guess this module is no longer needed and can be replaced by the feature provided by Keycloak. I need a more fine-grained study on Keycloak side to give my conclusion.
+
 ### skeleton-key-idm
+
+
+### keystone
+
+
+### login-module-authenticator
+
 
 ### _References_
 
 ---
 
-[^1]: https://github.com/apereo/cas
-[^2]: https://en.wikipedia.org/wiki/OpenID
-[^3]: https://en.wikipedia.org/wiki/Security_Assertion_Markup_Language
-[^4]: https://en.wikipedia.org/wiki/Identity_provider
-[^5]: http://jose.readthedocs.io/en/latest/
+[^1]: [Central Authentication Service (CAS).](https://github.com/apereo/cas)
+[^2]: [OpenID.](https://en.wikipedia.org/wiki/OpenID)
+[^3]: [Security Assertion Markup Language
+](https://en.wikipedia.org/wiki/Security_Assertion_Markup_Language)
+[^4]: [Identity provider
+.](https://en.wikipedia.org/wiki/Identity_provider)
+[^5]: [Javascript Object Signing and Encryption (JOSE)
+.](http://jose.readthedocs.io/en/latest/)
+[^6]: [DomainKeys Identified Mail (DKIM).](http://www.dkim.org/)
+[^7]: [Java Secure Socket Extension.](https://en.wikipedia.org/wiki/Java_Secure_Socket_Extension)
