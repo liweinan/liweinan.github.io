@@ -19,7 +19,11 @@ resteasy-oauth
 skeleton-key-idm
 ```
 
-I’ll introduce the above modules one by one and refer to Keycloak when necessary. The first one is `jose-jwt`. `jose` is `Javascript Object Signing and Encryption`, and `jws` is `JSON Web Token`[^5]. The `jose-jws` module contains classes to deal with these two encryption modules. Keycloak copied part of these classes into its own project:
+I’ll introduce the above modules one by one and refer to Keycloak when necessary.
+
+### jose-jwt
+
+The first one is `jose-jwt`. `jose` is `Javascript Object Signing and Encryption`, and `jws` is `JSON Web Token`[^5]. The `jose-jws` module contains classes to deal with these two encryption modules. Keycloak copied part of these classes into its own project:
 
 ```
 $ pwd
@@ -140,6 +144,13 @@ And `resteasy-crypto` is shipped by default:
 system/layers/base/org/jboss/resteasy/resteasy-crypto/main/module.xml
 system/layers/base/org/jboss/resteasy/resteasy-crypto/main/resteasy-crypto-3.0.19.Final.jar
 ```
+
+Now let's check the `resteasy-crypto` module.
+
+### resteasy-crypto
+
+
+
 
 ### _References_
 
