@@ -180,7 +180,7 @@ In the future maybe we should try to maintain the shared part of classes between
 
 ### skeleton-key-idm
 
-I believe this project is now fully replaced by Keycloak and can be deprecated. Here are two articles you may want to read that describes the design and architecture of the `skeleton-key-idm`[^8][^9].
+I believe this project is now fully replaced by Keycloak and can be deprecated. Here are two articles you may want to read that describes the design and architecture of the `skeleton-key-idm`[^8] [^9].
 
 ### keystone
 
