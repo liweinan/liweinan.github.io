@@ -149,8 +149,13 @@ Now let's check the `resteasy-crypto` module.
 
 ### resteasy-crypto
 
+### keystone
 
+### login-module-authenticator
 
+### resteasy-oauth
+
+### skeleton-key-idm
 
 ### _References_
 
