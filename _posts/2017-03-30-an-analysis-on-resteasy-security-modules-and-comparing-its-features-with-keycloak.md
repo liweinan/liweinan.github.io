@@ -217,7 +217,7 @@ Here are my conclusions on RESTEasy security modules, it may not be accurate, an
 - The development of `keystone` support should be moved to Keycloak side.
 - Who is using `login-module-authenticator`? I guess it should be removed from RESTEasy. We need to know what project is using it.
 
-Above are just some personal comments and decisions from RESTEasy community.
+Above are just some personal comments and they are not the decisions from RESTEasy community.
 
 ### _References_
 
