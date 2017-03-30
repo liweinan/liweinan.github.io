@@ -193,11 +193,8 @@ In the future maybe we should try to maintain the shared part of classes between
 
 [^1]: [Central Authentication Service (CAS).](https://github.com/apereo/cas)
 [^2]: [OpenID.](https://en.wikipedia.org/wiki/OpenID)
-[^3]: [Security Assertion Markup Language
-](https://en.wikipedia.org/wiki/Security_Assertion_Markup_Language)
-[^4]: [Identity provider
-.](https://en.wikipedia.org/wiki/Identity_provider)
-[^5]: [Javascript Object Signing and Encryption (JOSE)
-.](http://jose.readthedocs.io/en/latest/)
+[^3]: [Security Assertion Markup Language.](https://en.wikipedia.org/wiki/Security_Assertion_Markup_Language)
+[^4]: [Identity provider.](https://en.wikipedia.org/wiki/Identity_provider)
+[^5]: [Javascript Object Signing and Encryption (JOSE).](http://jose.readthedocs.io/en/latest/)
 [^6]: [DomainKeys Identified Mail (DKIM).](http://www.dkim.org/)
 [^7]: [Java Secure Socket Extension.](https://en.wikipedia.org/wiki/Java_Secure_Socket_Extension)
