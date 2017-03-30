@@ -180,12 +180,44 @@ In the future maybe we should try to maintain the shared part of classes between
 
 ### skeleton-key-idm
 
+I believe this project is now fully replaced by Keycloak and can be deprecated. Here are two articles you may want to read that describes the design and architecture of the `skeleton-key-idm`[^8][^9].
 
 ### keystone
 
+`keystone` is  a `Skeleton Keystone IDM` that supports `Openstack's Keystone protocol`. IMHO, the development of this project should be moved to Keycloak side, and RESTEasy should deprecate this module.
 
 ### login-module-authenticator
 
+This module is just a simple one that contains two classes:
+
+```
+login-module-authenticator weli$ tree src/
+src/
+└── main
+    └── java
+        └── org
+            └── jboss
+                └── security
+                    └── web
+                        ├── DomainDelegatingAuthenticator.java
+                        └── ThreadContext.java
+
+6 directories, 2 files
+```
+
+I haven't done full analysis on the usage of this project. Maybe it's used by JBoss Web? I don't know yet. But I believe this sub-module could be removed in future.
+
+### Conclusion
+
+Here are my conclusions on RESTEasy security modules, it may not be accurate, and it's just based on my study till now. You can't use this as the final decision of RESTEasy community for the future. Here are the points:
+
+- We should keep `jose-jwt` and `resteasy-crypto` modules because they are used by Wildfly.
+- Maybe we can coordinate with Keycloak team to merge the shared part of codes. IMHO Keycloak can use `jose-jwt` and `resteasy-crypto` and don't maintain it in Keycloak, or vice versa.
+- `resteasy-oauth`, `skeleton-key-idm` should be deprecated and users should use Keycloak instead.
+- The development of `keystone` support should be moved to Keycloak side.
+- Who is using `login-module-authenticator`? I guess it should be removed from RESTEasy. We need to know what project is using it.
+
+Above are just some personal comments and decisions from RESTEasy community.
 
 ### _References_
 
@@ -198,3 +230,5 @@ In the future maybe we should try to maintain the shared part of classes between
 [^5]: [Javascript Object Signing and Encryption (JOSE).](http://jose.readthedocs.io/en/latest/)
 [^6]: [DomainKeys Identified Mail (DKIM).](http://www.dkim.org/)
 [^7]: [Java Secure Socket Extension.](https://en.wikipedia.org/wiki/Java_Secure_Socket_Extension)
+[^8]: [Scoping out Resteasy Skeleton Key Security.](https://bill.burkecentral.com/2012/11/21/scoping-out-resteasy-skeleton-key-security/)
+[^9]: [Resteasy Skeleton Key Web SSO/OAuth.](https://developer.jboss.org/wiki/ResteasySkeletonKeyWebSSOOAuth)
