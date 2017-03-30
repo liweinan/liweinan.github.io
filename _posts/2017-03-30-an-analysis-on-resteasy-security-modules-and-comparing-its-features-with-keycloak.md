@@ -26,6 +26,8 @@ $ pwd
 /Users/weli/projs/keycloak/keycloak-github
 ```
 
+And here are the classes:
+
 ```
 $ find . | grep jose
 ./core/src/main/java/org/keycloak/jose
@@ -54,6 +56,8 @@ $ find . | grep jose
 ./core/src/test/java/org/keycloak/jose/jwk/JWKBuilderTest.java
 ```
 
+Keycloak doesn't contain `jwt` classes:
+
 ```
 $ find . | grep jwt
 ./adapters/oidc/adapter-core/src/test/resources/keycloak-jwt.json
@@ -64,12 +68,14 @@ $ find . | grep jwt
 ./themes/src/main/resources/theme/base/admin/resources/partials/client-credentials-jwt.html
 ```
 
-Here are the contents of RESTEasy `jose-jws` module:
+Here are the contents of RESTEasy `jose-jws` module. The directory is:
 
 ```
 $ pwd
 /Users/weli/projs/resteasy-upstream/security/jose-jwt/src
 ```
+
+Here are the classes:
 
 ```
 $ find . | grep -v test
@@ -121,19 +127,19 @@ $ find . | grep -v test
 ./main/java/org/jboss/resteasy/jwt/JWTContextResolver.java
 ```
 
-Generally speaking, the classes in Keycloak is a subset of the classes in RESTEasy `jose-jwt`. Wildfly uses the `resteasy-crypto` and `jose-jws` modules by default:
+Generally speaking, the classes in Keycloak is a subset of the classes in RESTEasy `jose-jwt`. In addition, Wildfly uses the `resteasy-crypto` and `jose-jws` modules by default. Here are the default modules in `wildfly-10.1.0.Final`:
 
 ```
 system/layers/base/org/jboss/resteasy/jose-jwt/main/jose-jwt-3.0.19.Final.jar
 system/layers/base/org/jboss/resteasy/jose-jwt/main/module.xml
 ```
 
+And `resteasy-crypto` is shipped by default:
+
 ```
 system/layers/base/org/jboss/resteasy/resteasy-crypto/main/module.xml
 system/layers/base/org/jboss/resteasy/resteasy-crypto/main/resteasy-crypto-3.0.19.Final.jar
 ```
-
-
 
 ### _References_
 
