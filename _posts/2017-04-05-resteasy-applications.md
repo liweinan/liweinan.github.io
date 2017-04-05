@@ -1,5 +1,5 @@
 ---
-title: RESTEasy Applications Support - DRAFT
+title: RESTEasy Applications Support
 abstract: In this article I'd like to give you a brief introduction on RESTEasy Application Support.
 ---
 
@@ -58,7 +58,7 @@ From the above code, we can see the method will create an Application class inst
 
 ![2016-04-05-org.jboss.resteasy.spi.ResteasyDeployment.createApplication.png]({{ site.url }}/assets/2016-04-05-org.jboss.resteasy.spi.ResteasyDeployment.createApplication.png)
 
-Here are the two places that are using `createApplication()` method:
+From the above analysis, we can see the instance of Application will be stored into multiple classes, such as `Dispatcher` and `ResteasyProviderFactory`. Here are the two places that are using `createApplication()` method:
 
 ![2017-04-05-create-application.png]({{ site.url }}/assets/2017-04-05-create-application.png)
 
@@ -66,6 +66,93 @@ As the screenshot shown above, one is in `ServletContainerDispatcher.init()`, an
 
 ![2017-04-05-servletcontainerdispatcher.png]({{ site.url }}/assets/2017-04-05-servletcontainerdispatcher.png)
 
-Here is the usage in `ResteasyDeployment.start()`:
+We can see there is a `processApplication()` method after `createApplication()` method. Here is the sequence diagram of the `ServletContainerDispatcher.processApplication()` method:
+
+![2017-04-05-processapplication.png]({{ site.url }}/assets/2017-04-05-processapplication.png)
+
+We can see the `processApplication()` method will fetch the resources from Application instance and register them into various classes. This is the usage of Application in RESTEasy. Next let's see the `createApplication()` method in `ResteasyDeployment.start()`:
 
 ![2017-04-05-resteasydeployment.png]({{ site.url }}/assets/2017-04-05-resteasydeployment.png)
+
+Please note RESTEasy doesn't process the `@ApplicationPath` annotation by itself, it's the container's responsibility to deal with it. `WadlUndertowConnector` is a good example:
+
+```java
+package org.jboss.resteasy.wadl;
+
+import io.undertow.servlet.api.DeploymentInfo;
+import io.undertow.servlet.api.ServletInfo;
+import org.jboss.resteasy.plugins.server.servlet.HttpServlet30Dispatcher;
+import org.jboss.resteasy.plugins.server.undertow.UndertowJaxrsServer;
+import org.jboss.resteasy.spi.ResteasyDeployment;
+
+import javax.ws.rs.ApplicationPath;
+import javax.ws.rs.core.Application;
+
+import static io.undertow.servlet.Servlets.servlet;
+
+/**
+ * Created by weli on 7/26/16.
+ */
+public class WadlUndertowConnector {
+    public UndertowJaxrsServer deployToServer(UndertowJaxrsServer server, Class<? extends Application> application) {
+        ApplicationPath appPath = application.getAnnotation(ApplicationPath.class);
+        String path = "/";
+        if (appPath != null) path = appPath.value();
+
+        return deployToServer(server, application, path);
+    }
+
+    public UndertowJaxrsServer deployToServer(UndertowJaxrsServer server, Class<? extends Application> application, String contextPath) {
+        ResteasyDeployment deployment = new ResteasyDeployment();
+        deployment.setApplicationClass(application.getName());
+
+        DeploymentInfo di = server.undertowDeployment(deployment);
+
+        ServletInfo resteasyWadlServlet = servlet("ResteasyWadlServlet", ResteasyWadlServlet.class)
+                .setAsyncSupported(false)
+                .setLoadOnStartup(1)
+                .addMapping("/application.xml");
+        di.addServlet(resteasyWadlServlet);
+
+        di.setClassLoader(application.getClassLoader());
+        di.setContextPath(contextPath);
+        di.setDeploymentName("Resteasy" + contextPath);
+        return server.deploy(di);
+    }
+}
+```
+
+From the above code, we can see the `ApplicationPath` is extracted from Application instance:
+
+```java
+ApplicationPath appPath = application.getAnnotation(ApplicationPath.class);
+```
+
+And then it's injected into the Undertow[^undertow] container:
+
+```java
+di.setContextPath(contextPath);
+```
+
+From the above study, we know that Application can help users to register resources into Servlet container in a cleaner way, nevertheless RESTEasy doesn't rely on Application to register classes. In addition, some RESTEasy non-servlet containers such as Netty4 and Sun JDK HTTP Server doesn't need Application to register resources.
+
+For Servlet Container, RESTEasy provides helper classes such as `ServletContainerDispatcher` to help the container to prepare RESTEasy classes more conveniently. Here are the relative classes:
+
+![2017-04-05-dispatcher.png]({{ site.url }}/assets/2017-04-05-dispatcher.png)
+
+RESTEasy Undertow server is a servlet container, and `UndertowJaxrsServer` uses `ServletContainerDispatcher` like this:
+
+```java
+ServletInfo resteasyServlet = servlet("ResteasyServlet", HttpServlet30Dispatcher.class)
+        .setAsyncSupported(true)
+        .setLoadOnStartup(1)
+        .addMapping(mapping);
+```
+
+I won't dig into more details in this article, but you should get a good understanding on RESTEasy Application support now.
+
+### _References_
+
+---
+
+[^undertow]: [http://undertow.io.](http://undertow.io/)
