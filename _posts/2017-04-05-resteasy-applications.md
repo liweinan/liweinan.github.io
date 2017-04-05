@@ -1,5 +1,5 @@
 ---
-title: RESTEasy Applications Support
+title: RESTEasy Application Support
 abstract: In this article I'd like to give you a brief introduction on RESTEasy Application Support.
 ---
 
