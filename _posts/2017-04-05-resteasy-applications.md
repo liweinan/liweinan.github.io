@@ -58,6 +58,14 @@ From the above code, we can see the method will create an Application class inst
 
 ![2016-04-05-org.jboss.resteasy.spi.ResteasyDeployment.createApplication.png]({{ site.url }}/assets/2016-04-05-org.jboss.resteasy.spi.ResteasyDeployment.createApplication.png)
 
-Here are the two places that using `createApplication()` method:
+Here are the two places that are using `createApplication()` method:
 
 ![2017-04-05-create-application.png]({{ site.url }}/assets/2017-04-05-create-application.png)
+
+As the screenshot shown above, one is in `ServletContainerDispatcher.init()`, and the other one is `ResteasyDeployment.start()`. Here is the usage of `createApplication()` method in `ServletContainerDispatcher.init()`:
+
+![2017-04-05-servletcontainerdispatcher.png]({{ site.url }}/assets/2017-04-05-servletcontainerdispatcher.png)
+
+Here is the usage in `ResteasyDeployment.start()`:
+
+![2017-04-05-resteasydeployment.png]({{ site.url }}/assets/2017-04-05-resteasydeployment.png)
