@@ -34,7 +34,7 @@ PropertyInjector propertyInjector = providerFactory.getInjectorFactory().createP
 propertyInjector.inject(app);
 ```
 
-From the above code, we can see RESTEasy stores a single `Application` instance internally. The data structure needs to be modified to store multiple `Application` instances. In Jersey, the `JerseyServletContainerInitializer` class accepts multiple `Application` definitions. Here is the relative code in `JerseyServletContainerInitializer.onStartupImpl()` method:
+From the above code, we can see RESTEasy stores a single `Application` instance internally. The data structure needs to be modified to store multiple `Application` instances. In Jersey, the `JerseyServletContainerInitializer` class accepts multiple `Application` definitions. Here is the relative code in `JerseyServletContainerInitializer.onStartupImpl()` method[^1]:
 
 ```java
 for (final Class<? extends Application> applicationClass : getApplicationClasses(classes)) {
@@ -66,6 +66,16 @@ final ResourceConfig resourceConfig = ResourceConfig.forApplicationClass(clazz, 
     .addProperties(Utils.getContextParams(context));
 ```
 
-The main logic of  `JerseyServletContainerInitializer.addServletWithExistingRegistration()` is shown above. It will create an instance of `ResourceConfig` class. This class contains `Application` and the resource classes registered under the `Application`. Here is the class diagram of the `ResourceConfig`:
+The main logic of  `JerseyServletContainerInitializer.addServletWithExistingRegistration()` is shown above. It will create an instance of `ResourceConfig` class[^2]. This class contains `Application` and the resource classes registered under the `Application`. Here is the class diagram of the `ResourceConfig`:
 
-![2017-04-10-ResourceConfig.png]({{ site.url }}/assets2017-04-10-ResourceConfig.png)
+![2017-04-10-ResourceConfig.png]({{ site.url }}/assets/2017-04-10-ResourceConfig.png)
+
+From the above diagram, we can see `WrappingResourceConfig` contains `application : javax.ws.rs.core.Application` and `defaultClasses : java.util.Set<Class<?>> = new HashSet<>()`, this provides the `application -> resources` mapping. If RESTEasy wants to support multiple `Application` deployment, it also needs to have a data structure to record the relationship between each Application instance and its included resources.
+
+### _References_
+
+---
+
+[^1]: [JerseyServletContainerInitializer.java](https://github.com/jersey/jersey/blob/master/containers/jersey-servlet/src/main/java/org/glassfish/jersey/servlet/init/JerseyServletContainerInitializer.java#L156)
+
+[^2]: [ResourceConfig.java](https://github.com/jersey/jersey/blob/master/core-server/src/main/java/org/glassfish/jersey/server/ResourceConfig.java#L108)
