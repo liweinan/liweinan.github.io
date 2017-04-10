@@ -34,7 +34,7 @@ PropertyInjector propertyInjector = providerFactory.getInjectorFactory().createP
 propertyInjector.inject(app);
 ```
 
-From the above code, we can see RESTEasy stores a single `Application` instance internally. The data structure needs to be modified to store multiple `Application` instances. In Jersey, the `JerseyServletContainerInitializer` class accepts multiple `Application` definitions. Here is the relative code in `JerseyServletContainerInitializer.onStartupImpl()` method[^1]:
+From the above code, we can see RESTEasy stores a single `Application` instance internally. The data structure needs to be modified to store multiple `Application` instances. In Jersey, the `JerseyServletContainerInitializer` class accepts multiple `Application` definitions. Here is the relative code in `onStartupImpl()` method[^1]:
 
 ```java
 for (final Class<? extends Application> applicationClass : getApplicationClasses(classes)) {
