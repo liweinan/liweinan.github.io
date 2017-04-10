@@ -72,6 +72,8 @@ The main logic of  `JerseyServletContainerInitializer.addServletWithExistingRegi
 
 From the above diagram, we can see `WrappingResourceConfig` contains `application : javax.ws.rs.core.Application` and `defaultClasses : java.util.Set<Class<?>> = new HashSet<>()`, this provides the `application -> resources` mapping. If RESTEasy wants to support multiple `Application` deployment, it also needs to have a data structure to record the relationship between each Application instance and its included resources.
 
+Please note `Application` is just a method to help users to register their resteful resources easier in Servlet container, both Jersey and RESTEasy core design don't merely rely on the `Application` to find and register resources, and other non-servet containers just don't need `Application` to register resources. You can refer to RESTEasy's Netty container document[^3] to see how it register resource classes via programmable interfaces.
+
 ### _References_
 
 ---
@@ -79,3 +81,5 @@ From the above diagram, we can see `WrappingResourceConfig` contains `applicatio
 [^1]: [JerseyServletContainerInitializer.java](https://github.com/jersey/jersey/blob/master/containers/jersey-servlet/src/main/java/org/glassfish/jersey/servlet/init/JerseyServletContainerInitializer.java#L156)
 
 [^2]: [ResourceConfig.java](https://github.com/jersey/jersey/blob/master/core-server/src/main/java/org/glassfish/jersey/server/ResourceConfig.java#L108)
+
+[^3]: [RESTEasy_Embedded_Container.html.](http://docs.jboss.org/resteasy/docs/3.1.2.Final/userguide/html/RESTEasy_Embedded_Container.html#d4e1597)
