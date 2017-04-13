@@ -179,10 +179,9 @@ Now we should configure the module in httpd. From the source code of the module 
 
 ```c
 static int foo_handler(request_rec *r) {
-  if (!r->handler || strcmp(r->handler, "foo_handler")) return (DECLINED);
-
-  ap_set_content_type(r, "text/html");
-  ap_rprintf(r, "Hello, martian!");
+  if (!r->handler || strcmp(r->handler, "foo_handler")) return (DECLINED);
+  ap_set_content_type(r, "text/html");
+  ap_rprintf(r, "Hello, martian!");
 ```
 
 So if the handler name is set to `foo_handler`, it will accept the request and return a simple text to the client. We can add following lines into `httpd.conf`:
