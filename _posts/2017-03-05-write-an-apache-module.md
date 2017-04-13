@@ -14,7 +14,7 @@ I'm using _Fedora Linux_, So I can use the _httpd_ and _httpd-devel_ provided by
 The reason to install _httpd-devel_ is that we need the header files relative to module deveplopment provided by it. Now let's write a simple module:
 
 ```c
-// module_foo.c
+// foo_module.c
 #include <stdio.h>
 #include "apr_hash.h"
 #include "ap_config.h"
@@ -25,7 +25,6 @@ The reason to install _httpd-devel_ is that we need the header files relative to
 #include "http_log.h"
 #include "http_protocol.h"
 #include "http_request.h"
-
 
 static int foo_handler(request_rec *r) {
   if (!r->handler || strcmp(r->handler, "foo_handler")) return (DECLINED);
@@ -82,27 +81,27 @@ We can use it to compile our `foo_module`:
 
 As the snapshot shown above，we have used `apxs` to compile _foo_module.c_:
 
-```bash
+```
 $ apxs -a -c foo_module.c
 ```
 
 The output of compling process is like this:
 
-```bash
+```
 /usr/lib64/apr-1/build/libtool --silent --mode=compile gcc -prefer-pic -O2 -g -pipe -Wall -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector-strong --param=ssp-buffer-size=4 -grecord-gcc-switches -specs=/usr/lib/rpm/redhat/redhat-hardened-cc1 -m64 -mtune=generic  -DLINUX -D_REENTRANT -D_GNU_SOURCE -pthread -I/usr/include/httpd  -I/usr/include/apr-1   -I/usr/include/apr-1   -c -o foo_module.lo foo_module.c && touch foo_module.slo
 /usr/lib64/apr-1/build/libtool --silent --mode=link gcc -Wl,-z,relro,-z,now   -o foo_module.la  -rpath /usr/lib64/httpd/modules -module -avoid-version    foo_module.lo
 ```
 
 As the output shown above, we can see `apxs` used _libtool_ to compile our module, and generated many files:
 
-```bash
+```
 $ ls
 foo_module.c  foo_module.la  foo_module.lo  foo_module.o  foo_module.slo
 ```
 
 There are also generated files in _.libs_ directory：
 
-```bash
+```
 $ ls -l ./.libs/
 total 104
 -rw-rw-r--. 1 weli weli 35580 Jan 27 02:55 foo_module.a
@@ -117,13 +116,13 @@ Most of the files on above are intermediate libraries genereated during compile 
 Nevertheless, we don't have to install the module manually, we can also use the `apxs` utility to install it to default _httpd_ installation location. Here is the command to install the module:
 
 
-```bash
+```
 $ sudo apxs -i foo_module.la
 ```
 
 Please note we have used `sudo` to invoke `apxs`, because the module will be installed to system provided _httpd_, and its directories need root permission to modify. In addition, the `foo_module.la` is a _libtool_ description file that describes the libraries it generated, and it is a pure text file if you'd like to check. Here is the output of above command:
 
-```bash
+```
 /usr/lib64/httpd/build/instdso.sh SH_LIBTOOL='/usr/lib64/apr-1/build/libtool' foo_module.la /usr/lib64/httpd/modules
 /usr/lib64/apr-1/build/libtool --mode=install install foo_module.la /usr/lib64/httpd/modules/
 libtool: install: install .libs/foo_module.so /usr/lib64/httpd/modules/foo_module.so
@@ -157,13 +156,13 @@ The important line is at the bottom of above log, from which we can see _foo_mod
 
 The above `apxs` command will just install the _.so_ file into httpd module directory, but it won't load it in _httpd_ config file for you. If you'd like to activate your module by adding it into _httpd_ config file, you can use the following command:
 
-```bash
+```
 $ sudo apxs -ia foo_module.la
 ```
 
 And this time there is an additional line in the output:
 
-```bash
+```
 chmod 755 /usr/lib64/httpd/modules/foo_module.so
 [activating module 'foo' in /etc/httpd/conf/httpd.conf]
 ```
@@ -175,3 +174,61 @@ $ grep foo /etc/httpd/conf/httpd.conf
 # LoadModule foo_module modules/mod_foo.so
 LoadModule foo_module         /usr/lib64/httpd/modules/foo_module.so
 ```
+
+Now we should configure the module in httpd. From the source code of the module we saw:
+
+```c
+static int foo_handler(request_rec *r) {
+  if (!r->handler || strcmp(r->handler, "foo_handler")) return (DECLINED);
+
+  ap_set_content_type(r, "text/html");
+  ap_rprintf(r, "Hello, martian!");
+```
+
+So if the handler name is set to `foo_handler`, it will accept the request and return a simple text to the client. We can add following lines into `httpd.conf`:
+
+```
+<Location /foo>
+SetHandler foo_handler
+</Location>
+```
+
+With the above configuraton, we set the `foo_handler` to serve the location `/foo`, and our module will be used to deal with this location. Now we can start the httpd server:
+
+```
+$ sudo service httpd start
+Redirecting to /bin/systemctl start  httpd.service
+```
+
+If the service started correctly, we can see from the log like this:
+
+```
+$ systemctl status httpd.service
+● httpd.service - The Apache HTTP Server
+   Loaded: loaded (/usr/lib/systemd/system/httpd.service; disabled; vendor preset: disabled)
+   Active: active (running) since Thu 2017-04-13 18:04:46 CST; 20s ago
+ Main PID: 16184 (httpd)
+   Status: "Total requests: 0; Idle/Busy workers 100/0;Requests/sec: 0; Bytes served/sec:   0 B/sec"
+    Tasks: 32 (limit: 512)
+   Memory: 3.9M
+      CPU: 133ms
+   CGroup: /system.slice/httpd.service
+           ├─16184 /usr/sbin/httpd -DFOREGROUND
+           ├─16211 /usr/sbin/httpd -DFOREGROUND
+           ├─16212 /usr/sbin/httpd -DFOREGROUND
+           ├─16213 /usr/sbin/httpd -DFOREGROUND
+           ├─16214 /usr/sbin/httpd -DFOREGROUND
+           └─16215 /usr/sbin/httpd -DFOREGROUND
+
+Apr 13 18:04:37 fedora.shared systemd[1]: Starting The Apache HTTP Server...
+Apr 13 18:04:46 fedora.shared systemd[1]: Started The Apache HTTP Server.
+```
+
+Now we can access the location `/foo` to see if our module works properly:
+
+```
+$  curl http://localhost/foo
+Hello, martian!
+```
+
+As the command output shown above, our module works as expected.

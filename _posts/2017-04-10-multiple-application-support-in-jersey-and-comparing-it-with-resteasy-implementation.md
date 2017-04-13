@@ -66,7 +66,7 @@ final ResourceConfig resourceConfig = ResourceConfig.forApplicationClass(clazz, 
     .addProperties(Utils.getContextParams(context));
 ```
 
-The main logic of  `addServletWithExistingRegistration()` is shown above. It will create an instance of `ResourceConfig` class[^2]. This class contains `Application` and the resource classes registered under the `Application`. Here is the class diagram of the `ResourceConfig`:
+The main logic of `addServletWithExistingRegistration()` is shown above. It will create an instance of `ResourceConfig` class[^2]. This class contains `Application` and the resource classes registered under the `Application`. Here is the class diagram of the `ResourceConfig`:
 
 ![2017-04-10-ResourceConfig.png]({{ site.url }}/assets/2017-04-10-ResourceConfig.png)
 
