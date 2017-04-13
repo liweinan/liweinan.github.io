@@ -11,7 +11,7 @@ I'm using _Fedora Linux_, So I can use the _httpd_ and _httpd-devel_ provided by
 
 ![img]({{ site.url }}/assets/httpd_module_01.jpg)
 
-The reason to install _httpd-devel_ is that we need the header files relative to module deveplopment provided by it. Now let's write a simple module:
+The reason to install _httpd-devel_ is that we need the header files relative to module development provided by it[^1]. Now let's write a simple module:
 
 ```c
 // foo_module.c
