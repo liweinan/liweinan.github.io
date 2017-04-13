@@ -231,3 +231,9 @@ Hello, martian!
 ```
 
 As the command output shown above, our module works as expected.
+
+### _References_
+
+---
+
+[^1]: Kew, Nick. The Apache modules book: application development with Apache. Prentice Hall Professional, 2007.
