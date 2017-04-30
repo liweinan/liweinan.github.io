@@ -3,8 +3,6 @@ title: An Introduction to Visual Paradigm
 abstract: There are many UML modeling tools on the market. In this article, I'd like to introduce the one I used in my daily work called Visual Paradigm.
 ---
 
-## _{{ page.title }}_
-
 {{ page.abstract }}
 
 I have used many UML and modeling tools in my career, some are open-sourced and some are commercial softwares. There are many options in this field you can choose from, such as _ArgoUML_[^argo], _StarUML_[^star], _OmniGraffle_[^omni], or etc. You can check the links of these tools I've provided to you to see if they can fit your requirements.

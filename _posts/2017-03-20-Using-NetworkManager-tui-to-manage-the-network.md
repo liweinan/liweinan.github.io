@@ -3,8 +3,6 @@ title: Using NetworkManager-tui To Manage The Network From Text User Interface
 abstract: Sometimes it's more convenient to manage the network from text user interface. In this article I'd like to share a curses-based tool named NetworkManager-tui.
 ---
 
-## _{{ page.title }}_
-
 {{ page.abstract }}
 
 This package is provided by Fedora Linux[^fedora] distributions, and I'm using Fedora Version 24 in my local machine, so I can check it with the `dnf` command. Here is the info of this package:

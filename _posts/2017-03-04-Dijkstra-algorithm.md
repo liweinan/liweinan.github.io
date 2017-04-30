@@ -3,8 +3,6 @@ title: A Java Implementation of Dijkstra's Algorithm
 abstract: In this article I'd like to show you a java implementation of Dijkstra's Algorithm I've written.
 ---
 
-## _{{ page.title }}_
-
 {{ page.abstract }}
 
 I'm reading the book _Grokking Algorithm_[^grok] recently, and it introduces _Dijkstra's Algorithm_ in chapter 7. Here is a java implementation I've written:
