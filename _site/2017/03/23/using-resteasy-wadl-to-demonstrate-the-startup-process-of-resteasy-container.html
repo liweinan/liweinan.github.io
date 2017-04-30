@@ -1,5 +1,3 @@
-<h2 id="using-resteasy-wadl-to-demonstrate-the-startup-process-of-resteasy-container"><em>Using RESTEasy WADL To Demonstrate The Startup Process Of RESTEasy Container</em></h2>
-
 <p>RESTEasy WADL is a module that can generate WADL data for the restful resources. It needs to scan the RESTEasy container to get all the resources and methods information to generate the WADL data correctly, so analyzing the RESTEasy WADL intialization process can help us to better understanding the RESTEasy container structure. In this article I will use the code of RESTEasy WADL for this purpose.</p>
 
 <p>In the WADL section of RESTEasy document<sup id="fnref:doc"><a href="#fn:doc" class="footnote">1</a></sup>, it shows the usage of the WADL module. Here is the code shown in <code class="highlighter-rouge">51.2. RESTEasy WADL support for Sun JDK HTTP Server</code>:</p>
