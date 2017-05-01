@@ -121,7 +121,7 @@ Hello.java           HelloHelper.java     HelloHolder.java     HelloOperations.j
 
 The `POA` is abbreviation of `Portable Object Adapter`[^poa], and is it part of the CORBA specification. The `HelloPOA` class is a servant side skeleton class that can help us to register the defined methods into naming service. Let's see the defintion of this class:
 
-^[poa]: [Portable Object Adapter (POA)](http://docs.oracle.com/javase/7/docs/technotes/guides/idl/POA.html)
+[^poa]: [Portable Object Adapter (POA)](http://docs.oracle.com/javase/7/docs/technotes/guides/idl/POA.html)
 
 ```
 public abstract class HelloPOA extends org.omg.PortableServer.Servant
