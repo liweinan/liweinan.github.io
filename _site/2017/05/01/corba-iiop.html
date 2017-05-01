@@ -108,9 +108,7 @@ Hello.java           HelloHelper.java     HelloHolder.java     HelloOperations.j
 </code></pre>
 </div>
 
-<p>The <code class="highlighter-rouge">POA</code> is abbreviation of <code class="highlighter-rouge">Portable Object Adapter</code>[^poa], and is it part of the CORBA specification. The <code class="highlighter-rouge">HelloPOA</code> class is a servant side skeleton class that can help us to register the defined methods into naming service. Let’s see the defintion of this class:</p>
-
-<p>^[poa]: <a href="http://docs.oracle.com/javase/7/docs/technotes/guides/idl/POA.html">Portable Object Adapter (POA)</a></p>
+<p>The <code class="highlighter-rouge">POA</code> is abbreviation of <code class="highlighter-rouge">Portable Object Adapter</code><sup id="fnref:poa"><a href="#fn:poa" class="footnote">5</a></sup>, and is it part of the CORBA specification. The <code class="highlighter-rouge">HelloPOA</code> class is a servant side skeleton class that can help us to register the defined methods into naming service. Let’s see the defintion of this class:</p>
 
 <div class="highlighter-rouge"><pre class="highlight"><code>public abstract class HelloPOA extends org.omg.PortableServer.Servant
  implements HelloApp.HelloOperations, org.omg.CORBA.portable.InvokeHandler
@@ -596,6 +594,9 @@ helloImpl = HelloHelper.narrow(ncRef.resolve_str(name));
     </li>
     <li id="fn:idl">
       <p><a href="https://en.wikipedia.org/wiki/Interface_description_language">Interface_description_language</a>&nbsp;<a href="#fnref:idl" class="reversefootnote">&#8617;</a></p>
+    </li>
+    <li id="fn:poa">
+      <p><a href="http://docs.oracle.com/javase/7/docs/technotes/guides/idl/POA.html">Portable Object Adapter (POA)</a>&nbsp;<a href="#fnref:poa" class="reversefootnote">&#8617;</a></p>
     </li>
   </ol>
 </div>
