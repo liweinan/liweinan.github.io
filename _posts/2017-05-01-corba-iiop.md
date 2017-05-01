@@ -128,46 +128,45 @@ public abstract class HelloPOA extends org.omg.PortableServer.Servant
  implements HelloApp.HelloOperations, org.omg.CORBA.portable.InvokeHandler
 ```
 
-From the above class definition, we can see the `HelloPOA` class extends the `org.omg.PortableServer.Servant` and implements `HelloApp.HelloOperations` and `org.omg.CORBA.portable.InvokeHandler`. This is a abstract class, and we need to extend this class and implement the `sayHello()` method in `HelloOperations` interface. Now we can check the details in `HelloPOA` class . Firstly, it stores our defined methods like this:
+From the above class definition, we can see the `HelloPOA` class extends the `org.omg.PortableServer.Servant` and implements `HelloApp.HelloOperations` and `org.omg.CORBA.portable.InvokeHandler`. This is an abstract class, and we need to extend this class and implement the `sayHello()` method in the `HelloOperations` interface. Firstly let's check the detail code in `HelloPOA` class:
 
 ```
-  private static java.util.Hashtable _methods = new java.util.Hashtable ();
-  static
+private static java.util.Hashtable _methods = new java.util.Hashtable ();
+static
+{
+  _methods.put ("sayHello", new java.lang.Integer (0));
+}
+```
+
+As the code shown above, it stores our defined methods into `_methods` hashtable. Then let's check the `_invoke()` method:
+
+```
+public org.omg.CORBA.portable.OutputStream _invoke (String $method,
+                              org.omg.CORBA.portable.InputStream in,
+                              org.omg.CORBA.portable.ResponseHandler $rh)
+{
+  org.omg.CORBA.portable.OutputStream out = null;
+  java.lang.Integer __method = (java.lang.Integer)_methods.get ($method);
+  if (__method == null)
+    throw new org.omg.CORBA.BAD_OPERATION (0, org.omg.CORBA.CompletionStatus.COMPLETED_MAYBE);
+
+  switch (__method.intValue ())
   {
-    _methods.put ("sayHello", new java.lang.Integer (0));
+     case 0:  // HelloApp/Hello/sayHello
+     {
+       String $result = null;
+       $result = this.sayHello ();
+       out = $rh.createReply();
+       out.write_string ($result);
+       break;
+     }
+
+     default:
+       throw new org.omg.CORBA.BAD_OPERATION (0, org.omg.CORBA.CompletionStatus.COMPLETED_MAYBE);
   }
-```
 
-As the code shown above, it stores our defined methods into `_methods` hashtable. Now let's check the `_invoke()` method:
-
-```
-  public org.omg.CORBA.portable.OutputStream _invoke (String $method,
-                                org.omg.CORBA.portable.InputStream in,
-                                org.omg.CORBA.portable.ResponseHandler $rh)
-  {
-    org.omg.CORBA.portable.OutputStream out = null;
-    java.lang.Integer __method = (java.lang.Integer)_methods.get ($method);
-    if (__method == null)
-      throw new org.omg.CORBA.BAD_OPERATION (0, org.omg.CORBA.CompletionStatus.COMPLETED_MAYBE);
-
-    switch (__method.intValue ())
-    {
-       case 0:  // HelloApp/Hello/sayHello
-       {
-         String $result = null;
-         $result = this.sayHello ();
-         out = $rh.createReply();
-         out.write_string ($result);
-         break;
-       }
-
-       default:
-         throw new org.omg.CORBA.BAD_OPERATION (0, org.omg.CORBA.CompletionStatus.COMPLETED_MAYBE);
-    }
-
-    return out;
-  } // _invoke
-
+  return out;
+} // _invoke
 ```
 
 As the code shown above, the `_invoke()` method will firstly call the `sayHello()` method in server side with the actual `HelloOperations` implementation like this:
