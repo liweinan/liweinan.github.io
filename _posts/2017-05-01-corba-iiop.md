@@ -169,28 +169,28 @@ public org.omg.CORBA.portable.OutputStream _invoke (String $method,
 } // _invoke
 ```
 
-As the code shown above, the `_invoke()` method will firstly call the `sayHello()` method in server side with the actual `HelloOperations` implementation like this:
+As the code shown above, the `_invoke()` method will firstly call the `sayHello()` method in servant side with the actual `HelloOperations` implementation. Here is the relative part of the code in the method:
 
 ```
-         $result = this.sayHello ();
+$result = this.sayHello ();
 ```
 
-And then it will create the reply and write to client side via network:
+After the above local invocation is done in servant side, it will create the reply and write to client side via network like this:
 
 ```
-         out = $rh.createReply();
-         out.write_string ($result);
+out = $rh.createReply();
+out.write_string ($result);
 ```
 
-After checking the above code, now let's see this class diagram that includes `HelloPOA` together will client side classes and shared classes between client side and server side:
+The above code will transfer the the response of local invocation to client side via network. After looked at the code in `HelloPOA`, now let's see this class diagram that includes all the classes we have generated:
 
 ![](/assets/2017-05-01-corba-iiop/hello-server-client.png)
 
-From the above diagram, we can see the `HelloPOA` class needs to finally implement the `sayHello()` method defined in `HelloOperations` interface. That is what we need to do it by ourselves. In next section, let's implement our servant implementation.
+From the above diagram, we can see the relationship between these classes, and we can see the shared classes between client side and servant side. Nevertheless, these classes can not form a complete client or servant yet. We need to implement some client side and servant side classes by oursevles. Now let's implment the servant side implementation of the `Hello` interface.
 
 ### Servant Implementation
 
-Now let's write a `HelloImpl` class that extends `HelloPOA` to implement the `sayHello()` method:
+For the servant side, we need to write a `HelloImpl` class that extends `HelloPOA` to implement the `sayHello()` method. Here is the code:
 
 ```
 package HelloApp;
@@ -219,11 +219,11 @@ public class HelloImpl extends HelloPOA {
 }
 ```
 
-From the above code, we can see that the `HelloImpl` class I wrote implements the `sayHello()` method, and it will accept a  `org.omg.CORBA.ORB` instance for network communication. We'll check the detail of network communication later. The following diagram shows the server side classes we have so far:
+From the above code, we can see that the `HelloImpl` class I wrote implements the `sayHello()` method, and it will accept a `org.omg.CORBA.ORB` instance for network communication. We'll check the detail of network communication layer later. The following diagram shows the servant side classes we have so far:
 
 ![](/assets/2017-05-01-corba-iiop/HelloImpl.png)
 
-From the above diagram, we can see two generated classes by `idlj` compiler, which are `HelloOperations` and `HelloPOA`, and a handwritten class `HelloImpl`, and their relationship is shown in above diagram. Until now, we have `_HelloStub` class for client side to call the method in `HelloImpl` from server side, and the network communication detail in between is handled by other classes, we'll check more details then. Now we should write a server that uses `HelloImpl` to accept the call from client. Here is the code of the `HelloServer` class:
+From the above diagram, we can see the two generated classes by `idlj` compiler, which are `HelloOperations` and `HelloPOA`, and a handwritten class `HelloImpl`. Their relationship is shown in above diagram. Until now, we have `_HelloStub` class for client side to call the method in `HelloImpl` from server side, and the network communication detail in between is handled by the POA class. Actually the `ORB` layer will deal with the network communication, and it's handled by the generated classes. We don't have to dig into the network layer so deep now. Let's write a `HelloServer` class that accepts the call from client and invocate the `HelloImpl.sayHello()` method, and then return the result back to the client. Here is the code of the `HelloServer` class:
 
 ```
 package HelloApp;
@@ -269,14 +269,16 @@ public class HelloServer {
 }
 ```
 
-Generally speaking, the above `HelloServer` code does three main tasks: Firstly, it activates the servant manager:
+From the above code, we can see the `HelloServer` class generally performs three steps: Firstly, it activates the servant manager:
 
 ```
 POA rootpoa = POAHelper.narrow(orb.resolve_initial_references("RootPOA"));
 rootpoa.the_POAManager().activate();
 ```
 
-As the above code shows, the servant manager is in `rootpoa`, and it's retrieved by `ORB` from naming service. The name of the `POA` object in naming service is `RootPOA`. This is the architecture defined by CORBA standard: there is a naming service for service to be registered and fetched. For example, our `HelloImpl`, which extends `HelloPOA` and `org.omg.PortableServer.Servant` is a service that can be registered into the naming service. The naming service can be provided by multiple implementations. In this article, I'll use a tool provided by JDK named `orbd` for this purpose. The second task of above code is to register `HelloImpl` into naming service. The code is shown in below:
+As the above code shows, the servant manager is in `rootpoa`, and it's retrieved by `ORB` from naming service. The name of the `POA` object in naming service is `RootPOA`. This is the architecture defined by CORBA specification. There is a naming service for the servants to be registered and fetched. For example, our `HelloImpl` can be registered into the naming service. The naming service is provided by naming server. In this article, I'll use a tool provided by JDK named `orbd` for this purpose. It is a CORBA naming service daemon provided by JDK. 
+
+Secondly, the above code registers `HelloImpl` into naming service. The code is shown in below:
 
 ```
 HelloImpl helloImpl = new HelloImpl();
@@ -293,7 +295,9 @@ NameComponent path[] = ncRef.to_name(name);
 ncRef.rebind(path, href);
 ```
 
-From the above code, we can see that we use `orb` to get `NameService` itself from naming service daemon, and then we register our `HelloImpl` as `Hello` service. At last, we will start our service to listen for request:
+From the above code, we can see that we use `orb` to get `NameService` itself from naming service, and then we register our `HelloImpl` as `Hello` service. 
+
+Thirdly, we start our service to listen to the client requests:
 
 ```
 System.out.println("Server started. Accepting requests...");
@@ -301,7 +305,7 @@ System.out.println("Server started. Accepting requests...");
 orb.run();
 ```
 
-In above code, the last line will make the service into action, and it will start to listen for requests from client side. Now we understand that under CORBA architecture, there will be a naming service for server side to register servants, and for client side to fetch the services provided by multiple servants at server side. The naming service will listen to network port also, and the servant like `HelloImpl` is registered via naming service. When the client side using `_HelloStub` to call the `sayHello()` method, there will be network communication handled by `orb` layer, and on server side the `HelloImpl.sayHello()` method will be called actually. We have checked the `_invoke()` method in `HelloPOA` for server side, now let's write a client implemention class named `HelloClient`. 
+In above code, the last line will put the servant into listening status, and it will start to listen for requests from clients via network. As we have prepared the servant side, now we need to implement the client side.
 
 ### Client Side Implementation
 
