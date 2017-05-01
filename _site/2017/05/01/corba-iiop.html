@@ -1,4 +1,3 @@
-
 <p>In this article, I’d like to introduce to you the Common Object Request Broker Architecture, which is abbreviated as CORBA<sup id="fnref:corba"><a href="#fn:corba" class="footnote">1</a></sup>, and its implementation in Java, which is named Java RMI-IIOP. You may think the CORBA is an outdated technology, actually it is still acting as the the basic architecture of distributed object invocation field. Many of state-of-the-art projects are built on top of CORBA. For example, Narayana, the transaction processing project provided by JBoss community, use many idl files to describe its OTS implementation interfaces. Narayana is acting as the transaction processing subsystem in Wildfly<sup id="fnref:wildfly"><a href="#fn:wildfly" class="footnote">2</a></sup>.</p>
 
 <p>Java RMI<sup id="fnref:rmi"><a href="#fn:rmi" class="footnote">3</a></sup> is an distributed object invocation solution provided from Java community, and it was then enhenced by the RMI-IIOP standard to fully compliant with the CORBA standard. Because CORBA provides platform independency, so the Java RMI-IIOP allows the Java applications to communicate with the systems that conforms to the CORBA that is not written in Java.</p>
@@ -573,7 +572,7 @@ helloImpl = HelloHelper.narrow(ncRef.resolve_str(name));
 
 <h2 id="conclusion">Conclusion</h2>
 
-<p>In this chapter, we have written a Java application with CORBA standard and Java RMI-IIOP implementation. We have seen the achitecture defined by the CORBA, and we see how does Java platform provides us multiple tools to write the application that conforms to the standard. The CORBA and Java RMI-IIOP standards are the basis of many modern application servers. I wish this chapter is a good start for you to dig deeper in this area in future.</p>
+<p>In this article, we have written a Java application with CORBA standard and Java RMI-IIOP implementation. We have seen the achitecture defined by the CORBA, and we see how does Java platform provides us multiple tools to write the application that conforms to the standard. The CORBA and Java RMI-IIOP standards are the basis of many modern application servers. I wish this article is a good start for you to dig deeper in this area in future.</p>
 
 <h3 id="references"><em>References</em></h3>
 
