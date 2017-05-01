@@ -366,11 +366,11 @@ The next step in client is to get the `Hello` interface via network, and here is
 helloImpl = HelloHelper.narrow(ncRef.resolve_str(name));
 ```
 
-The above code is simliar to the process of getting `NameService` in above. We use `ncRef.resolve_str(...)` to fetch the remote object from naming server. If we check the type of `helloImpl`, we will see the type is `_HelloStub`, and this class will handle the network communication with server side. When we call `helloImpl.sayHello()` method later, the stub will actually invoke the `HelloImpl.sayHello()` implementation at servant side. Now let's check how does servant side receives the call from client side and process the request.
+The above code is simliar to the process of getting `NameService` in above. We use `ncRef.resolve_str(...)` to fetch the remote object from naming server. If we check the type of `helloImpl`, we will see the type is `_HelloStub`, and this class will handle the network communication with server side. When we call `helloImpl.sayHello()` method later, the stub will actually invoke the `HelloImpl.sayHello()` implementation at servant side. Now let's check how does servant side receives the call from client side and processes the request.
 
 ### Request Processing Of Servant Side
 
-At the servant side, the `HelloImpl` class extends the generated `HelloPOA` class as we saw in above, and we have checked that the `_invoke()` method in `HelloPOA` class will receive the network call and handle the local method dispatching properly. Let's review the core part in `HelloPOA._invoke(...)` method:
+At the servant side, the `HelloImpl` class extends the generated `HelloPOA` class as we saw in above. We have checked that the `_invoke()` method in `HelloPOA` class, and knows it will receive the network requests, and then dispatch the requests to local implementations. Let's review the core part in the `HelloPOA._invoke(...)` method:
 
 ```
 private static java.util.Hashtable _methods = new java.util.Hashtable ();
@@ -400,28 +400,23 @@ return out;
 } // _invoke
 ```
 
-As the code shown above, we can see how does server side deals with the request from client side. Now let's see the `sayHello()` call process in `_HelloStub` from client side:
+As the code shown above, we can see how does servant side deals with the request from client side. Now let's see the `sayHello()` call in `_HelloStub` from client side:
 
 ![](/assets/2017-05-01-corba-iiop/HelloApp._HelloStub.sayHello().png)
 
-From the above sequence diagram, we can see how does `_HelloStub.sayHello()` method invokes a call to remote server side, and remarshal the reply message from server. We'll check the detail of the network layer in next section. Here is the sequence diagram of `HelloPOA._invoke(...)` method in server side:
-
+From the above sequence diagram, we can see how does `_HelloStub.sayHello()` method invokes a call to remote server side, and remarshal the reply message received from servant. Here is the sequence diagram of `HelloPOA._invoke(...)` method in server side:
 
 ![](/assets/2017-05-01-corba-iiop/HelloApp.HelloPOA._invoke(String, org.omg.CORBA.portable.InputStream, org.omg.CORBA.portable.ResponseHandler).png)
 
-From the above seqeuence diagram, we see how does server side deals with the remote call from client side. To sum up the above analysis, here is the description of the whole process: Firstly, there is a naming service daemon started that allows multiple servants to be registered and client can fetch the servant from the naming service.
+From the above seqeuence diagram, we can see how does servant side deal with the requests from the client side. To sum up, here is the description of the whole process: Firstly, there is a naming service daemon started that allows multiple servants to be registered and client can fetch the servant from the naming service.
 
-The second step is to register our `HelloImpl` servant into the naming service. The third step is that client side fetches the `Hello` service from the naming service, and then invokes a call to `Hello.sayHello()` method via `_HelloStub` class. The `_HelloStub` class deals with the network communication with server side, and the server side `HelloPOA` class, which is the super class of `HelloImpl`, invokes the `sayHello()` method in `HelloImpl`, and then marshal the return message and send back the message to client side.
+Secondly, we register our `HelloImpl` servant into the naming service, and the service name is set to `Hello`. The client side fetches the `Hello` servant from the naming service, and knows the network location of the `Hello` servant. Then the client side invokes a request by using the `Hello.sayHello()` method. This is done via the `_HelloStub` class. The `_HelloStub` class deals with the network communication with the servant side. The servant side used `HelloPOA` class to deal with the request from client side. It invokes the `sayHello()` method in `HelloImpl`, and then marshal the return message and send back the message to client side.
 
-In the third step, the client side remarshal the network data reply from server side, and wrap it into the return message of `sayHello()` interface method via `_HelloStub`.
+Thirdly, the client side receives the the network data reply from the servant side, and remarhal the data as the return value of the `sayHello()` method of `Hello` interface..  
 
-From the user's perspective, the client side invokes `Hello.sayHello()` method as if it's a local method call, but actually it will remotely call the `HelloImpl.sayHello()` in a remote server. The network communication and server implementation details are hidden to users. This is one of the design purposes of the CORBA architecture: Hiding the distrubution details to users and make the server implementation and client implementation independent from each other.
+From the user's perspective, the client side invokes `Hello.sayHello()` method as if it's a local method call, but actually it is a remote call to the `HelloImpl.sayHello()` in a servant. The network communication and server implementation details are hidden to users. This is one of the design purposes of the CORBA architecture. In addition, the client side, servant side and naming service side are independent from each other. Now let's deploy our whole project into running state.
 
-In above processes, we used `Hello.idl` to define a uniform inteface between client and server, but we don't enforce the client side implementation and server side implementation. We used the `idlj` compiler to generate both the client side stub class and server side skeleton class for us, and it also generated some helper classes for us to deal with the network communication details. However, this is not a enforced step. You can use C++ to implement your server side or Perl to implement your client side, and there are tools to generate code for different languages.
-
-For the naming server, we haven't digged into much detail about it, and we don't have to stick to a single implementation and can choose from many vendors. In the next section, I'd like to show you the steps to start a the naming service and deploy the servant into the naming server. Finally we will use the client to fetch the servant infomation from the naming server, and then make a client call to the servant side.
-
-## Deployment of CORBA architecture in Java
+## Deployment Of The Project
 
 Java has provided us many tools to implement CORBA architecture. As we have seen previously, we have used `idlj` compiler to generate client Stub and server POA for us together with many helper classes. In addition, Java has provided us a naming servie daemon called `orbd`. We can start `orbd` in command line to start the naming service, and then register our `Hello` servant into the naming service. After this, the client side can fetech the servant from naming service, and then make a remote call via stub interface. Here is the deployment diagram of naming service, servant and client:
 
