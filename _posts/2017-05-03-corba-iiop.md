@@ -493,22 +493,21 @@ We can see from above that the naming service will send the data requested by se
 NamingContextExt ncRef = NamingContextExtHelper.narrow(objRef);
 ```
 
-The corresponding data of above request from `HelloServer` on machine B is like this on naming service machine A:
+The corresponding data of above request from `HelloServer` on machine B captured in machine A, and here is the screenshot of the captured data:
 
 ![](/assets/2017-05-03/op.png)
 
-We can see the ` NamingContextExtHelper.narrow(...)` will issue a `_is_a` operation on naming service side. The thing we need to note is that this time the `_is_a` operation uses TCP port `1049` for communication:
+We can see the `NamingContextExtHelper.narrow(...)` will issue an `_is_a` operation on naming service side. This time the `_is_a` operation uses TCP port `1049` for communication:
 
 ![](/assets/2017-05-03/1049.png)
 
-
-As the screenshot shown above, we can see the naming service uses two different ports for different purposes. The port `1050` is used for intially fetch the `NameService`, and all the following actions will use port `1049`. Next we should run to this line on in `HelloServer`:
+As the screenshot shown above, we can see the naming service uses two different ports for different purposes. The port `1050` is used for intially fetching the `NameService`, and all the following actions will use port `1049`. The code will then run to this line on in `HelloServer`:
 
 ```
 NameComponent path[] = ncRef.to_name(name);
 ```
 
-For the above `ncRef.to_name(...)` call, the relative GIOP message received at machine A is like this:
+From the above `ncRef.to_name(...)` call, the relative GIOP message received at machine A is like this:
 
 ![](/assets/2017-05-03/to_name.png)
 
@@ -518,7 +517,7 @@ The GIOP message shows that the operation name at network level is also `to_name
 ncRef.rebind(path, href);
 ```
 
-This is the command that will register the `HelloImpl` into naming service. And here is the corresponding GIOP message:
+This is the command that will register the `HelloImpl` into naming service, and here is the corresponding GIOP message:
 
 ![](/assets/2017-05-03/rebind.png)
 
