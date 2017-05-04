@@ -480,21 +480,21 @@ return out;
 </code></pre>
 </div>
 
-<p>The corresponding data of above request from <code class="highlighter-rouge">HelloServer</code> on machine B is like this on naming service machine A:</p>
+<p>The corresponding data of above request from <code class="highlighter-rouge">HelloServer</code> on machine B captured in machine A, and here is the screenshot of the captured data:</p>
 
 <p><img src="/assets/2017-05-03/op.png" alt="" /></p>
 
-<p>We can see the ` NamingContextExtHelper.narrow(…)<code class="highlighter-rouge"> will issue a </code>_is_a<code class="highlighter-rouge"> operation on naming service side. The thing we need to note is that this time the </code>_is_a<code class="highlighter-rouge"> operation uses TCP port </code>1049` for communication:</p>
+<p>We can see the <code class="highlighter-rouge">NamingContextExtHelper.narrow(...)</code> will issue an <code class="highlighter-rouge">_is_a</code> operation on naming service side. This time the <code class="highlighter-rouge">_is_a</code> operation uses TCP port <code class="highlighter-rouge">1049</code> for communication:</p>
 
 <p><img src="/assets/2017-05-03/1049.png" alt="" /></p>
 
-<p>As the screenshot shown above, we can see the naming service uses two different ports for different purposes. The port <code class="highlighter-rouge">1050</code> is used for intially fetch the <code class="highlighter-rouge">NameService</code>, and all the following actions will use port <code class="highlighter-rouge">1049</code>. Next we should run to this line on in <code class="highlighter-rouge">HelloServer</code>:</p>
+<p>As the screenshot shown above, we can see the naming service uses two different ports for different purposes. The port <code class="highlighter-rouge">1050</code> is used for intially fetching the <code class="highlighter-rouge">NameService</code>, and all the following actions will use port <code class="highlighter-rouge">1049</code>. The code will then run to this line on in <code class="highlighter-rouge">HelloServer</code>:</p>
 
 <div class="highlighter-rouge"><pre class="highlight"><code>NameComponent path[] = ncRef.to_name(name);
 </code></pre>
 </div>
 
-<p>For the above <code class="highlighter-rouge">ncRef.to_name(...)</code> call, the relative GIOP message received at machine A is like this:</p>
+<p>From the above <code class="highlighter-rouge">ncRef.to_name(...)</code> call, the relative GIOP message received at machine A is like this:</p>
 
 <p><img src="/assets/2017-05-03/to_name.png" alt="" /></p>
 
@@ -504,7 +504,7 @@ return out;
 </code></pre>
 </div>
 
-<p>This is the command that will register the <code class="highlighter-rouge">HelloImpl</code> into naming service. And here is the corresponding GIOP message:</p>
+<p>This is the command that will register the <code class="highlighter-rouge">HelloImpl</code> into naming service, and here is the corresponding GIOP message:</p>
 
 <p><img src="/assets/2017-05-03/rebind.png" alt="" /></p>
 
