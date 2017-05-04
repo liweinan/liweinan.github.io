@@ -1,6 +1,6 @@
 <p>I want to make a deep understanding on JDBC specification and how does a database vendor implement it in its driver. So I will use the PostgreSQL JDBC driver to do the investigate in this series of the articles. The first part will be focus on the installation of the PostgreSQL database server and its JDBC driver.</p>
 
-<h2 id="jdbc-and-the-postgresql-jdbc-driver">JDBC And The PostgreSQL JDBC driver</h2>
+<h2 id="jdbc-and-the-postgresql-jdbc-driver">JDBC and the PostgreSQL JDBC driver</h2>
 
 <p>The fullname of <code class="highlighter-rouge">JDBC</code> is <code class="highlighter-rouge">Java Database Connectivity</code>, and it is a specification provided by JDK for the users to operate on the underlying databases. Databaes vendors need to implement the JDBC interfaces in their own driver libraries. For example, here is the PostgreSQL JDBC driver I downloaded from internet:</p>
 
@@ -16,7 +16,7 @@ backend_protocol_v4_wanted_features.md docs
 
 <p>The above output shows the PostgreSQL JDBC driver provided by PostgreSQL community. We can use the driver to connect to the database system and operate on databases. In this section, I’d like to introduce to you the basic usages of the PostgreSQL JDBC driver. The first step is to install the PostgreSQL database system and start the database server.</p>
 
-<h3 id="installing-the-postgresql-database-system">Installing the PostgreSQL Database System</h3>
+<h3 id="installing-the-postgresql-database-system">Installing the PostgreSQL database system</h3>
 
 <p>I am using the MacOS operation system, so I will use Homebrew to install the PostgreSQL. We can use the <code class="highlighter-rouge">brew</code> command to query the package:</p>
 
@@ -173,7 +173,7 @@ CREATE TABLE
 
 <p>From the above command output, we can see the structure of the <code class="highlighter-rouge">user_info</code>. Until now we have prepared our database server. The next step is to get the JDBC driver.</p>
 
-<h3 id="fetching-the-postgresql-jdbc-driver">Fetching The PostgreSQL JDBC driver</h3>
+<h3 id="fetching-the-postgresql-jdbc-driver">Fetching the PostgreSQL JDBC driver</h3>
 
 <p>There are several ways to get the PostgreSQL JDBC driver. For common users, the most straigtforward way is to download the PostgreSQL JDBC driver from its website<sup id="fnref:jdbcurl"><a href="#fn:jdbcurl" class="footnote">1</a></sup>. However, our goal in this chapter is to learn the implementation of the PostgreSQL JDBC driver, so we need to fetch the source code of the driver. The source code repository of the PostgreSQL JDBC driver is hosted on Github<sup id="fnref:jdbcdriver"><a href="#fn:jdbcdriver" class="footnote">2</a></sup>. We can clone the <code class="highlighter-rouge">pgjdbc</code> repository from Github, and here is the command to do so:</p>
 
@@ -209,7 +209,7 @@ certdir                                release_notes.sh                       ub
 
 <p>After successfully compiling and installing the PostgreSQL JDBC driver, we can start to use it. I’ll put the usage of the driver in next article.</p>
 
-<h3 id="references"><em>References</em></h3>
+<h2 id="references"><em>References</em></h2>
 
 <hr />
 <div class="footnotes">
