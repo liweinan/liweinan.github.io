@@ -155,11 +155,11 @@ _remote.repositories           maven-metadata-local.xml       postgresql-42.0.1-
 
 <p>After adding the class file, we need to build the project using Gradle. To build the project, we need to add a <code class="highlighter-rouge">fatJar</code> task into <code class="highlighter-rouge">build.gradle</code>:</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>task fatJar(type: Jar) {
-    baseName = project.name + '-all'
-    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
-    with jar
-}
+<div class="language-groovy highlighter-rouge"><pre class="highlight"><code><span class="n">task</span> <span class="nf">fatJar</span><span class="o">(</span><span class="nl">type:</span> <span class="n">Jar</span><span class="o">)</span> <span class="o">{</span>
+    <span class="n">baseName</span> <span class="o">=</span> <span class="n">project</span><span class="o">.</span><span class="na">name</span> <span class="o">+</span> <span class="s1">'-all'</span>
+    <span class="n">from</span> <span class="o">{</span> <span class="n">configurations</span><span class="o">.</span><span class="na">compile</span><span class="o">.</span><span class="na">collect</span> <span class="o">{</span> <span class="n">it</span><span class="o">.</span><span class="na">isDirectory</span><span class="o">()</span> <span class="o">?</span> <span class="n">it</span> <span class="o">:</span> <span class="n">zipTree</span><span class="o">(</span><span class="n">it</span><span class="o">)</span> <span class="o">}</span> <span class="o">}</span>
+    <span class="n">with</span> <span class="n">jar</span>
+<span class="o">}</span>
 </code></pre>
 </div>
 
