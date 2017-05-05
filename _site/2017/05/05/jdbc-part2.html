@@ -118,32 +118,32 @@ _remote.repositories           maven-metadata-local.xml       postgresql-42.0.1-
 
 <p>We can write a sample to use the JDBC interfaces and PostgreSQL driver to connect to the underlying database server. Here is the code:</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>package io.weinan.jdbc;
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="kn">package</span> <span class="n">io</span><span class="o">.</span><span class="na">weinan</span><span class="o">.</span><span class="na">jdbc</span><span class="o">;</span>
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.util.Properties;
+<span class="kn">import</span> <span class="nn">java.sql.Connection</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.sql.DriverManager</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.util.Properties</span><span class="o">;</span>
 
-/**
+<span class="cm">/**
  * Created by weli on 30/04/2017.
- */
-public class DirectConnection {
+ */</span>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">DirectConnection</span> <span class="o">{</span>
 
-    public static void main(String[] args) throws Exception {
-        Class.forName("org.postgresql.Driver");
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
+        <span class="n">Class</span><span class="o">.</span><span class="na">forName</span><span class="o">(</span><span class="s">"org.postgresql.Driver"</span><span class="o">);</span>
 
-        String url = "jdbc:postgresql://localhost/weli";
-        Properties props = new Properties();
-        props.setProperty("user","weli");
-        props.setProperty("password","");
-        props.setProperty("ssl","false");
+        <span class="n">String</span> <span class="n">url</span> <span class="o">=</span> <span class="s">"jdbc:postgresql://localhost/weli"</span><span class="o">;</span>
+        <span class="n">Properties</span> <span class="n">props</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Properties</span><span class="o">();</span>
+        <span class="n">props</span><span class="o">.</span><span class="na">setProperty</span><span class="o">(</span><span class="s">"user"</span><span class="o">,</span><span class="s">"weli"</span><span class="o">);</span>
+        <span class="n">props</span><span class="o">.</span><span class="na">setProperty</span><span class="o">(</span><span class="s">"password"</span><span class="o">,</span><span class="s">""</span><span class="o">);</span>
+        <span class="n">props</span><span class="o">.</span><span class="na">setProperty</span><span class="o">(</span><span class="s">"ssl"</span><span class="o">,</span><span class="s">"false"</span><span class="o">);</span>
 
-        Connection conn = DriverManager.getConnection(url, props);
+        <span class="n">Connection</span> <span class="n">conn</span> <span class="o">=</span> <span class="n">DriverManager</span><span class="o">.</span><span class="na">getConnection</span><span class="o">(</span><span class="n">url</span><span class="o">,</span> <span class="n">props</span><span class="o">);</span>
 
-        System.out.println(conn);
+        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">conn</span><span class="o">);</span>
 
-    }
-}
+    <span class="o">}</span>
+<span class="o">}</span>
 </code></pre>
 </div>
 
