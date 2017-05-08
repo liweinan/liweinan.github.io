@@ -12,7 +12,7 @@
 
 <p>Here is the class diagram of the <code class="highlighter-rouge">org.postgresql.Driver</code>:</p>
 
-<p><img src="/assets/jdbc/org.postgresql.Driver.png" alt="" /></p>
+<p><img src="/assets/jdbc/org.postgresql.Driver.png" alt="/assets/jdbc/org.postgresql.Driver.png" /></p>
 
 <p>From the above class diagram, we can see the <code class="highlighter-rouge">org.postgresql.Driver</code> class has a <code class="highlighter-rouge">connect(...)</code> method to handle the connection to the underlying database server. Here is the relative code in <code class="highlighter-rouge">connect(...)</code> method to make the connection:</p>
 
@@ -70,7 +70,7 @@ public static void register() throws SQLException {
 
 <p>From above code, we can see the <code class="highlighter-rouge">register()</code> method in <code class="highlighter-rouge">org.postgresql.Driver</code> class register itself into the <code class="highlighter-rouge">java.sql.DriverManager</code> class. The <code class="highlighter-rouge">java.sql.DriverManager</code> is provided by JDK. It’s not an interface,  instead it is a class provided by JDBC library that for managing all the database drivers loaded into Java virtual machine. All the driver implementations need to register itself into DriverManager during class loading phase. The <code class="highlighter-rouge">org.postgresql.Driver</code> follows this rule as we see in above. Here is the class diagram of the <code class="highlighter-rouge">java.sql.DriverManager</code> class:</p>
 
-<p>!()[/assets/jdbc/DriverManager.png]</p>
+<p><img src="/assets/jdbc/DriverManager.png" alt="/assets/jdbc/DriverManager.png" /></p>
 
 <p>From the above diagram, we can see that the <code class="highlighter-rouge">java.sql.DriverManager</code> provides methods like <code class="highlighter-rouge">registerDriver(...)</code> and <code class="highlighter-rouge">deregisterDriver(...)</code> for the drivers to register or deregister themselves. In addition, it provides <code class="highlighter-rouge">getConnection(...)</code> methods to the users. In our own <code class="highlighter-rouge">DirectConnection</code> example, we use the <code class="highlighter-rouge">java.sql.DriverManager</code> to get the connection, and here is the relative code:</p>
 
