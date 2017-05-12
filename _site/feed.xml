@@ -7,6 +7,530 @@
     
       
         <item>
+          <title>Adventures in JDBC and the PostgreSQL JDBC driver: Part 4 - Connection pooling in JDBC</title>
+          <description>&lt;p&gt;In the previous articles, we have learned the basic aspects of the JDBC specification and the implementation of the PostgreSQL driver. In this article, I’d like to go on checking another important part of the JDBC specification(&lt;a href=&quot;http://download.oracle.com/otn-pub/jcp/jdbc-4_1-mrel-spec/jdbc4.1-fr-spec.pdf?AuthParam=1494474283_bf1014b01227d16877a00b038e2e7e82&quot;&gt;JDBC™ 4.1  Specification&lt;/a&gt;): Connection pooling.&lt;/p&gt;
+
+&lt;p&gt;In JDBC specification, it defines a three-tier layer structure for the users to get connection from a managed data source pool. Here is the diagram from the specification:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/jdbc/pooling.png&quot; alt=&quot;/assets/jdbc/pooling.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;In above diagram, we can see the data source is designed to be provided by application server. For example, Wildfly as an application server should take the responsibility to provide a database connection pool to the users. On the JDBC driver layer, it needs to implement two interfaces defined by JDBC specification. Here is the class diagram of the two interfaces:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/jdbc/interfaces.png&quot; alt=&quot;/assets/jdbc/interfaces.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;The above diagram shows the two interfaces from JDK source that should be implemented by the JDBC driver, which are &lt;code class=&quot;highlighter-rouge&quot;&gt;javax.sql.PooledConnection&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;javax.sql.ConnectionPoolDataSource&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;From the above diagram, we can see the &lt;code class=&quot;highlighter-rouge&quot;&gt;ConnectionPoolDataSource&lt;/code&gt; interface defines a &lt;code class=&quot;highlighter-rouge&quot;&gt;getPooledConnection()&lt;/code&gt; method that will return a &lt;code class=&quot;highlighter-rouge&quot;&gt;javax.sql.PooledConnection&lt;/code&gt; typed data.&lt;/p&gt;
+
+&lt;p&gt;The &lt;code class=&quot;highlighter-rouge&quot;&gt;PooledConnection&lt;/code&gt; interface defines the &lt;code class=&quot;highlighter-rouge&quot;&gt;getConnection()&lt;/code&gt; method that will return a &lt;code class=&quot;highlighter-rouge&quot;&gt;java.sql.Connection&lt;/code&gt; typed data.&lt;/p&gt;
+
+&lt;p&gt;The purpose of the design is to allow the implementation of the &lt;code class=&quot;highlighter-rouge&quot;&gt;PooledConnection&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;ConnectionPoolDataSource&lt;/code&gt; to manage the underlying &lt;code class=&quot;highlighter-rouge&quot;&gt;Connection&lt;/code&gt; to the database. In this way, the JDBC driver can handle the &lt;code class=&quot;highlighter-rouge&quot;&gt;Connection&lt;/code&gt; instance returned from &lt;code class=&quot;highlighter-rouge&quot;&gt;PooledConnection&lt;/code&gt; to manage its lifecycle the data pool.&lt;/p&gt;
+
+&lt;p&gt;Here is the class diagram about the implementation of the above two interfaces in PostgreSQL JDBC driver:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/jdbc/org.postgresql.ds.png&quot; alt=&quot;/assets/jdbc/org.postgresql.ds.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;The above diagram shows the implementation of the interfaces in the driver. The &lt;code class=&quot;highlighter-rouge&quot;&gt;org.postgresql.ds.PGPooledConnection&lt;/code&gt; implements the &lt;code class=&quot;highlighter-rouge&quot;&gt;javax.sql.PooledConnection&lt;/code&gt; interface, and the &lt;code class=&quot;highlighter-rouge&quot;&gt;org.postgresql.ds.PGConnectionPoolDataSource&lt;/code&gt; implements the &lt;code class=&quot;highlighter-rouge&quot;&gt;javax.sql.ConnectionPoolDataSource&lt;/code&gt;. We will check the design of these two classes later in the article.&lt;/p&gt;
+
+&lt;p&gt;These two interfaces do not care about the detail pool implementation, and usually in application server the connection pool implementation can be configured and replaced with multiple choices.&lt;/p&gt;
+
+&lt;p&gt;In this article, I won’t use an application server as the datasource provider. In PostgreSQL JDBC driver, it provides a sample pooling implementation class named &lt;code class=&quot;highlighter-rouge&quot;&gt;org.postgresql.ds.PGPoolingDataSource&lt;/code&gt;. We will use it as our demonstration implementation in this article.&lt;/p&gt;
+
+&lt;p&gt;Firstly, let’s write a class to use the &lt;code class=&quot;highlighter-rouge&quot;&gt;org.postgresql.ds.PGPoolingDataSource&lt;/code&gt; to fetch a connection from the pool:&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;package io.weinan.jdbc;
+
+import org.postgresql.ds.PGPoolingDataSource;
+
+/**
+ * Created by weli on 01/05/2017.
+ */
+public class PlayWithPGPoolingDataSource {
+
+    public static void main(String[] args) throws Exception {
+        PGPoolingDataSource dataSource = new PGPoolingDataSource();
+        dataSource.setDataSourceName(&quot;jdbc:postgresql://localhost/weli&quot;);
+        dataSource.setUser(&quot;weli&quot;);
+        dataSource.setPassword(&quot;&quot;);
+
+        System.out.println(dataSource.getConnection());
+
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;The above code creates a &lt;code class=&quot;highlighter-rouge&quot;&gt;PGPoolingDataSource&lt;/code&gt; class instance, and we set relative parameters for the class to connect to the database server. We use the &lt;code class=&quot;highlighter-rouge&quot;&gt;getConnection()&lt;/code&gt; method of the &lt;code class=&quot;highlighter-rouge&quot;&gt;dataSource&lt;/code&gt; to get the connection from the connection pool. Running the above code could get the following result:&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Pooled connection wrapping physical connection org.postgresql.jdbc.PgConnection@497470ed
+class com.sun.proxy.$Proxy0
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;From the above output, we can see a wrapper proxy instance around &lt;code class=&quot;highlighter-rouge&quot;&gt;org.postgresql.jdbc.PgConnection&lt;/code&gt; being returned to the user.&lt;/p&gt;
+
+&lt;p&gt;From the users perspective, they don’t care about the implementation of the connection instance, they will just use it as an ordinary connection interface and call the methods to operate on the database.&lt;/p&gt;
+
+&lt;p&gt;If users call the &lt;code class=&quot;highlighter-rouge&quot;&gt;close&lt;/code&gt; method of the connection, it will actually be returned to the connection pool instead of really being closed. This is implemented in the &lt;code class=&quot;highlighter-rouge&quot;&gt;org.postgresql.ds.PGPooledConnection&lt;/code&gt; class.&lt;/p&gt;
+
+&lt;p&gt;Let’s check the class diagram of the &lt;code class=&quot;highlighter-rouge&quot;&gt;org.postgresql.ds.PGPooledConnection&lt;/code&gt; in detail:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/jdbc/org.postgresql.ds.PGPooledConnection.png&quot; alt=&quot;/assets/jdbc/org.postgresql.ds.PGPooledConnection.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;From the above diagram, we can see the connection instanced is proxied, and it is actually the inner class &lt;code class=&quot;highlighter-rouge&quot;&gt;ConnectionHandler&lt;/code&gt; inside the &lt;code class=&quot;highlighter-rouge&quot;&gt;org.postgresql.jdbc.ds.PGPooledConnection&lt;/code&gt; class.&lt;/p&gt;
+
+&lt;p&gt;Here is the debug process screenshot that proves the above conclusion:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/jdbc/pool_conn_proxy.png&quot; alt=&quot;/assets/jdbc/pool_conn_proxy.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;From the above screenshot, you can see I have set the breakpoint at the &lt;code class=&quot;highlighter-rouge&quot;&gt;conn&lt;/code&gt; instance returned from the data source. In the inspection window of IntelliJ IDEA, we can see the real class of the &lt;code class=&quot;highlighter-rouge&quot;&gt;conn&lt;/code&gt; is &lt;code class=&quot;highlighter-rouge&quot;&gt;PGPooledConnection$ConnectionHandler&lt;/code&gt;. Remember that &lt;code class=&quot;highlighter-rouge&quot;&gt;conn&lt;/code&gt; has the type of &lt;code class=&quot;highlighter-rouge&quot;&gt;java.sql.Connection&lt;/code&gt;, so the users will just treat it as ordinary connection to the database.&lt;/p&gt;
+
+&lt;p&gt;The job of &lt;code class=&quot;highlighter-rouge&quot;&gt;PGPooledConnection$ConnectionHandler&lt;/code&gt; proxy is to dispatch the calls to the &lt;code class=&quot;highlighter-rouge&quot;&gt;org.postgresql.jdbc.PgConnection&lt;/code&gt; that makes physical connections with the database server.&lt;/p&gt;
+
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;org.postgresql.jdbc.PgConnection&lt;/code&gt; is the class that implements the &lt;code class=&quot;highlighter-rouge&quot;&gt;java.sql.Connection&lt;/code&gt; interface, and it will make the physical connection with underlying database system.&lt;/p&gt;
+
+&lt;p&gt;The &lt;code class=&quot;highlighter-rouge&quot;&gt;org.postgresql.ds.PGPooledConnection$ConnectionHandler&lt;/code&gt; proxy will handle the &lt;code class=&quot;highlighter-rouge&quot;&gt;org.postgresql.jdbc.PgConnection&lt;/code&gt;. Now let’s check the code of the &lt;code class=&quot;highlighter-rouge&quot;&gt;org.postgresql.ds.PGPoolingDataSource&lt;/code&gt; class to see how it manages the lifecycle of the physical connection.&lt;/p&gt;
+
+&lt;p&gt;Here is the code of &lt;code class=&quot;highlighter-rouge&quot;&gt;org.postgresql.ds.PGPooledConnection$ConnectionHandler&lt;/code&gt; class:&lt;/p&gt;
+
+&lt;div class=&quot;language-java highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;  &lt;span class=&quot;cm&quot;&gt;/**
+   * Instead of declaring a class implementing Connection, which would have to be updated for every
+   * JDK rev, use a dynamic proxy to handle all calls through the Connection interface. This is the
+   * part that requires JDK 1.3 or higher, though JDK 1.2 could be supported with a 3rd-party proxy
+   * package.
+   */&lt;/span&gt;
+  &lt;span class=&quot;kd&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;ConnectionHandler&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;implements&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;InvocationHandler&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Connection&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;con&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Connection&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;proxy&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// the Connection the client is currently using, which is a proxy&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;boolean&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;automatic&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;false&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+
+    &lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;ConnectionHandler&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Connection&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;con&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+      &lt;span class=&quot;k&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;con&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;con&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+
+    &lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Object&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;invoke&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Object&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;proxy&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Method&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;method&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Object&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;[]&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;args&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;throws&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Throwable&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+      &lt;span class=&quot;kd&quot;&gt;final&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;String&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;methodName&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;method&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;getName&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;();&lt;/span&gt;
+      &lt;span class=&quot;c1&quot;&gt;// From Object&lt;/span&gt;
+      &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;method&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;getDeclaringClass&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Object&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;class&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;methodName&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;equals&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;toString&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;))&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+          &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;Pooled connection wrapping physical connection &quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;con&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;methodName&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;equals&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;equals&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;))&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+          &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;proxy&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;args&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;];&lt;/span&gt;
+        &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;methodName&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;equals&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;hashCode&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;))&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+          &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;System&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;identityHashCode&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;proxy&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+        &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+          &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;method&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;invoke&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;con&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;args&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+        &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;catch&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;InvocationTargetException&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;e&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+          &lt;span class=&quot;k&quot;&gt;throw&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;e&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;getTargetException&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;();&lt;/span&gt;
+        &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+      &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+
+      &lt;span class=&quot;c1&quot;&gt;// All the rest is from the Connection or PGConnection interface&lt;/span&gt;
+      &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;methodName&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;equals&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;isClosed&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;))&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;con&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;null&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;||&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;con&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;isClosed&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;();&lt;/span&gt;
+      &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+      &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;methodName&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;equals&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;close&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;))&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;c1&quot;&gt;// we are already closed and a double close&lt;/span&gt;
+        &lt;span class=&quot;c1&quot;&gt;// is not an error.&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;con&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;null&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+          &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;null&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+
+        &lt;span class=&quot;n&quot;&gt;SQLException&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ex&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;null&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(!&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;con&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;isClosed&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;())&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+          &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(!&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;isXA&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;amp;&amp;amp;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;!&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;con&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;getAutoCommit&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;())&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+              &lt;span class=&quot;n&quot;&gt;con&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;rollback&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;();&lt;/span&gt;
+            &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;catch&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;SQLException&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;e&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+              &lt;span class=&quot;n&quot;&gt;ex&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;e&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+            &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+          &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+          &lt;span class=&quot;n&quot;&gt;con&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;clearWarnings&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;();&lt;/span&gt;
+        &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;con&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;null&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;proxy&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;null&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;last&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;null&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;fireConnectionClosed&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;();&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ex&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;!=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;null&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+          &lt;span class=&quot;k&quot;&gt;throw&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ex&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;null&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+      &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+      &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;con&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;null&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;||&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;con&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;isClosed&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;())&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;throw&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;PSQLException&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;automatic&lt;/span&gt;
+            &lt;span class=&quot;o&quot;&gt;?&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;GT&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;tr&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;
+                &lt;span class=&quot;s&quot;&gt;&quot;Connection has been closed automatically because a new connection was opened for the same PooledConnection or the PooledConnection has been closed.&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+            &lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;GT&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;tr&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;Connection has been closed.&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;),&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;PSQLState&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;CONNECTION_DOES_NOT_EXIST&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+      &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+
+      &lt;span class=&quot;c1&quot;&gt;// From here on in, we invoke via reflection, catch exceptions,&lt;/span&gt;
+      &lt;span class=&quot;c1&quot;&gt;// and check if they're fatal before rethrowing.&lt;/span&gt;
+      &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;methodName&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;equals&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;createStatement&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;))&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+          &lt;span class=&quot;n&quot;&gt;Statement&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;st&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Statement&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;method&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;invoke&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;con&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;args&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+          &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Proxy&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;newProxyInstance&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;getClass&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;().&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;getClassLoader&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(),&lt;/span&gt;
+              &lt;span class=&quot;k&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Class&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;[]{&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Statement&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;class&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;org&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;postgresql&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;PGStatement&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;class&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;},&lt;/span&gt;
+              &lt;span class=&quot;k&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;StatementHandler&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;st&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;));&lt;/span&gt;
+        &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;methodName&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;equals&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;prepareCall&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;))&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+          &lt;span class=&quot;n&quot;&gt;Statement&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;st&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Statement&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;method&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;invoke&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;con&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;args&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+          &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Proxy&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;newProxyInstance&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;getClass&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;().&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;getClassLoader&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(),&lt;/span&gt;
+              &lt;span class=&quot;k&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Class&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;[]{&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;CallableStatement&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;class&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;org&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;postgresql&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;PGStatement&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;class&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;},&lt;/span&gt;
+              &lt;span class=&quot;k&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;StatementHandler&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;st&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;));&lt;/span&gt;
+        &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;methodName&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;equals&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;prepareStatement&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;))&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+          &lt;span class=&quot;n&quot;&gt;Statement&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;st&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Statement&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;method&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;invoke&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;con&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;args&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+          &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Proxy&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;newProxyInstance&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;getClass&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;().&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;getClassLoader&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(),&lt;/span&gt;
+              &lt;span class=&quot;k&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Class&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;[]{&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;PreparedStatement&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;class&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;org&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;postgresql&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;PGStatement&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;class&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;},&lt;/span&gt;
+              &lt;span class=&quot;k&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;StatementHandler&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;st&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;));&lt;/span&gt;
+        &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+          &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;method&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;invoke&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;con&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;args&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+        &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+      &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;catch&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kd&quot;&gt;final&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;InvocationTargetException&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ite&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;kd&quot;&gt;final&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Throwable&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;te&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ite&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;getTargetException&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;();&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;te&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;instanceof&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;SQLException&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+          &lt;span class=&quot;n&quot;&gt;fireConnectionError&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;((&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;SQLException&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;te&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// Tell listeners about exception if it's fatal&lt;/span&gt;
+        &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;throw&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;te&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+      &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+
+    &lt;span class=&quot;n&quot;&gt;Connection&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;getProxy&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+      &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;proxy&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+
+    &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;setProxy&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Connection&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;proxy&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+      &lt;span class=&quot;k&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;proxy&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;proxy&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+
+    &lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;close&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+      &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;con&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;!=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;null&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;automatic&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+      &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+      &lt;span class=&quot;n&quot;&gt;con&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;null&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+      &lt;span class=&quot;n&quot;&gt;proxy&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;null&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+      &lt;span class=&quot;c1&quot;&gt;// No close event fired here: see JDBC 2.0 Optional Package spec section 6.3&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+
+    &lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;boolean&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;isClosed&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+      &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;con&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;null&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+  &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;From the above code, we can see the &lt;code class=&quot;highlighter-rouge&quot;&gt;invoke(...)&lt;/code&gt; method in the &lt;code class=&quot;highlighter-rouge&quot;&gt;ConnectionHandler&lt;/code&gt; wraps around the &lt;code class=&quot;highlighter-rouge&quot;&gt;Method&lt;/code&gt; of &lt;code class=&quot;highlighter-rouge&quot;&gt;Connection&lt;/code&gt;. For example, it handles the event like connection close. Here is the relative code:&lt;/p&gt;
+
+&lt;div class=&quot;language-java highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;n&quot;&gt;fireConnectionClosed&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;();&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Now let’s check the code of this &lt;code class=&quot;highlighter-rouge&quot;&gt;fireConnectionClosed()&lt;/code&gt; method:&lt;/p&gt;
+
+&lt;div class=&quot;language-java highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;cm&quot;&gt;/**
+  * Used to fire a connection closed event to all listeners.
+  */&lt;/span&gt;
+ &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;fireConnectionClosed&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+   &lt;span class=&quot;n&quot;&gt;ConnectionEvent&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;evt&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;null&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+   &lt;span class=&quot;c1&quot;&gt;// Copy the listener list so the listener can remove itself during this method call&lt;/span&gt;
+   &lt;span class=&quot;n&quot;&gt;ConnectionEventListener&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;[]&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;local&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;
+       &lt;span class=&quot;n&quot;&gt;listeners&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;toArray&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ConnectionEventListener&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;listeners&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;size&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;()]);&lt;/span&gt;
+   &lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ConnectionEventListener&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;listener&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;local&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+     &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;evt&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;null&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+       &lt;span class=&quot;n&quot;&gt;evt&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;createConnectionEvent&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kc&quot;&gt;null&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+     &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+     &lt;span class=&quot;n&quot;&gt;listener&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;connectionClosed&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;evt&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+   &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+ &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;From the above code, we can see the &lt;code class=&quot;highlighter-rouge&quot;&gt;fireConnectionClosed()&lt;/code&gt; method will create an instance of &lt;code class=&quot;highlighter-rouge&quot;&gt;ConnectionEvent&lt;/code&gt; class and register it into an instance of &lt;code class=&quot;highlighter-rouge&quot;&gt;ConnectionEventListener&lt;/code&gt;, and finally the listener will fire the &lt;code class=&quot;highlighter-rouge&quot;&gt;connectionClosed(...)&lt;/code&gt; event.&lt;/p&gt;
+
+&lt;p&gt;The &lt;code class=&quot;highlighter-rouge&quot;&gt;ConnectionEvent&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;ConnectionEventListener&lt;/code&gt; are two interfaces provided by the JDBC specification, and it is the container’s job to implement them properly to handle the event in a pooling environment. For example, in the &lt;code class=&quot;highlighter-rouge&quot;&gt;PGPoolingDataSource&lt;/code&gt; demo datasource implementation, it will just return the connection back to its pool instead of really closing it. In the real container like Wildfly, it will rely on its pooling provider to manage the events (Apache Commons DBCP is a popular connection pooling provider used by many application servers). We will check the detail of the &lt;code class=&quot;highlighter-rouge&quot;&gt;PGPoolingDataSource&lt;/code&gt; later in the article.&lt;/p&gt;
+
+&lt;p&gt;Now let’s see the class diagram of the &lt;code class=&quot;highlighter-rouge&quot;&gt;javax.sql.ConnectionEvent&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;javax.sql.ConnectionEventListener&lt;/code&gt; interfaces:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/jdbc/events.png&quot; alt=&quot;/assets/jdbc/pooling.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;From the above diagram, we can see the main job of the &lt;code class=&quot;highlighter-rouge&quot;&gt;ConnectionEventListener&lt;/code&gt; interface is to handle the &lt;code class=&quot;highlighter-rouge&quot;&gt;connectionClosed(...)&lt;/code&gt; method, and the &lt;code class=&quot;highlighter-rouge&quot;&gt;ConnectionEvent&lt;/code&gt; will be passed in as the context. Now we need to check the implementation of the &lt;code class=&quot;highlighter-rouge&quot;&gt;PGPoolingDataSource&lt;/code&gt; to see how to implement a pooling data source.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/jdbc/org.postgresql.dsPGPoolingDataSource.png&quot; alt=&quot;/assets/jdbc/org.postgresql.dsPGPoolingDataSource.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;The above &lt;code class=&quot;highlighter-rouge&quot;&gt;org.postgresql.ds.PGPoolingDataSource&lt;/code&gt; is a demo class that implements a simple data source pool. Firstly let’s check how does it stores connections in a “pool”. Here are the relative data structures in the class:&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;private Stack&amp;lt;PooledConnection&amp;gt; available = new Stack();
+private Stack&amp;lt;PooledConnection&amp;gt; used = new Stack();
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;From the above code, we can see there are two stacks to store its “pooled” connections: one is named &lt;code class=&quot;highlighter-rouge&quot;&gt;available&lt;/code&gt; and the other is called &lt;code class=&quot;highlighter-rouge&quot;&gt;used&lt;/code&gt;. Besides the above two stacks, the &lt;code class=&quot;highlighter-rouge&quot;&gt;PGPoolingDataSource&lt;/code&gt; class also stores a &lt;code class=&quot;highlighter-rouge&quot;&gt;PGConnectionPoolDataSource&lt;/code&gt; instance:&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;private PGConnectionPoolDataSource source;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;From the above code, we can see an instance of &lt;code class=&quot;highlighter-rouge&quot;&gt;PGConnectionPoolDataSource&lt;/code&gt; that implements the &lt;code class=&quot;highlighter-rouge&quot;&gt;javax.sql.ConnectionPoolDataSource&lt;/code&gt; interface is stored. Let’s now review the usages of &lt;code class=&quot;highlighter-rouge&quot;&gt;ConnectionPoolDataSource&lt;/code&gt; interface: it defines a &lt;code class=&quot;highlighter-rouge&quot;&gt;getPooledConnection()&lt;/code&gt; that will be used to return a &lt;code class=&quot;highlighter-rouge&quot;&gt;javax.sql.PooledConnection&lt;/code&gt;, and the &lt;code class=&quot;highlighter-rouge&quot;&gt;javax.sql.PooledConnection&lt;/code&gt; will return a managed &lt;code class=&quot;highlighter-rouge&quot;&gt;Connection&lt;/code&gt; instance from the pool. In PostgreSQL driver, the &lt;code class=&quot;highlighter-rouge&quot;&gt;org.postgresql.ds.PGPooledConnection&lt;/code&gt; implements the &lt;code class=&quot;highlighter-rouge&quot;&gt;javax.sql.PooledConnection&lt;/code&gt; interface, and will return a &lt;code class=&quot;highlighter-rouge&quot;&gt;ConnectionHandler&lt;/code&gt; proxy class that wraps around the physical &lt;code class=&quot;highlighter-rouge&quot;&gt;org.postgresql.jdbc.PgConnection&lt;/code&gt; instance.&lt;/p&gt;
+
+&lt;p&gt;Next, the &lt;code class=&quot;highlighter-rouge&quot;&gt;ConnectionHandler&lt;/code&gt; proxy will wrap the connection methods with event listener, and the event listener will be handled properly by the pooling vendor. Our pooling vendor is &lt;code class=&quot;highlighter-rouge&quot;&gt;PGPoolingDataSource&lt;/code&gt;, which is a demo class to show how to implement a data source pool.&lt;/p&gt;
+
+&lt;p&gt;Now let’s go back to &lt;code class=&quot;highlighter-rouge&quot;&gt;PGPoolingDataSource&lt;/code&gt; to see how it initializes the data source. Here is the &lt;code class=&quot;highlighter-rouge&quot;&gt;initialize()&lt;/code&gt; method in the class:&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;/**
+ * Initializes this DataSource. If the initialConnections is greater than zero, that number of
+ * connections will be created. After this method is called, the DataSource properties cannot be
+ * changed. If you do not call this explicitly, it will be called the first time you get a
+ * connection from the DataSource.
+ *
+ * @throws SQLException Occurs when the initialConnections is greater than zero, but the
+ *         DataSource is not able to create enough physical connections.
+ */
+public void initialize() throws SQLException {
+  synchronized (lock) {
+    source = createConnectionPool();
+    try {
+      source.initializeFrom(this);
+    } catch (Exception e) {
+      throw new PSQLException(GT.tr(&quot;Failed to setup DataSource.&quot;), PSQLState.UNEXPECTED_ERROR,
+          e);
+    }
+
+    while (available.size() &amp;lt; initialConnections) {
+      available.push(source.getPooledConnection());
+    }
+
+    initialized = true;
+  }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;The above code shows some important tasks that &lt;code class=&quot;highlighter-rouge&quot;&gt;initialize()&lt;/code&gt; method will perform. Firstly, it will create a &lt;code class=&quot;highlighter-rouge&quot;&gt;PGConnectionPoolDataSource&lt;/code&gt; instance. Here is the code:&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;source = createConnectionPool();
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;The above code will create an instance of the &lt;code class=&quot;highlighter-rouge&quot;&gt;PGConnectionPoolDataSource&lt;/code&gt;. The data source will be used to create some idle connections and pushed into the &lt;code class=&quot;highlighter-rouge&quot;&gt;available&lt;/code&gt; stack. Here is the code:&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;while (available.size() &amp;lt; initialConnections) {
+  available.push(source.getPooledConnection());
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;From the above code, we can see some connections are created initially and pushed to the &lt;code class=&quot;highlighter-rouge&quot;&gt;available&lt;/code&gt; stack. This is a cache scheme for demonstration. Now we should check how does the connections are fetched from the stack. Here is the  &lt;code class=&quot;highlighter-rouge&quot;&gt;getPooledConnection()&lt;/code&gt; method that takes the task:&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;private Connection getPooledConnection() throws SQLException {
+    PooledConnection pc = null;
+    Object var2 = this.lock;
+    synchronized(this.lock) {
+        if(this.available == null) {
+            throw new PSQLException(GT.tr(&quot;DataSource has been closed.&quot;, new Object[0]), PSQLState.CONNECTION_DOES_NOT_EXIST);
+        }
+
+        while(true) {
+            if(!this.available.isEmpty()) {
+                pc = (PooledConnection)this.available.pop();
+                this.used.push(pc);
+                break;
+            } else if(this.maxConnections != 0 &amp;amp;&amp;amp; this.used.size() &amp;gt;= this.maxConnections) {
+                try {
+                    this.lock.wait(1000L);
+                } catch (InterruptedException var5) {
+                    ;
+                }
+            } else {
+                pc = this.source.getPooledConnection();
+                this.used.push(pc);
+                break;
+            }
+        }
+    }
+
+    pc.addConnectionEventListener(this.connectionEventListener);
+    return pc.getConnection();
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;The above method shows us how does a connection fetched from the stack. Here is the relative part of the code:&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;pc = (PooledConnection)this.available.pop();
+this.used.push(pc);
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;From the above code we can see there will be a connection poped from the &lt;code class=&quot;highlighter-rouge&quot;&gt;available&lt;/code&gt; stack, and it will be pushed it into the &lt;code class=&quot;highlighter-rouge&quot;&gt;used&lt;/code&gt; stack. Finally the connection will be returned to the caller. If &lt;code class=&quot;highlighter-rouge&quot;&gt;maxConnections&lt;/code&gt; are reached, it means there is no usable connection in the &lt;code class=&quot;highlighter-rouge&quot;&gt;available&lt;/code&gt; stack. In this condition, the process will wait for for 1 second for the available connections to be returned back to the stack and try again:&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;else if(this.maxConnections != 0 &amp;amp;&amp;amp; this.used.size() &amp;gt;= this.maxConnections) {
+...
+this.lock.wait(1000L);
+...
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;The above logic is very low efficient, that’s why this &lt;code class=&quot;highlighter-rouge&quot;&gt;PGPoolingDataSource&lt;/code&gt; class is just for demonstration and can’t be used in production field. In application server, we’ll have more powerful connection pool solutions.&lt;/p&gt;
+
+&lt;p&gt;Now let’s go on our code reading. If the number of connections in the &lt;code class=&quot;highlighter-rouge&quot;&gt;available&lt;/code&gt; stack does not meet the &lt;code class=&quot;highlighter-rouge&quot;&gt;maxConnections&lt;/code&gt;, it will create a new connection from the data source and immediately pushed into &lt;code class=&quot;highlighter-rouge&quot;&gt;used&lt;/code&gt; stack:&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;...
+pc = this.source.getPooledConnection();
+this.used.push(pc);
+...
+
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;The above code shows the new connection is created and pushed into the &lt;code class=&quot;highlighter-rouge&quot;&gt;used&lt;/code&gt; stack. Now we know if the connection is being used by a thread, it will be kept into the &lt;code class=&quot;highlighter-rouge&quot;&gt;used&lt;/code&gt; stack.&lt;/p&gt;
+
+&lt;p&gt;Now let’s think about this question: how does the connection moved from &lt;code class=&quot;highlighter-rouge&quot;&gt;used&lt;/code&gt; stack back to &lt;code class=&quot;highlighter-rouge&quot;&gt;available&lt;/code&gt; stack? The answer is: this is achieved by the listener pattern. In &lt;code class=&quot;highlighter-rouge&quot;&gt;getPooledConnection()&lt;/code&gt; method, we can see a event listener is added to the pooled connection. The code is like this:&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;pc.addConnectionEventListener(this.connectionEventListener);
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;From the above code, we can see the &lt;code class=&quot;highlighter-rouge&quot;&gt;connectionEventListerner&lt;/code&gt; instance is added into the &lt;code class=&quot;highlighter-rouge&quot;&gt;PooledConnection pc&lt;/code&gt; instance. The connection listener will finally be called with its &lt;code class=&quot;highlighter-rouge&quot;&gt;connectionClosed(...)&lt;/code&gt; method, and the method is actually implemented by the pooling provider. So it is job of the &lt;code class=&quot;highlighter-rouge&quot;&gt;PGPoolingDataSource&lt;/code&gt; demo class to implement the logic itself. Here is how the &lt;code class=&quot;highlighter-rouge&quot;&gt;ConnectionEventListener&lt;/code&gt; inner class in &lt;code class=&quot;highlighter-rouge&quot;&gt;PGPoolingDataSource&lt;/code&gt; class that implements it for demonstration purpose:&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;/**
+ * Notified when a pooled connection is closed, or a fatal error occurs on a pooled connection.
+ * This is the only way connections are marked as unused.
+ */
+private ConnectionEventListener connectionEventListener = new ConnectionEventListener() {
+  public void connectionClosed(ConnectionEvent event) {
+    ((PooledConnection) event.getSource()).removeConnectionEventListener(this);
+    synchronized (lock) {
+      if (available == null) {
+        return; // DataSource has been closed
+      }
+      boolean removed = used.remove(event.getSource());
+      if (removed) {
+        available.push((PooledConnection) event.getSource());
+        // There's now a new connection available
+        lock.notify();
+      } else {
+        // a connection error occurred
+      }
+    }
+  }
+
+  /**
+   * This is only called for fatal errors, where the physical connection is useless afterward and
+   * should be removed from the pool.
+   */
+  public void connectionErrorOccurred(ConnectionEvent event) {
+    ((PooledConnection) event.getSource()).removeConnectionEventListener(this);
+    synchronized (lock) {
+      if (available == null) {
+        return; // DataSource has been closed
+      }
+      used.remove(event.getSource());
+      // We're now at least 1 connection under the max
+      lock.notify();
+    }
+  }
+};
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;From the above code, we can see that when a pooled connection is closed, it will be returned back to the &lt;code class=&quot;highlighter-rouge&quot;&gt;available&lt;/code&gt; pool and removed from &lt;code class=&quot;highlighter-rouge&quot;&gt;used&lt;/code&gt; pool. The connection won’t be really closed actually.&lt;/p&gt;
+
+&lt;p&gt;Now let’s see how does &lt;code class=&quot;highlighter-rouge&quot;&gt;org.postgresql.ds.PGPooledConnection&lt;/code&gt; class call the above implemented listener. Here is the code:&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;private final List&amp;lt;ConnectionEventListener&amp;gt; listeners = new LinkedList&amp;lt;ConnectionEventListener&amp;gt;();
+...
+/**
+ * Adds a listener for close or fatal error events on the connection handed out to a client.
+ */
+public void addConnectionEventListener(ConnectionEventListener connectionEventListener) {
+  listeners.add(connectionEventListener);
+}
+
+/**
+ * Removes a listener for close or fatal error events on the connection handed out to a client.
+ */
+public void removeConnectionEventListener(ConnectionEventListener connectionEventListener) {
+  listeners.remove(connectionEventListener);
+}
+...
+/**
+ * Used to fire a connection closed event to all listeners.
+ */
+void fireConnectionClosed() {
+  ConnectionEvent evt = null;
+  // Copy the listener list so the listener can remove itself during this method call
+  ConnectionEventListener[] local =
+      listeners.toArray(new ConnectionEventListener[listeners.size()]);
+  for (ConnectionEventListener listener : local) {
+    if (evt == null) {
+      evt = createConnectionEvent(null);
+    }
+    listener.connectionClosed(evt);
+  }
+}
+
+/**
+ * Used to fire a connection error event to all listeners.
+ */
+void fireConnectionFatalError(SQLException e) {
+  ConnectionEvent evt = null;
+  // Copy the listener list so the listener can remove itself during this method call
+  ConnectionEventListener[] local =
+      listeners.toArray(new ConnectionEventListener[listeners.size()]);
+  for (ConnectionEventListener listener : local) {
+    if (evt == null) {
+      evt = createConnectionEvent(e);
+    }
+    listener.connectionErrorOccurred(evt);
+  }
+}
+...
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;From the above code, we can see the listeners are stored in &lt;code class=&quot;highlighter-rouge&quot;&gt;listeners&lt;/code&gt; linked list. These methods will be called in the inner class &lt;code class=&quot;highlighter-rouge&quot;&gt;ConnectionHandler&lt;/code&gt;, which is the proxy class represents the connection as we have seen. We can see the &lt;code class=&quot;highlighter-rouge&quot;&gt;fireConnectionClosed()&lt;/code&gt; is called when the user invoke the &lt;code class=&quot;highlighter-rouge&quot;&gt;close()&lt;/code&gt; method of the connection.&lt;/p&gt;
+
+&lt;p&gt;From user’s perspective, they don’t need to care about these underlying implementations, and they just use the connection interface as common to interact with the underlying database. From the database manager’s perspective, they can change or tune the data pooling provider in the application server level. In our example, we use a very simple data pooling provider named &lt;code class=&quot;highlighter-rouge&quot;&gt;PGPoolingDataSource&lt;/code&gt;. We even don’t have to implement a pool at all and just provide a single connection to the users. For example, there is a ‘PGSimpleDataSource’ class provided by PostgreSQL driver that will not provide any ‘pooling’, and it will just pass every connection request to the underlying physical connections. Here is the code of the class:&lt;/p&gt;
+
+&lt;div class=&quot;language-java highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kn&quot;&gt;package&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;org&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;postgresql&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;ds&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+
+&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;org.postgresql.ds.common.BaseDataSource&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+
+&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;java.io.IOException&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;java.io.ObjectInputStream&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;java.io.ObjectOutputStream&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;java.io.Serializable&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;java.sql.SQLException&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+
+&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;javax.sql.DataSource&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+
+&lt;span class=&quot;cm&quot;&gt;/**
+ * Simple DataSource which does not perform connection pooling. In order to use the DataSource, you
+ * must set the property databaseName. The settings for serverName, portNumber, user, and password
+ * are optional. Note: these properties are declared in the superclass.
+ *
+ * @author Aaron Mulder (ammulder@chariotsolutions.com)
+ */&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;PGSimpleDataSource&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;extends&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;BaseDataSource&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;implements&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;DataSource&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Serializable&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;...&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;From the above code, we can see the &lt;code class=&quot;highlighter-rouge&quot;&gt;PGSimpleDataSource&lt;/code&gt; is just a thin layer that didn’t provide any data source pool inside. In this article, I have showed you the JDBC connection pool design, and we have checked a demo implementation of the architecture. We can see the whole design is very flexible, it decouples three kind of people: the user of the data base, the data base driver developer, the connection pool provider. We haven’t checked the real connection pool provider in an application server. For example, Wildfly uses Apache Commons DBCP as its connection pool provider.&lt;/p&gt;
+
+&lt;p&gt;I plan to write article to introduce the data source in Wildfly, but it will be out of the scope of this series of the articles. In the next article, I’d like to introduce the transaction aspect of the JDBC specification.&lt;/p&gt;
+</description>
+          <pubDate>2017-05-11T00:00:00+00:00</pubDate>
+          <link>/2017/05/11/jdbc-part4.html</link>
+          <guid isPermaLink="true">/2017/05/11/jdbc-part4.html</guid>
+        </item>
+      
+    
+      
+        <item>
           <title>Adventures in JDBC and the PostgreSQL JDBC driver: Part 3 - Analyzing the JDBC driver registration process</title>
           <description>&lt;p&gt;In last part of the series of the articles, we have made a sample project to load the PostgreSQL JDBC driver into the running Java virtual machine. In this part, we will examine the JDBC driver startup process.&lt;/p&gt;
 
