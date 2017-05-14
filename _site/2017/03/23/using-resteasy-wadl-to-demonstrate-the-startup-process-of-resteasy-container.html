@@ -1,0 +1,130 @@
+<p>RESTEasy WADL is a module that can generate WADL data for the restful resources. It needs to scan the RESTEasy container to get all the resources and methods information to generate the WADL data correctly, so analyzing the RESTEasy WADL intialization process can help us to better understanding the RESTEasy container structure. In this article I will use the code of RESTEasy WADL for this purpose.</p>
+
+<p>In the WADL section of RESTEasy document<sup id="fnref:doc"><a href="#fn:doc" class="footnote">1</a></sup>, it shows the usage of the WADL module. Here is the code shown in <code class="highlighter-rouge">51.2. RESTEasy WADL support for Sun JDK HTTP Server</code>:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="n">org</span><span class="o">.</span><span class="na">jboss</span><span class="o">.</span><span class="na">resteasy</span><span class="o">.</span><span class="na">plugins</span><span class="o">.</span><span class="na">server</span><span class="o">.</span><span class="na">sun</span><span class="o">.</span><span class="na">http</span><span class="o">.</span><span class="na">HttpContextBuilder</span> <span class="n">contextBuilder</span> <span class="o">=</span>
+	<span class="k">new</span> <span class="n">org</span><span class="o">.</span><span class="na">jboss</span><span class="o">.</span><span class="na">resteasy</span><span class="o">.</span><span class="na">plugins</span><span class="o">.</span><span class="na">server</span><span class="o">.</span><span class="na">sun</span><span class="o">.</span><span class="na">http</span><span class="o">.</span><span class="na">HttpContextBuilder</span><span class="o">();</span>
+
+<span class="n">contextBuilder</span><span class="o">.</span><span class="na">getDeployment</span><span class="o">().</span><span class="na">getActualResourceClasses</span><span class="o">()</span>
+	<span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">ResteasyWadlDefaultResource</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+</code></pre>
+</div>
+
+<p>The above code show us how the resource classes are added into the <code class="highlighter-rouge">ResteasyDeployment</code>. The <code class="highlighter-rouge">HttpContextBuilder</code> is a RESTEasy wrapper class for the Sun JDK HTTP Server, and we don’t need to care about its details in this article. We need to understand the <code class="highlighter-rouge">ResteasyWadlDefaultResource</code> is added into <code class="highlighter-rouge">ResteasyDeployment</code> from above code. This tells us the <code class="highlighter-rouge">ResteasyDeployment</code> class stores all the resource classes. I won’t dive into the <code class="highlighter-rouge">ResteasyDeployment</code> in this article, but if you’d like to learn more about the core classes of RESTEasy you can check this<sup id="fnref:core"><a href="#fn:core" class="footnote">2</a></sup>.</p>
+
+<p>Now we can go on checking the following code in the document:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code>  <span class="n">ResteasyWadlDefaultResource</span><span class="o">.</span><span class="na">getServices</span><span class="o">()</span>
+  	<span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">"/"</span><span class="o">,</span>
+  		<span class="n">ResteasyWadlGenerator</span>
+  			<span class="o">.</span><span class="na">generateServiceRegistry</span><span class="o">(</span><span class="n">contextBuilder</span><span class="o">.</span><span class="na">getDeployment</span><span class="o">()));</span>
+</code></pre>
+</div>
+
+<p>From above code we can see the <code class="highlighter-rouge">ResteasyWadlGenerator</code> class is used to create the <code class="highlighter-rouge">ResteasyWadlServiceRegistry</code>. It will use the <code class="highlighter-rouge">ResteasyDeployment</code> to get all the resource classes and their method information. This is reasonable because <code class="highlighter-rouge">ResteasyDeployment</code> contains all the resources as we see above. Here is the code of <code class="highlighter-rouge">ResteasyWadlGenerator</code>:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">class</span> <span class="nc">ResteasyWadlGenerator</span> <span class="o">{</span>
+
+    <span class="kd">public</span> <span class="kd">static</span> <span class="n">ResteasyWadlServiceRegistry</span> <span class="nf">generateServiceRegistry</span><span class="o">(</span><span class="n">ResteasyDeployment</span> <span class="n">deployment</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">ResourceMethodRegistry</span> <span class="n">registry</span> <span class="o">=</span> <span class="o">(</span><span class="n">ResourceMethodRegistry</span><span class="o">)</span> <span class="n">deployment</span><span class="o">.</span><span class="na">getRegistry</span><span class="o">();</span>
+        <span class="n">ResteasyProviderFactory</span> <span class="n">providerFactory</span> <span class="o">=</span> <span class="n">deployment</span><span class="o">.</span><span class="na">getProviderFactory</span><span class="o">();</span>
+        <span class="n">ResteasyWadlServiceRegistry</span> <span class="n">service</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ResteasyWadlServiceRegistry</span><span class="o">(</span><span class="kc">null</span><span class="o">,</span> <span class="n">registry</span><span class="o">,</span> <span class="n">providerFactory</span><span class="o">,</span> <span class="kc">null</span><span class="o">);</span>
+        <span class="k">return</span> <span class="n">service</span><span class="o">;</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre>
+</div>
+
+<p>From the above implementation, we can see the <code class="highlighter-rouge">ResourceMethodRegistry</code> and <code class="highlighter-rouge">ResteasyProviderFactory</code> are fetched from <code class="highlighter-rouge">ResteasyDeployment</code>. These two classes are put into <code class="highlighter-rouge">ResteasyWadlServiceRegistry</code>, so the <code class="highlighter-rouge">ResourceMethodRegistry</code> and <code class="highlighter-rouge">ResteasyProviderFactory</code> must contain sufficient information about restful resources, or <code class="highlighter-rouge">ResteasyWadlServiceRegistry</code> will not get all the necessary information about the  resources. Now let’s see the class diagram of <code class="highlighter-rouge">ResteasyWadlServiceRegistry</code> and the relative classes it contains:</p>
+
+<p><img src="/assets/2017-03-23-ResteasyWadlServiceRegistry.png" alt="2017-03-23-ResteasyWadlServiceRegistry.png" /></p>
+
+<p>From the above diagram, we can see <code class="highlighter-rouge">ResteasyWadlServiceRegistry</code> contains <code class="highlighter-rouge">ResourceMethodRegistry</code> and <code class="highlighter-rouge">ResteasyProviderFactory</code>, and with these two classes, it can later fetch all the following classes it needs. Please note <code class="highlighter-rouge">ResteasyWadlServiceRegistry</code> stores two kinds of resources. The first kind is <code class="highlighter-rouge">resources</code>:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="kd">private</span> <span class="n">Map</span><span class="o">&lt;</span><span class="n">String</span><span class="o">,</span> <span class="n">ResteasyWadlResourceMetaData</span><span class="o">&gt;</span> <span class="n">resources</span><span class="o">;</span>
+</code></pre>
+</div>
+
+<p>From the above <code class="highlighter-rouge">Map</code> data structure, we can guess the resources contain url &lt;-&gt; class entries, and <code class="highlighter-rouge">ResteasyWadlResourceMetaData</code> is used to store resource class information. The second kind is <code class="highlighter-rouge">locators</code>:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="kd">private</span> <span class="n">List</span><span class="o">&lt;</span><span class="n">ResteasyWadlServiceRegistry</span><span class="o">&gt;</span> <span class="n">locators</span><span class="o">;</span>
+</code></pre>
+</div>
+
+<p>This one contains resource locators, because resource locators are actually nested resources, so they are a list of <code class="highlighter-rouge">ResteasyWadlServiceRegistry</code> itself. We can check the <code class="highlighter-rouge">scanRegistry()</code> method of <code class="highlighter-rouge">ResteasyWadlServiceRegistry</code> to see how it fetches, processes and stores the resources information:</p>
+
+<p><img src="/assets/2017-03-24-scanRegistry.png" alt="2017-03-24-scanRegistry.png" /></p>
+
+<p>From the above sequence diagram we can see how <code class="highlighter-rouge">ResteasyWadlServiceRegistry</code> deals with two types of resources. If the resource type is <code class="highlighter-rouge">ResourceMethodInvoker</code>, then it will create <code class="highlighter-rouge">ResteasyWadlMethodMetaData</code> and <code class="highlighter-rouge">ResteasyWadlResourceMetaData</code> to store the resource classes and methods information. The name of this class is misleading, it should be called <code class="highlighter-rouge">ResourceClassAndMethodInvoker</code>, because it contains both resource class their methods information. Here is the relative code in <code class="highlighter-rouge">scanRegistry()</code> method:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="k">if</span> <span class="o">(</span><span class="n">invoker</span> <span class="k">instanceof</span> <span class="n">ResourceMethodInvoker</span><span class="o">)</span> <span class="o">{</span>
+		<span class="n">ResteasyWadlMethodMetaData</span> <span class="n">methodMetaData</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ResteasyWadlMethodMetaData</span><span class="o">(</span><span class="k">this</span><span class="o">,</span> <span class="o">(</span><span class="n">ResourceMethodInvoker</span><span class="o">)</span> <span class="n">invoker</span><span class="o">);</span>
+		<span class="n">ResteasyWadlResourceMetaData</span> <span class="n">resourceMetaData</span> <span class="o">=</span> <span class="n">resources</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">methodMetaData</span><span class="o">.</span><span class="na">getKlassUri</span><span class="o">());</span>
+		<span class="k">if</span> <span class="o">(</span><span class="n">resourceMetaData</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+				<span class="n">resourceMetaData</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ResteasyWadlResourceMetaData</span><span class="o">(</span><span class="n">methodMetaData</span><span class="o">.</span><span class="na">getKlassUri</span><span class="o">());</span>
+				<span class="n">resources</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="n">methodMetaData</span><span class="o">.</span><span class="na">getKlassUri</span><span class="o">(),</span> <span class="n">resourceMetaData</span><span class="o">);</span>
+		<span class="o">}</span>
+		<span class="n">resourceMetaData</span><span class="o">.</span><span class="na">addMethodMetaData</span><span class="o">(</span><span class="n">methodMetaData</span><span class="o">);</span>
+<span class="o">}</span>
+</code></pre>
+</div>
+
+<p>On other hand, if the resource type is <code class="highlighter-rouge">ResourceLocator</code>, then it will add the locator into the <code class="highlighter-rouge">locators</code> array. Here is the relative code:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="k">else</span> <span class="k">if</span> <span class="o">(</span><span class="n">invoker</span> <span class="k">instanceof</span> <span class="n">ResourceLocator</span><span class="o">)</span> <span class="o">{</span>
+	<span class="n">ResourceMethodRegistry</span> <span class="n">locatorRegistry</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ResourceMethodRegistry</span><span class="o">(</span><span class="n">providerFactory</span><span class="o">);</span>
+	<span class="n">locatorRegistry</span><span class="o">.</span><span class="na">addResourceFactory</span><span class="o">(</span><span class="kc">null</span><span class="o">,</span> <span class="kc">null</span><span class="o">,</span> <span class="n">locatorResourceType</span><span class="o">);</span>
+	<span class="n">locators</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="k">new</span> <span class="n">ResteasyWadlServiceRegistry</span><span class="o">(</span><span class="k">this</span><span class="o">,</span> <span class="n">locatorRegistry</span><span class="o">,</span> <span class="n">providerFactory</span><span class="o">,</span> <span class="n">locator</span><span class="o">));</span>
+<span class="o">}</span>
+</code></pre>
+</div>
+
+<p>The name of <code class="highlighter-rouge">ResourceMethodRegistry</code> is also misleading, it might be better called <code class="highlighter-rouge">ResourceClassAndMethodRegistry</code> because it also contains both resource classes and methods information. The instance of <code class="highlighter-rouge">ResourceMethodRegistry</code> is <code class="highlighter-rouge">locatorRegistry</code>, and it is passed to the constructor of <code class="highlighter-rouge">ResteasyWadlServiceRegistry</code>, and the created <code class="highlighter-rouge">ResteasyWadlServiceRegistry</code> is added into <code class="highlighter-rouge">locators</code>. This is the line of code that does this:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="n">locators</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="k">new</span> <span class="n">ResteasyWadlServiceRegistry</span><span class="o">(</span><span class="k">this</span><span class="o">,</span> <span class="n">locatorRegistry</span><span class="o">,</span> <span class="n">providerFactory</span><span class="o">,</span> <span class="n">locator</span><span class="o">));</span>
+</code></pre>
+</div>
+
+<p>Please note the constructor of <code class="highlighter-rouge">ResteasyWadlServiceRegistry</code> will call the <code class="highlighter-rouge">scanRegistry()</code> method, so here we have a recursive call of <code class="highlighter-rouge">scanRegistry()</code> for resource locators. This implementation reflects the fact that resource locator is a kind of nested resource. Now let’s check the <code class="highlighter-rouge">ResteasyWadlResourceMetaData</code> and <code class="highlighter-rouge">ResteasyWadlMethodMetaData</code>:</p>
+
+<p><img src="/assets/ResteasyWadlMethodMetaData.png" alt="ResteasyWadlMethodMetaData.png" /></p>
+
+<p>From the above diagram, we can see <code class="highlighter-rouge">ResteasyWadlResourceMetaData</code> has a list of <code class="highlighter-rouge">ResteasyWadlMethodMetaData</code>, and <code class="highlighter-rouge">ResteasyWadlMethodMetaData</code> contains the <code class="highlighter-rouge">ResourceMethodInvoker</code>, and the <code class="highlighter-rouge">ResourceMethodInvoker</code> is the implementation class to do the actual resource method invocations. Now we can check how <code class="highlighter-rouge">ResteasyWadlWriter</code> uses <code class="highlighter-rouge">ResteasyWadlResourceMetaData</code> and <code class="highlighter-rouge">ResteasyWadlMethodMetaData</code> to convert resource classes and methods to WADL data:</p>
+
+<p><img src="/assets/2017-03-24-processWadl.png" alt="2017-03-24-processWadl.png" /></p>
+
+<p>From the above sequence diagram we can see how <code class="highlighter-rouge">resourceMetaDataEntry</code> and <code class="highlighter-rouge">methodMetaData</code> are used in <code class="highlighter-rouge">processWadl</code> method. Here is the relative code:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="k">for</span> <span class="o">(</span><span class="n">Map</span><span class="o">.</span><span class="na">Entry</span><span class="o">&lt;</span><span class="n">String</span><span class="o">,</span> <span class="n">ResteasyWadlResourceMetaData</span><span class="o">&gt;</span> <span class="n">resourceMetaDataEntry</span> <span class="o">:</span> <span class="n">serviceRegistry</span><span class="o">.</span><span class="na">getResources</span><span class="o">().</span><span class="na">entrySet</span><span class="o">())</span> <span class="o">{</span>
+	<span class="n">resourceClass</span><span class="o">.</span><span class="na">setPath</span><span class="o">(</span><span class="n">resourceMetaDataEntry</span><span class="o">.</span><span class="na">getKey</span><span class="o">());</span>
+	<span class="n">root</span><span class="o">.</span><span class="na">getResource</span><span class="o">().</span><span class="na">add</span><span class="o">(</span><span class="n">resourceClass</span><span class="o">);</span>
+
+	<span class="k">for</span> <span class="o">(</span><span class="n">ResteasyWadlMethodMetaData</span> <span class="n">methodMetaData</span> <span class="o">:</span> <span class="n">resourceMetaDataEntry</span><span class="o">.</span><span class="na">getValue</span><span class="o">().</span><span class="na">getMethodsMetaData</span><span class="o">())</span> <span class="o">{</span>
+		<span class="n">Method</span> <span class="n">method</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Method</span><span class="o">();</span>
+	<span class="o">}</span>
+<span class="o">}</span>
+</code></pre>
+</div>
+
+<p>In addition, at the end of the <code class="highlighter-rouge">processWadl</code> method, it deals with the resource locators in a recursive way:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="k">for</span> <span class="o">(</span><span class="n">ResteasyWadlServiceRegistry</span> <span class="n">subService</span> <span class="o">:</span> <span class="n">serviceRegistry</span><span class="o">.</span><span class="na">getLocators</span><span class="o">())</span>
+		<span class="n">processWadl</span><span class="o">(</span><span class="n">subService</span><span class="o">,</span> <span class="n">root</span><span class="o">);</span>
+</code></pre>
+</div>
+
+<p>We can see again from here that the resource locators are just nested resources.</p>
+
+<h3 id="references"><em>References</em></h3>
+
+<hr />
+<div class="footnotes">
+  <ol>
+    <li id="fn:doc">
+      <p><a href="http://docs.jboss.org/resteasy/docs/3.1.1.Final/userguide/html_single/index.html#WADL">http://docs.jboss.org.</a>&nbsp;<a href="#fnref:doc" class="reversefootnote">&#8617;</a></p>
+    </li>
+    <li id="fn:core">
+      <p><a href="http://weinan.io/2017/03/15/core-classes-to-implement-resteasy-container.html">http://weinan.io.</a>&nbsp;<a href="#fnref:core" class="reversefootnote">&#8617;</a></p>
+    </li>
+  </ol>
+</div>

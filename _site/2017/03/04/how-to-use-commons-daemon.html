@@ -1,0 +1,386 @@
+<p>Apache Commons Daemon is a tool provided by Apache community which can help you to manage your Java application as a standard system daemon. In this article I’d like to show you the basic usage of it.</p>
+
+<p>The Apache Commons Daemon consists of two parts: One part is written in Java called <code class="highlighter-rouge">commons-daemon</code>, the other part is called <code class="highlighter-rouge">jsvc</code> which is written in C.</p>
+
+<p>The <code class="highlighter-rouge">commons-daemon</code> part gives you some Java interfaces that you should follow to wrap your server program. The most important interface you need to implement is <code class="highlighter-rouge">Daemon.java</code>:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">interface</span> <span class="nc">Daemon</span>
+<span class="o">{</span>
+
+    <span class="cm">/**
+     * Initializes this &lt;code&gt;Daemon&lt;/code&gt; instance.
+     * &lt;p&gt;
+     *   This method gets called once the JVM process is created and the
+     *   &lt;code&gt;Daemon&lt;/code&gt; instance is created thru its empty public
+     *   constructor.
+     * &lt;/p&gt;
+     * &lt;p&gt;
+     *   Under certain operating systems (typically Unix based operating
+     *   systems) and if the native invocation framework is configured to do
+     *   so, this method might be called with &lt;i&gt;super-user&lt;/i&gt; privileges.
+     * &lt;/p&gt;
+     * &lt;p&gt;
+     *   For example, it might be wise to create &lt;code&gt;ServerSocket&lt;/code&gt;
+     *   instances within the scope of this method, and perform all operations
+     *   requiring &lt;i&gt;super-user&lt;/i&gt; privileges in the underlying operating
+     *   system.
+     * &lt;/p&gt;
+     * &lt;p&gt;
+     *   Apart from set up and allocation of native resources, this method
+     *   must not start the actual operation of the &lt;code&gt;Daemon&lt;/code&gt; (such
+     *   as starting threads calling the &lt;code&gt;ServerSocket.accept()&lt;/code&gt;
+     *   method) as this would impose some serious security hazards. The
+     *   start of operation must be performed in the &lt;code&gt;start()&lt;/code&gt;
+     *   method.
+     * &lt;/p&gt;
+     *
+     * @param context A &lt;code&gt;DaemonContext&lt;/code&gt; object used to
+     * communicate with the container.
+     * @exception DaemonInitException An exception that prevented
+     * initialization where you want to display a nice message to the user,
+     * rather than a stack trace.
+     * @exception Exception Any exception preventing a successful
+     *                      initialization.
+     */</span>
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">init</span><span class="o">(</span><span class="n">DaemonContext</span> <span class="n">context</span><span class="o">)</span>
+        <span class="kd">throws</span> <span class="n">DaemonInitException</span><span class="o">,</span> <span class="n">Exception</span><span class="o">;</span>
+
+    <span class="cm">/**
+     * Starts the operation of this &lt;code&gt;Daemon&lt;/code&gt; instance. This
+     * method is to be invoked by the environment after the init()
+     * method has been successfully invoked and possibly the security
+     * level of the JVM has been dropped. Implementors of this
+     * method are free to start any number of threads, but need to
+     * return control after having done that to enable invocation of
+     * the stop()-method.
+     */</span>
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">start</span><span class="o">()</span>
+        <span class="kd">throws</span> <span class="n">Exception</span><span class="o">;</span>
+
+    <span class="cm">/**
+     * Stops the operation of this &lt;code&gt;Daemon&lt;/code&gt; instance. Note
+     * that the proper place to free any allocated resources such as
+     * sockets or file descriptors is in the destroy method, as the
+     * container may restart the Daemon by calling start() after
+     * stop().
+     */</span>
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">stop</span><span class="o">()</span>
+        <span class="kd">throws</span> <span class="n">Exception</span><span class="o">;</span>
+
+    <span class="cm">/**
+     * Frees any resources allocated by this daemon such as file
+     * descriptors or sockets. This method gets called by the container
+     * after stop() has been called, before the JVM exits. The Daemon
+     * can not be restarted after this method has been called without a
+     * new call to the init() method.
+     */</span>
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">destroy</span><span class="o">();</span>
+<span class="o">}</span>
+</code></pre>
+</div>
+
+<p>From the above interface we can see there are several methods related with a server cycle you should implement. How does <code class="highlighter-rouge">commons-daemon</code> uses the above interface to manage your Java application? The answers lies in <code class="highlighter-rouge">jsvc</code> part. <code class="highlighter-rouge">jsvc</code> is written in C, and it provides you three processes<sup id="fnref:1"><a href="#fn:1" class="footnote">1</a></sup>, which are called the <code class="highlighter-rouge">Launcher Process</code>, the <code class="highlighter-rouge">Controller Process</code>, and the <code class="highlighter-rouge">Controlled Process</code>.</p>
+
+<p>The purpose of the launcher process is very straight-forward, which will launch a child process. The child process will be a Java instance and it’s called the <code class="highlighter-rouge">controller process</code>.</p>
+
+<p>The controller process will start JVM and start your Java application by properly calling the <code class="highlighter-rouge">init</code> and <code class="highlighter-rouge">start</code> methods defined in above interface. Then it will wait for standard Linux/UNIX process signals. So afterthen you can send standard Linux/UNIX signals to stop your Java application, and this process will call <code class="highlighter-rouge">stop</code> and <code class="highlighter-rouge">destroy</code> methods according to the signal you send to this process.</p>
+
+<p>The started Java application process is called the <code class="highlighter-rouge">controlled process</code>, it’s your Java application that is running. This process is downgraded to normal user privileges by using system capabilities like <code class="highlighter-rouge">setuid</code> and <code class="highlighter-rouge">setgid</code> or so.</p>
+
+<p>How can <code class="highlighter-rouge">jsvc</code> start JVM? It uses <code class="highlighter-rouge">JNI</code> to interact with Java Virtual Machine. The fullname of <code class="highlighter-rouge">JNI</code> is called <code class="highlighter-rouge">Java Native Interface</code><sup id="fnref:2"><a href="#fn:2" class="footnote">2</a></sup>, and it is a stanard framework to enables Java code running in a Java Virtual Machine (JVM) to call and be called by native applications. You don’t have to understand the details of <code class="highlighter-rouge">jsvc</code>, but if you are interested in the implementation, you can see the usage of <code class="highlighter-rouge">JNI_CreateJavaVM()</code> method provided by Java in <code class="highlighter-rouge">jsvc</code> source code as a start point to learn about <code class="highlighter-rouge">jsvc</code>. In general, the purpose of the <code class="highlighter-rouge">jsvc</code> is to manage the lifecycle of your Java application by interacting with <code class="highlighter-rouge">Daemon</code> interface on Java side, and you get the ability to start/stop your Java application by using standard system signals scheme.</p>
+
+<p>Now let’s start to learn how to use <code class="highlighter-rouge">commons-daemon</code> and <code class="highlighter-rouge">jsvc</code> to manage the lifecycle of our Java application. There is an article that roughly describes the steps to integrate your Java application with <code class="highlighter-rouge">commons-daemon</code><sup id="fnref:3"><a href="#fn:3" class="footnote">3</a></sup> you can check. In this article I’ll provide a more detailed explaination.</p>
+
+<h3 id="integrate-your-java-application-with-commons-daemon">Integrate your Java application with commons-daemon</h3>
+
+<p>Firstly, write a Java class that implements the <code class="highlighter-rouge">Daemon</code> interface:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">org.apache.commons.daemon.Daemon</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.apache.commons.daemon.DaemonContext</span><span class="o">;</span>
+
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">MyDaemon</span> <span class="kd">implements</span> <span class="n">Daemon</span> <span class="o">{</span>
+
+    <span class="nd">@Override</span>
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">init</span><span class="o">(</span><span class="n">DaemonContext</span> <span class="n">context</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
+        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"MyDaemon init..."</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="nd">@Override</span>
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">start</span><span class="o">()</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
+        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"MyDaemon start..."</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="nd">@Override</span>
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">stop</span><span class="o">()</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
+        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"MyDaemon stop..."</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="nd">@Override</span>
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">destroy</span><span class="o">()</span> <span class="o">{</span>
+        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"MyDaemon destroy..."</span><span class="o">);</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre>
+</div>
+
+<p>From the above code, we can see the Daemon interfaces defines four methods that controls you application cycle, which are <code class="highlighter-rouge">init</code>, <code class="highlighter-rouge">start</code>, <code class="highlighter-rouge">stop</code> and <code class="highlighter-rouge">destroy</code>. And <code class="highlighter-rouge">jsvc</code> will call these methods to start/stop your application properly. So it’s your responsibility to implement the above methods properly.</p>
+
+<p>Then we need to compile our Java project properly. I have put above <code class="highlighter-rouge">MyDaemon</code> into a Gradle project<sup id="fnref:4"><a href="#fn:4" class="footnote">4</a></sup>, so you can directly check it out and build a jar from it. You can go to the directory of the project, and then run <code class="highlighter-rouge">./gradlew fatJar</code>. It will download the <code class="highlighter-rouge">gradle</code> and build the project for you.</p>
+
+<p>After building it successfully, you can get the jar <code class="highlighter-rouge">build/libs/DaemonDemo-all-1.0.jar</code>. This jar contains the above <code class="highlighter-rouge">MyDaemon</code> class, and <code class="highlighter-rouge">commons-daemon</code> jar as dependency.</p>
+
+<p>For the next step, we need to install <code class="highlighter-rouge">jsvc</code> into our system. I use <code class="highlighter-rouge">Fedora Linux</code>, so I use <code class="highlighter-rouge">dnf</code> command to install the package provided by default:</p>
+
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code>apache-commons-daemon-jsvc.x86_64 : Java daemon launcher
+</code></pre>
+</div>
+
+<p>After installing it, we can see the files provided by above package:</p>
+
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code><span class="gp">$ </span>rpm -ql apache-commons-daemon-jsvc-1.0.15-10.fc23.x86_64
+/usr/bin/jsvc
+/usr/share/doc/apache-commons-daemon-jsvc
+/usr/share/doc/apache-commons-daemon-jsvc/LICENSE.txt
+/usr/share/doc/apache-commons-daemon-jsvc/NOTICE.txt
+/usr/share/man/man1/jsvc.1.gz
+</code></pre>
+</div>
+
+<p>As the file list shown above, the core file provided by the package is the binary file  <code class="highlighter-rouge">/usr/bin/jsvc</code>. We will use this <code class="highlighter-rouge">jsvc</code> to start our <code class="highlighter-rouge">MyDaemon</code>.</p>
+
+<p>Before starting <code class="highlighter-rouge">jsvc</code>, we need to make sure the Java side, <code class="highlighter-rouge">apache-commons-daemon</code>, is installed. You can download the jar from the Apache commons website directly<sup id="fnref:5"><a href="#fn:5" class="footnote">5</a></sup>. I will use the one provided by Fedora directly:</p>
+
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code>apache-commons-daemon.noarch : Defines API to support an alternative invocation mechanism
+</code></pre>
+</div>
+
+<p>The above package will provide the commons-daemon jar:</p>
+
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code><span class="o">[</span>weli@localhost projs]<span class="nv">$ </span>rpm -ql apache-commons-daemon-1.0.15-1.redhat_1.ep6.el6.noarch
+/usr/share/java/apache-commons-daemon-1.0.15-redhat-1.jar
+/usr/share/java/apache-commons-daemon.jar
+/usr/share/java/commons-daemon-1.0.15-redhat-1.jar
+/usr/share/java/commons-daemon.jar
+/usr/share/java/jakarta-commons-daemon-1.0.15-redhat-1.jar
+/usr/share/java/jakarta-commons-daemon.jar
+</code></pre>
+</div>
+
+<p>Above jars are acutally the same, most of them are symbolic links to the same actual jar file, so referring to anyone is the same. Now I can use <code class="highlighter-rouge">jsvc</code> and <code class="highlighter-rouge">commons-daemon.jar</code> to start our <code class="highlighter-rouge">MyDaemon</code>. The command is like the following:</p>
+
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code><span class="gp">$ </span>sudo /usr/bin/jsvc <span class="se">\</span>
+-debug <span class="se">\</span>
+-nodetach <span class="se">\</span>
+-cp /home/weli/projs/jboss-webserver-and-eap-high-availability/DaemonDemo/build/libs:/usr/share/java/commons-daemon-1.0.15-redhat-1.jar MyDaemon
+</code></pre>
+</div>
+
+<p>As the command shown above, we have used <code class="highlighter-rouge">nodetach</code> option to make the program a daemon, and we use <code class="highlighter-rouge">cp</code> option to tell <code class="highlighter-rouge">jsvc</code> to find our jar and <code class="highlighter-rouge">commons-daemon</code> jar. Finally we have told <code class="highlighter-rouge">jsvc</code> our class that implements the <code class="highlighter-rouge">Daemon</code> interface. Because we have used <code class="highlighter-rouge">debug</code> option, so the output of above command is very long. Here is the whole output:</p>
+
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code>+-- DUMPING PARSED COMMAND LINE ARGUMENTS --------------
+| Detach:          False
+| Show Version:    No
+| Show Help:       No
+| Check Only:      Disabled
+| Stop:            False
+| Wait:            0
+| Run as service:  No
+| Install service: No
+| Remove service:  No
+| JVM Name:        <span class="s2">"null"</span>
+| Java Home:       <span class="s2">"null"</span>
+| PID File:        <span class="s2">"/var/run/jsvc.pid"</span>
+| User Name:       <span class="s2">"null"</span>
+| Extra Options:   1
+|   <span class="s2">"-Djava.class.path=/home/weli/projs/jboss-webserver-and-eap-high-availability/DaemonDemo/build/libs:/usr/share/java/commons-daemon-1.0.15-redhat-1.jar"</span>
+| Class Invoked:   <span class="s2">"MyDaemon"</span>
+| Class Arguments: 0
++-------------------------------------------------------
+Home not specified on <span class="nb">command </span>line, using environment
+Home not on <span class="nb">command </span>line or <span class="k">in </span>environment, searching
+Attempting to locate Java Home <span class="k">in</span> /usr/java/default
+Path /usr/java/default is not a directory
+Attempting to locate Java Home <span class="k">in</span> /usr/java
+Path /usr/java is not a directory
+Attempting to locate Java Home <span class="k">in</span> /usr/local/java
+Path /usr/local/java is not a directory
+Attempting to locate Java Home <span class="k">in</span> /usr/lib/jvm/default-java
+Path /usr/lib/jvm/default-java is not a directory
+Attempting to locate Java Home <span class="k">in</span> /usr/lib/jvm/java
+Attempting to locate VM configuration file /usr/lib/jvm/java/jre/lib/jvm.cfg
+Attempting to locate VM configuration file /usr/lib/jvm/java/lib/jvm.cfg
+Attempting to locate VM configuration file /usr/lib/jvm/java/jre/lib/amd64/jvm.cfg
+Found VM configuration file at /usr/lib/jvm/java/jre/lib/amd64/jvm.cfg
+Found VM server definition <span class="k">in </span>configuration
+Checking library /usr/lib/jvm/java/jre/lib/amd64/server/libjvm.so
+Found VM client definition <span class="k">in </span>configuration
+Checking library /usr/lib/jvm/java/jre/lib/amd64/client/libjvm.so
+Checking library /usr/lib/jvm/java/lib/amd64/client/libjvm.so
+Cannot locate library <span class="k">for </span>VM client <span class="o">(</span>skipping<span class="o">)</span>
+Java Home located <span class="k">in</span> /usr/lib/jvm/java
++-- DUMPING JAVA HOME STRUCTURE ------------------------
+| Java Home:       <span class="s2">"/usr/lib/jvm/java"</span>
+| Java VM Config.: <span class="s2">"/usr/lib/jvm/java/jre/lib/amd64/jvm.cfg"</span>
+| Found JVMs:      1
+| JVM Name:        <span class="s2">"server"</span>
+|                  <span class="s2">"/usr/lib/jvm/java/jre/lib/amd64/server/libjvm.so"</span>
++-------------------------------------------------------
+Using default JVM <span class="k">in</span> /usr/lib/jvm/java/jre/lib/amd64/server/libjvm.so
+Invoking w/ <span class="nv">LD_LIBRARY_PATH</span><span class="o">=</span>/usr/lib/jvm/java/jre/lib/amd64/server:/usr/lib/jvm/java/jre/lib/amd64
++-- DUMPING PARSED COMMAND LINE ARGUMENTS --------------
+| Detach:          False
+| Show Version:    No
+| Show Help:       No
+| Check Only:      Disabled
+| Stop:            False
+| Wait:            0
+| Run as service:  No
+| Install service: No
+| Remove service:  No
+| JVM Name:        <span class="s2">"null"</span>
+| Java Home:       <span class="s2">"null"</span>
+| PID File:        <span class="s2">"/var/run/jsvc.pid"</span>
+| User Name:       <span class="s2">"null"</span>
+| Extra Options:   1
+|   <span class="s2">"-Djava.class.path=/home/weli/projs/jboss-webserver-and-eap-high-availability/DaemonDemo/build/libs:/usr/share/java/commons-daemon-1.0.15-redhat-1.jar"</span>
+| Class Invoked:   <span class="s2">"MyDaemon"</span>
+| Class Arguments: 0
++-------------------------------------------------------
+Home not specified on <span class="nb">command </span>line, using environment
+Home not on <span class="nb">command </span>line or <span class="k">in </span>environment, searching
+Attempting to locate Java Home <span class="k">in</span> /usr/java/default
+Path /usr/java/default is not a directory
+Attempting to locate Java Home <span class="k">in</span> /usr/java
+Path /usr/java is not a directory
+Attempting to locate Java Home <span class="k">in</span> /usr/local/java
+Path /usr/local/java is not a directory
+Attempting to locate Java Home <span class="k">in</span> /usr/lib/jvm/default-java
+Path /usr/lib/jvm/default-java is not a directory
+Attempting to locate Java Home <span class="k">in</span> /usr/lib/jvm/java
+Attempting to locate VM configuration file /usr/lib/jvm/java/jre/lib/jvm.cfg
+Attempting to locate VM configuration file /usr/lib/jvm/java/lib/jvm.cfg
+Attempting to locate VM configuration file /usr/lib/jvm/java/jre/lib/amd64/jvm.cfg
+Found VM configuration file at /usr/lib/jvm/java/jre/lib/amd64/jvm.cfg
+Found VM server definition <span class="k">in </span>configuration
+Checking library /usr/lib/jvm/java/jre/lib/amd64/server/libjvm.so
+Found VM client definition <span class="k">in </span>configuration
+Checking library /usr/lib/jvm/java/jre/lib/amd64/client/libjvm.so
+Checking library /usr/lib/jvm/java/lib/amd64/client/libjvm.so
+Cannot locate library <span class="k">for </span>VM client <span class="o">(</span>skipping<span class="o">)</span>
+Java Home located <span class="k">in</span> /usr/lib/jvm/java
++-- DUMPING JAVA HOME STRUCTURE ------------------------
+| Java Home:       <span class="s2">"/usr/lib/jvm/java"</span>
+| Java VM Config.: <span class="s2">"/usr/lib/jvm/java/jre/lib/amd64/jvm.cfg"</span>
+| Found JVMs:      1
+| JVM Name:        <span class="s2">"server"</span>
+|                  <span class="s2">"/usr/lib/jvm/java/jre/lib/amd64/server/libjvm.so"</span>
++-------------------------------------------------------
+Running w/ <span class="nv">LD_LIBRARY_PATH</span><span class="o">=</span>/usr/lib/jvm/java/jre/lib/amd64/server:/usr/lib/jvm/java/jre/lib/amd64
+redirecting stdout to /dev/null and stderr to /dev/null
+Switching <span class="nb">umask </span>back to 022 from 077
+Using default JVM <span class="k">in</span> /usr/lib/jvm/java/jre/lib/amd64/server/libjvm.so
+Attemtping to load library /usr/lib/jvm/java/jre/lib/amd64/server/libjvm.so
+JVM library /usr/lib/jvm/java/jre/lib/amd64/server/libjvm.so loaded
+JVM library entry point found <span class="o">(</span>0x924610A0<span class="o">)</span>
++-- DUMPING JAVA VM CREATION ARGUMENTS -----------------
+| Version:                       0x010004
+| Ignore Unrecognized Arguments: False
+| Extra options:                 1
+|   <span class="s2">"-Djava.class.path=/home/weli/projs/jboss-webserver-and-eap-high-availability/DaemonDemo/build/libs:/usr/share/java/commons-daemon-1.0.15-redhat-1.jar"</span> <span class="o">(</span>0x00000000<span class="o">)</span>
++-------------------------------------------------------
+| Internal options:              4
+|   <span class="s2">"-Dcommons.daemon.process.id=31380"</span> <span class="o">(</span>0x00000000<span class="o">)</span>
+|   <span class="s2">"-Dcommons.daemon.process.parent=31379"</span> <span class="o">(</span>0x00000000<span class="o">)</span>
+|   <span class="s2">"-Dcommons.daemon.version=1.0.15-dev"</span> <span class="o">(</span>0x00000000<span class="o">)</span>
+|   <span class="s2">"abort"</span> <span class="o">(</span>0xf9b3e0a0<span class="o">)</span>
++-------------------------------------------------------
+Java VM created successfully
+Class org/apache/commons/daemon/support/DaemonLoader found
+Native methods registered
+java_init <span class="k">done
+</span>Daemon loading...
+MyDaemon init...
+Daemon loaded successfully
+java_load <span class="k">done
+</span>MyDaemon start...
+Daemon started successfully
+java_start <span class="k">done
+</span>Waiting <span class="k">for </span>a signal to be delivered
+create_tmp_file: /tmp/31380.jsvc_up
+</code></pre>
+</div>
+
+<p>From above log we can see all the details of the process. We can see <code class="highlighter-rouge">jsvc</code> tried to find <code class="highlighter-rouge">java</code> from several predefined locations, and finally it found the <code class="highlighter-rouge">java</code> provided by Fedora, and it shows how it uses <code class="highlighter-rouge">DaemonLoader</code> and start our <code class="highlighter-rouge">MyDaemon</code>.</p>
+
+<p>Now let’s analyze the processes created by <code class="highlighter-rouge">jsvc</code>. As we have learned, <code class="highlighter-rouge">jsvc</code> itself is a <code class="highlighter-rouge">Launcher Process</code>, it will start a JVM instance called <code class="highlighter-rouge">Controller Process</code>, which will interact with launcher to listen to standard system signals. The controller will start our Daemon program as a standalone process as the <code class="highlighter-rouge">Controlled Process</code>, the controlled process will accept the management of controller, because controller process can control the child(controlled) process by using the implemented <code class="highlighter-rouge">Daemon</code> interface.</p>
+
+<p>We can use <code class="highlighter-rouge">ps</code> command to verify this:</p>
+
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code><span class="o">[</span>weli@localhost projs]<span class="nv">$ </span>ps -ef | grep jsvc
+root      2376   316  0 18:12 pts/5    00:00:00 sudo /usr/bin/jsvc -debug -nodetach -cp /home/weli/projs/jboss-webserver-and-eap-high-availability/DaemonDemo/build/libs:/usr/share/java/commons-daemon-1.0.15-redhat-1.jar MyDaemon
+root      2385  2376  0 18:12 pts/5    00:00:00 jsvc.exec -debug -nodetach -cp /home/weli/projs/jboss-webserver-and-eap-high-availability/DaemonDemo/build/libs:/usr/share/java/commons-daemon-1.0.15-redhat-1.jar MyDaemon
+root      2386  2385  0 18:12 pts/5    00:00:00 jsvc.exec -debug -nodetach -cp /home/weli/projs/jboss-webserver-and-eap-high-availability/DaemonDemo/build/libs:/usr/share/java/commons-daemon-1.0.15-redhat-1.jar MyDaemon
+</code></pre>
+</div>
+
+<p>From above we can see three processes. The <code class="highlighter-rouge">jsvc</code> itself is obviously the launcher. For the other to processes, we can refer to <code class="highlighter-rouge">jsvc</code> debug output to understand it:</p>
+
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code>+-------------------------------------------------------
+| Internal options:              4
+|   <span class="s2">"-Dcommons.daemon.process.id=2386"</span> <span class="o">(</span>0x00000000<span class="o">)</span>
+|   <span class="s2">"-Dcommons.daemon.process.parent=2385"</span> <span class="o">(</span>0x00000000<span class="o">)</span>
+|   <span class="s2">"-Dcommons.daemon.version=1.0.15-dev"</span> <span class="o">(</span>0x00000000<span class="o">)</span>
+|   <span class="s2">"abort"</span> <span class="o">(</span>0xfc2fc0a0<span class="o">)</span>
++-------------------------------------------------------
+Java VM created successfully
+</code></pre>
+</div>
+
+<p>So the parent is the controller, and the other one is the worker. After the <code class="highlighter-rouge">jsvc</code> is started as a daemon, we can now pressing <code class="highlighter-rouge">CTRL-C</code> to send a <code class="highlighter-rouge">SIGINT</code> signal to the process, and we can see the following output:</p>
+
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code>^CCaught SIGINT: Scheduling a shutdown
+remove_tmp_file: /tmp/2386.jsvc_up
+Shutdown or reload requested: exiting
+MyDaemon stop...
+Forwarding signal 2 to process 2386
+Caught SIGINT: Scheduling a shutdown
+Shutdown or reload already scheduled
+Daemon stopped successfully
+MyDaemon destroy...
+Daemon destroyed successfully
+Calling System.exit<span class="o">(</span>0<span class="o">)</span>
+Service shut down
+</code></pre>
+</div>
+
+<p>As the log shown above, we can see how <code class="highlighter-rouge">jsvc</code> handles the signal properly and gracefully shutdown our <code class="highlighter-rouge">MyDaemon</code>. So it’s our responsibility to implement <code class="highlighter-rouge">Daemon</code> interface correctly, so <code class="highlighter-rouge">jsvc</code> can use our implementation properly.</p>
+
+<h3 id="whats-the-difference-between-systemd-and-jsvc">What’s the difference between systemd and jsvc</h3>
+
+<p>Currently the <code class="highlighter-rouge">systemd</code> can achieve most parts of  the process control function provided by <code class="highlighter-rouge">jsvc</code>, but <code class="highlighter-rouge">jsvc</code> can let the server to bind to privileged port and then drop the root access properly. To see more differences between <code class="highlighter-rouge">systemd</code> and <code class="highlighter-rouge">jsvc</code>, you can check this page<sup id="fnref:6"><a href="#fn:6" class="footnote">6</a></sup>.</p>
+
+<h3 id="references"><em>References</em></h3>
+
+<hr />
+<div class="footnotes">
+  <ol>
+    <li id="fn:1">
+      <p><a href="https://commons.apache.org/proper/commons-daemon/jsvc.html">Jsvc</a>&nbsp;<a href="#fnref:1" class="reversefootnote">&#8617;</a></p>
+    </li>
+    <li id="fn:2">
+      <p><a href="https://en.wikipedia.org/wiki/Java_Native_Interface">Java Native Interface</a>&nbsp;<a href="#fnref:2" class="reversefootnote">&#8617;</a></p>
+    </li>
+    <li id="fn:3">
+      <p><a href="http://stackoverflow.com/questions/7687159/how-to-convert-a-java-program-to-daemon-with-jsvc">How to convert a java program to daemon with jsvc?</a>&nbsp;<a href="#fnref:3" class="reversefootnote">&#8617;</a></p>
+    </li>
+    <li id="fn:4">
+      <p><a href="https://github.com/liweinan/jboss-webserver-and-eap-high-availability/tree/master/DaemonDemo">DaemonDemo</a>&nbsp;<a href="#fnref:4" class="reversefootnote">&#8617;</a></p>
+    </li>
+    <li id="fn:5">
+      <p><a href="http://commons.apache.org/proper/commons-daemon/download_daemon.cgi">Download Commons Daemon</a>&nbsp;<a href="#fnref:5" class="reversefootnote">&#8617;</a></p>
+    </li>
+    <li id="fn:6">
+      <p><a href="http://stackoverflow.com/questions/28894008/what-benefit-do-i-get-from-jsvc-over-just-using-systemd">What benefit do I get from JSVC over just using systemd?</a>&nbsp;<a href="#fnref:6" class="reversefootnote">&#8617;</a></p>
+    </li>
+  </ol>
+</div>

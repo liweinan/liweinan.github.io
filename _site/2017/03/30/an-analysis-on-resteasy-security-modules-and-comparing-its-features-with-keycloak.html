@@ -1,0 +1,251 @@
+<p>In this article I’d like to share with you my study on RESTEasy security modules and Keycloak features.</p>
+
+<p>I haven’t finished all the investigations on this topic, but I’d like to share with you some of my findings till now. Firstly I’d like to give a brief introduction to Keycloak. This project is actually an Single-Sign-On solution. You can compare this project with Apereo CAS<sup id="fnref:1"><a href="#fn:1" class="footnote">1</a></sup>. The protcols that Keycloak supports by default are OpenID<sup id="fnref:2"><a href="#fn:2" class="footnote">2</a></sup> and SAML<sup id="fnref:3"><a href="#fn:3" class="footnote">3</a></sup>. These proctcols are just defining the credential exchanging framework, but Keycloak also provides IdP(Identity Provider)<sup id="fnref:4"><a href="#fn:4" class="footnote">4</a></sup> that can help customers to setup a credential server using Wildfly that can store username/password pairs and act as credentials provider, and Keycloak also provides different adapters to various kinds of clients(Service Provider in SSO concept). On the other hand, the RESTEasy security modules are listed here:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>$ ls -1
+jose-jwt
+keystone
+login-module-authenticator
+resteasy-crypto
+resteasy-oauth
+skeleton-key-idm
+</code></pre>
+</div>
+
+<p>I’ll introduce the above modules one by one and refer to Keycloak when necessary.</p>
+
+<h3 id="jose-jwt">jose-jwt</h3>
+
+<p>The first one is <code class="highlighter-rouge">jose-jwt</code>. <code class="highlighter-rouge">jose</code> is <code class="highlighter-rouge">Javascript Object Signing and Encryption</code>, and <code class="highlighter-rouge">jws</code> is <code class="highlighter-rouge">JSON Web Token</code><sup id="fnref:5"><a href="#fn:5" class="footnote">5</a></sup>. The <code class="highlighter-rouge">jose-jws</code> module contains classes to deal with these two encryption modules. Keycloak copied part of these classes into its own project:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>$ pwd
+/Users/weli/projs/keycloak/keycloak-github
+</code></pre>
+</div>
+
+<p>And here are the classes:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>$ find . | grep jose
+./core/src/main/java/org/keycloak/jose
+./core/src/main/java/org/keycloak/jose/jwk
+./core/src/main/java/org/keycloak/jose/jwk/JSONWebKeySet.java
+./core/src/main/java/org/keycloak/jose/jwk/JWK.java
+./core/src/main/java/org/keycloak/jose/jwk/JWKBuilder.java
+./core/src/main/java/org/keycloak/jose/jwk/JWKParser.java
+./core/src/main/java/org/keycloak/jose/jwk/RSAPublicJWK.java
+./core/src/main/java/org/keycloak/jose/jws
+./core/src/main/java/org/keycloak/jose/jws/Algorithm.java
+./core/src/main/java/org/keycloak/jose/jws/AlgorithmType.java
+./core/src/main/java/org/keycloak/jose/jws/crypto
+./core/src/main/java/org/keycloak/jose/jws/crypto/HashProvider.java
+./core/src/main/java/org/keycloak/jose/jws/crypto/HMACProvider.java
+./core/src/main/java/org/keycloak/jose/jws/crypto/RSAProvider.java
+./core/src/main/java/org/keycloak/jose/jws/crypto/SignatureProvider.java
+./core/src/main/java/org/keycloak/jose/jws/JWSBuilder.java
+./core/src/main/java/org/keycloak/jose/jws/JWSHeader.java
+./core/src/main/java/org/keycloak/jose/jws/JWSInput.java
+./core/src/main/java/org/keycloak/jose/jws/JWSInputException.java
+./core/src/test/java/org/keycloak/jose
+./core/src/test/java/org/keycloak/jose/HmacTest.java
+./core/src/test/java/org/keycloak/jose/JsonWebTokenTest.java
+./core/src/test/java/org/keycloak/jose/jwk
+./core/src/test/java/org/keycloak/jose/jwk/JWKBuilderTest.java
+</code></pre>
+</div>
+
+<p>Keycloak doesn’t contain <code class="highlighter-rouge">jwt</code> classes:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>$ find . | grep jwt
+./adapters/oidc/adapter-core/src/test/resources/keycloak-jwt.json
+./examples/authz/photoz/photoz-html5-client/src/main/webapp/lib/jwt-decode.min.js
+./testsuite/integration-arquillian/test-apps/photoz/photoz-html5-client/src/main/webapp/lib/jwt-decode.min.js
+./themes/src/main/resources/theme/base/admin/resources/partials/client-credentials-jwt-key-export.html
+./themes/src/main/resources/theme/base/admin/resources/partials/client-credentials-jwt-key-import.html
+./themes/src/main/resources/theme/base/admin/resources/partials/client-credentials-jwt.html
+</code></pre>
+</div>
+
+<p>Here are the contents of RESTEasy <code class="highlighter-rouge">jose-jws</code> module. The directory is:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>$ pwd
+/Users/weli/projs/resteasy-upstream/security/jose-jwt/src
+</code></pre>
+</div>
+
+<p>Here are the classes:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>$ find . | grep -v test
+.
+./main
+./main/java
+./main/java/org
+./main/java/org/jboss
+./main/java/org/jboss/resteasy
+./main/java/org/jboss/resteasy/jose
+./main/java/org/jboss/resteasy/jose/Base64Url.java
+./main/java/org/jboss/resteasy/jose/i18n
+./main/java/org/jboss/resteasy/jose/i18n/LogMessages.java
+./main/java/org/jboss/resteasy/jose/i18n/Messages.java
+./main/java/org/jboss/resteasy/jose/jwe
+./main/java/org/jboss/resteasy/jose/jwe/Algorithm.java
+./main/java/org/jboss/resteasy/jose/jwe/CompressionAlgorithm.java
+./main/java/org/jboss/resteasy/jose/jwe/crypto
+./main/java/org/jboss/resteasy/jose/jwe/crypto/AES.java
+./main/java/org/jboss/resteasy/jose/jwe/crypto/AESCBC.java
+./main/java/org/jboss/resteasy/jose/jwe/crypto/AESGCM.java
+./main/java/org/jboss/resteasy/jose/jwe/crypto/AuthenticatedCipherText.java
+./main/java/org/jboss/resteasy/jose/jwe/crypto/CompositeKey.java
+./main/java/org/jboss/resteasy/jose/jwe/crypto/DeflateHelper.java
+./main/java/org/jboss/resteasy/jose/jwe/crypto/DeflateUtils.java
+./main/java/org/jboss/resteasy/jose/jwe/crypto/DirectDecrypter.java
+./main/java/org/jboss/resteasy/jose/jwe/crypto/DirectEncrypter.java
+./main/java/org/jboss/resteasy/jose/jwe/crypto/HMAC.java
+./main/java/org/jboss/resteasy/jose/jwe/crypto/JWECryptoParts.java
+./main/java/org/jboss/resteasy/jose/jwe/crypto/RSA1_5.java
+./main/java/org/jboss/resteasy/jose/jwe/crypto/RSA_OAEP.java
+./main/java/org/jboss/resteasy/jose/jwe/crypto/RSADecrypter.java
+./main/java/org/jboss/resteasy/jose/jwe/crypto/RSAEncrypter.java
+./main/java/org/jboss/resteasy/jose/jwe/EncryptionMethod.java
+./main/java/org/jboss/resteasy/jose/jwe/JWEBuilder.java
+./main/java/org/jboss/resteasy/jose/jwe/JWEHeader.java
+./main/java/org/jboss/resteasy/jose/jwe/JWEInput.java
+./main/java/org/jboss/resteasy/jose/jws
+./main/java/org/jboss/resteasy/jose/jws/Algorithm.java
+./main/java/org/jboss/resteasy/jose/jws/crypto
+./main/java/org/jboss/resteasy/jose/jws/crypto/HMACProvider.java
+./main/java/org/jboss/resteasy/jose/jws/crypto/RSAProvider.java
+./main/java/org/jboss/resteasy/jose/jws/JWSBuilder.java
+./main/java/org/jboss/resteasy/jose/jws/JWSHeader.java
+./main/java/org/jboss/resteasy/jose/jws/JWSInput.java
+./main/java/org/jboss/resteasy/jwt
+./main/java/org/jboss/resteasy/jwt/JsonSerialization.java
+./main/java/org/jboss/resteasy/jwt/JsonWebToken.java
+./main/java/org/jboss/resteasy/jwt/JWTContextResolver.java
+</code></pre>
+</div>
+
+<p>Generally speaking, the classes in Keycloak is a subset of the classes in RESTEasy <code class="highlighter-rouge">jose-jwt</code>. In addition, Wildfly uses the <code class="highlighter-rouge">resteasy-crypto</code> and <code class="highlighter-rouge">jose-jws</code> modules by default. Here are the default modules in <code class="highlighter-rouge">wildfly-10.1.0.Final</code>:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>system/layers/base/org/jboss/resteasy/jose-jwt/main/jose-jwt-3.0.19.Final.jar
+system/layers/base/org/jboss/resteasy/jose-jwt/main/module.xml
+</code></pre>
+</div>
+
+<p>Now let’s check the <code class="highlighter-rouge">resteasy-crypto</code> module.</p>
+
+<h3 id="resteasy-crypto">resteasy-crypto</h3>
+
+<p><code class="highlighter-rouge">resteasy-crypto</code> provides a basic toolset for common encryption work. For example, it contains classes like <code class="highlighter-rouge">DKIMSignature</code> for dealing with DKIM headers<sup id="fnref:6"><a href="#fn:6" class="footnote">6</a></sup>, and it contains <code class="highlighter-rouge">KeyTools</code>, <code class="highlighter-rouge">PemUtils</code> and <code class="highlighter-rouge">DerUtils</code> for processing JSSE<sup id="fnref:7"><a href="#fn:7" class="footnote">7</a></sup> classes like <code class="highlighter-rouge">PrivateKey</code>, <code class="highlighter-rouge">PublicKey</code>, and <code class="highlighter-rouge">X509Certificate</code>. Same like <code class="highlighter-rouge">jose-jwt</code>, <code class="highlighter-rouge">resteasy-crypto</code> is shipped by default by Wildfly:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>system/layers/base/org/jboss/resteasy/resteasy-crypto/main/module.xml
+system/layers/base/org/jboss/resteasy/resteasy-crypto/main/resteasy-crypto-3.0.19.Final.jar
+</code></pre>
+</div>
+
+<p><code class="highlighter-rouge">Keycloak</code> has simliar classes, some are same, but they are not equal:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>$ ls -1 ./common/src/main/java/org/keycloak/common/util | grep -i util
+CRLUtils.java
+CertificateUtils.java
+CollectionUtil.java
+DerUtils.java
+EnvUtil.java
+HostUtils.java
+HtmlUtils.java
+KerberosSerializationUtils.java
+KeyUtils.java
+KeystoreUtil.java
+MimeTypeUtil.java
+NetworkUtils.java
+OCSPUtils.java
+ObjectUtil.java
+PemUtils.java
+StreamUtil.java
+UriUtils.java
+</code></pre>
+</div>
+
+<p>In the future maybe we should try to maintain the shared part of classes between Keycloak and RESTEasy.</p>
+
+<h3 id="resteasy-oauth">resteasy-oauth</h3>
+
+<p><code class="highlighter-rouge">resteasy-oauth</code> is a restful adapter to support OAuth protocol. I haven’t checked the detail implementation in Keycloak side, but I guess this module is no longer needed and can be replaced by the feature provided by Keycloak. I need a more fine-grained study on Keycloak side to give my conclusion.</p>
+
+<h3 id="skeleton-key-idm">skeleton-key-idm</h3>
+
+<p>I believe this project is now fully replaced by Keycloak and can be deprecated. Here are two articles you may want to read that describes the design and architecture of the <code class="highlighter-rouge">skeleton-key-idm</code><sup id="fnref:8"><a href="#fn:8" class="footnote">8</a></sup> <sup id="fnref:9"><a href="#fn:9" class="footnote">9</a></sup>.</p>
+
+<h3 id="keystone">keystone</h3>
+
+<p><code class="highlighter-rouge">keystone</code> is  a <code class="highlighter-rouge">Skeleton Keystone IDM</code> that supports <code class="highlighter-rouge">Openstack's Keystone protocol</code>. IMHO, the development of this project should be moved to Keycloak side, and RESTEasy should deprecate this module.</p>
+
+<h3 id="login-module-authenticator">login-module-authenticator</h3>
+
+<p>This module is just a simple one that contains two classes:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>login-module-authenticator weli$ tree src/
+src/
+└── main
+    └── java
+        └── org
+            └── jboss
+                └── security
+                    └── web
+                        ├── DomainDelegatingAuthenticator.java
+                        └── ThreadContext.java
+
+6 directories, 2 files
+</code></pre>
+</div>
+
+<p>I haven’t done full analysis on the usage of this project. Maybe it’s used by JBoss Web? I don’t know yet. But I believe this sub-module could be removed in future.</p>
+
+<h3 id="conclusion">Conclusion</h3>
+
+<p>Here are my conclusions on RESTEasy security modules, it may not be accurate, and it’s just based on my study till now. You can’t use this as the final decision of RESTEasy community for the future. Here are the points:</p>
+
+<ul>
+  <li>We should keep <code class="highlighter-rouge">jose-jwt</code> and <code class="highlighter-rouge">resteasy-crypto</code> modules because they are used by Wildfly.</li>
+  <li>Maybe we can coordinate with Keycloak team to merge the shared part of codes. IMHO Keycloak can use <code class="highlighter-rouge">jose-jwt</code> and <code class="highlighter-rouge">resteasy-crypto</code> and don’t maintain it in Keycloak, or vice versa.</li>
+  <li><code class="highlighter-rouge">resteasy-oauth</code>, <code class="highlighter-rouge">skeleton-key-idm</code> should be deprecated and users should use Keycloak instead.</li>
+  <li>The development of <code class="highlighter-rouge">keystone</code> support should be moved to Keycloak side.</li>
+  <li>Who is using <code class="highlighter-rouge">login-module-authenticator</code>? I guess it should be removed from RESTEasy. We need to know what project is using it.</li>
+</ul>
+
+<p>Above are just some personal comments and they are not the decisions from RESTEasy community.</p>
+
+<h3 id="references"><em>References</em></h3>
+
+<hr />
+
+<div class="footnotes">
+  <ol>
+    <li id="fn:1">
+      <p><a href="https://github.com/apereo/cas">Central Authentication Service (CAS).</a>&nbsp;<a href="#fnref:1" class="reversefootnote">&#8617;</a></p>
+    </li>
+    <li id="fn:2">
+      <p><a href="https://en.wikipedia.org/wiki/OpenID">OpenID.</a>&nbsp;<a href="#fnref:2" class="reversefootnote">&#8617;</a></p>
+    </li>
+    <li id="fn:3">
+      <p><a href="https://en.wikipedia.org/wiki/Security_Assertion_Markup_Language">Security Assertion Markup Language.</a>&nbsp;<a href="#fnref:3" class="reversefootnote">&#8617;</a></p>
+    </li>
+    <li id="fn:4">
+      <p><a href="https://en.wikipedia.org/wiki/Identity_provider">Identity provider.</a>&nbsp;<a href="#fnref:4" class="reversefootnote">&#8617;</a></p>
+    </li>
+    <li id="fn:5">
+      <p><a href="http://jose.readthedocs.io/en/latest/">Javascript Object Signing and Encryption (JOSE).</a>&nbsp;<a href="#fnref:5" class="reversefootnote">&#8617;</a></p>
+    </li>
+    <li id="fn:6">
+      <p><a href="http://www.dkim.org/">DomainKeys Identified Mail (DKIM).</a>&nbsp;<a href="#fnref:6" class="reversefootnote">&#8617;</a></p>
+    </li>
+    <li id="fn:7">
+      <p><a href="https://en.wikipedia.org/wiki/Java_Secure_Socket_Extension">Java Secure Socket Extension.</a>&nbsp;<a href="#fnref:7" class="reversefootnote">&#8617;</a></p>
+    </li>
+    <li id="fn:8">
+      <p><a href="https://bill.burkecentral.com/2012/11/21/scoping-out-resteasy-skeleton-key-security/">Scoping out Resteasy Skeleton Key Security.</a>&nbsp;<a href="#fnref:8" class="reversefootnote">&#8617;</a></p>
+    </li>
+    <li id="fn:9">
+      <p><a href="https://developer.jboss.org/wiki/ResteasySkeletonKeyWebSSOOAuth">Resteasy Skeleton Key Web SSO/OAuth.</a>&nbsp;<a href="#fnref:9" class="reversefootnote">&#8617;</a></p>
+    </li>
+  </ol>
+</div>

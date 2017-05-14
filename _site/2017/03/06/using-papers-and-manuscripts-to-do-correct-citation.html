@@ -1,0 +1,66 @@
+<p>In this article I’d like to share with you how to use Papers 3 and Manuscripts under MacOS to add academic citations into your GitHub Pages.</p>
+
+<p>Unfortunately, <em>GitHub Pages</em> does not support <code class="highlighter-rouge">jekyll-scholar</code> plugin by default<sup id="fnref:versions"><a href="#fn:versions" class="footnote">1</a></sup>, which means you can not use the graceful <em>BibTex</em> support provided by the plugin. This is painful, but this is the reality.</p>
+
+<p>Nevertheless, there are several ways we can overcome it to some extent. For example, we can fully discard the built-in support of <em>Jekyll</em> provided by <em>GitHub</em> and generate our whole blog site locally and push it online. In this way, we can take full control of our own website, but this is even more painful, because <em>GitHub</em> has eased our maintenance work a lot by generating <em>HTML</em> files on-the-fly from our <em>Markdown</em> files with its built-in <em>Jekyll</em> engine. I don’t want to discard the <em>GitHub</em> built-in support for <em>Jekyll</em> just for academic citation support.</p>
+
+<p>The next solution is to convert the <em>BibTex</em> file into <em>Markdown</em> format locally, and then we can add the converted <em>Markdown</em> text into our posts. There is a tool that can do it actually<sup id="fnref:bibtextomd"><a href="#fn:bibtextomd" class="footnote">2</a></sup>.</p>
+
+<p>The third solution is to use <em>javascript</em> library that can convert <em>BibTex</em> formatted text into <em>HTML</em> format on-the-fly. There is a library that can do this<sup id="fnref:bipub"><a href="#fn:bipub" class="footnote">3</a></sup>.</p>
+
+<p>However, I want a solution that can fully control the output I need and cite it manually in my article. There are a lot of free tools that can help us to convert <code class="highlighter-rouge">.bib</code> file to formal citation styles, but I’d like to use some professional tools that can ensure the correctness of the output and can support multiple citation styles like <em>APA</em>, <em>MLA</em>, <em>Chicago</em>, etc<sup id="fnref:citestyle"><a href="#fn:citestyle" class="footnote">4</a></sup>.</p>
+
+<p>To achieve this goal, we can use several professional academic reference managers such as <em>Mendeley</em> or <em>Papers</em>. My favorite tool on <em>MacOS</em> is <em>Papers 3</em>. It can export paper reference as <em>BibTex</em> library file like this:</p>
+
+<p><img src="/assets/bibtexexport.png" alt="bibtexexport" /></p>
+
+<p>I can fully control the exported citation style in <em>Papars 3</em> with its help. After the export is done, we get the <code class="highlighter-rouge">.bib</code> file like this:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>exported.bib
+</code></pre>
+</div>
+
+<p>We can use free tools provided by <em>LaTex</em> family to convert the above <code class="highlighter-rouge">.bib</code> file to <em>PDF</em> format, and then copy the generated citation text from the <em>PDF</em> file into our post page. For myself, I have a paper writing software called <em>Manuscripts</em> that can do this. <em>Manuscripts</em> has a feature to import <code class="highlighter-rouge">.bib</code> file and generate the bibliography for us:</p>
+
+<p><img src="/assets/importbib.png" alt="importbib" /></p>
+
+<p>The generated bibliography conforms to formal formats:</p>
+
+<p><img src="/assets/bib.png" alt="bib" /></p>
+
+<p>We can copy the citation text into our post. Here is the example how I can use it in this post:</p>
+
+<div class="language-markdown highlighter-rouge"><pre class="highlight"><code>(E &amp; Huang 2001)<span class="p">[</span><span class="nv">^Huang2001</span><span class="p">]</span>
+
+<span class="p">[</span><span class="ss">^Huang2001</span><span class="p">]:</span> <span class="sx">E,</span> W. &amp; Huang, Z., 2001. Matching Conditions in Atomistic-Continuum Modeling of Materials. _arXiv.org_, (13), p.135501. Available at: <span class="p">[</span><span class="nv">http://arxiv.org/abs/cond-mat/0106615v1</span><span class="p">](</span><span class="sx">http://arxiv.org/abs/cond-mat/0106615v1</span><span class="p">)</span>.
+</code></pre>
+</div>
+
+<p>Here’s the output demo:</p>
+
+<p>(E &amp; Huang 2001)<sup id="fnref:Huang2001"><a href="#fn:Huang2001" class="footnote">5</a></sup></p>
+
+<p>In this way, we have added academic citations into this post manually.</p>
+
+<h3 id="references"><em>References</em></h3>
+
+<hr />
+<div class="footnotes">
+  <ol>
+    <li id="fn:versions">
+      <p><a href="https://pages.github.com/versions/">GitHub Pages Dependency versions</a>&nbsp;<a href="#fnref:versions" class="reversefootnote">&#8617;</a></p>
+    </li>
+    <li id="fn:bibtextomd">
+      <p><a href="https://github.com/bryanwweber/bibtextomd">Convert BibTeX entries to formatted Markdown for use with the kramdown processor</a>&nbsp;<a href="#fnref:bibtextomd" class="reversefootnote">&#8617;</a></p>
+    </li>
+    <li id="fn:bipub">
+      <p><a href="https://github.com/vkaravir/bib-publication-list">bib-publication-list to automatically generate an interactive HTML publication list from a BibTeX file</a>&nbsp;<a href="#fnref:bipub" class="reversefootnote">&#8617;</a></p>
+    </li>
+    <li id="fn:citestyle">
+      <p><a href="http://pitt.libguides.com/citationhelp">Citation Styles: APA, MLA, Chicago, Turabian, IEEE: Home</a>&nbsp;<a href="#fnref:citestyle" class="reversefootnote">&#8617;</a></p>
+    </li>
+    <li id="fn:Huang2001">
+      <p>E, W. &amp; Huang, Z., 2001. Matching Conditions in Atomistic-Continuum Modeling of Materials. <em>arXiv.org</em>, (13), p.135501. Available at: <a href="http://arxiv.org/abs/cond-mat/0106615v1">http://arxiv.org/abs/cond-mat/0106615v1</a>.&nbsp;<a href="#fnref:Huang2001" class="reversefootnote">&#8617;</a></p>
+    </li>
+  </ol>
+</div>

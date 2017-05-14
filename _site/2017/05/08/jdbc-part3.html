@@ -1,0 +1,132 @@
+<p>In last part of the series of the articles, we have made a sample project to load the PostgreSQL JDBC driver into the running Java virtual machine. In this part, we will examine the JDBC driver startup process.</p>
+
+<p>In our example, we have written a <code class="highlighter-rouge">DirectConnection</code> class to load and use the JDBC driver. The code to load the JDBC driver is this line at the beginning of the class:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="n">Class</span><span class="o">.</span><span class="na">forName</span><span class="o">(</span><span class="s">"org.postgresql.Driver"</span><span class="o">);</span>
+</code></pre>
+</div>
+
+<p>The above line of code used the <code class="highlighter-rouge">java.lang.Class.forName(...)</code> method to invoke the class loader to load the <code class="highlighter-rouge">org.postgresql.Driver</code> class. The <code class="highlighter-rouge">org.postgresql.Driver</code> class implements the <code class="highlighter-rouge">java.sql.Driver</code> interface, and it provides the methods to connect to the underlying database server.</p>
+
+<p>Database vendors should implement their own drivers. From the users perspective, they can use the standard JDBC APIs to connect to the underlying database system without worrying about the differences between database vendors.</p>
+
+<p>Here is the class diagram of the <code class="highlighter-rouge">org.postgresql.Driver</code>:</p>
+
+<p><img src="/assets/jdbc/org.postgresql.Driver.png" alt="/assets/jdbc/org.postgresql.Driver.png" /></p>
+
+<p>From the above class diagram, we can see the <code class="highlighter-rouge">org.postgresql.Driver</code> class has a <code class="highlighter-rouge">connect(...)</code> method to handle the connection to the underlying database server. Here is the relative code in <code class="highlighter-rouge">connect(...)</code> method to make the connection:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="k">return</span> <span class="n">makeConnection</span><span class="o">(</span><span class="n">url</span><span class="o">,</span> <span class="n">props</span><span class="o">);</span>
+</code></pre>
+</div>
+
+<p>From above code, we can see the <code class="highlighter-rouge">connect(...)</code> method calls the <code class="highlighter-rouge">makeConnection(...)</code> method for database connection. Here is the code of <code class="highlighter-rouge">makeConnection(...)</code> method:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>private static Connection makeConnection(String url, Properties props) throws SQLException {
+	return new PgConnection(hostSpecs(props), user(props), database(props), props, url);
+}
+</code></pre>
+</div>
+
+<p>From above code, we can see that an instance of <code class="highlighter-rouge">org.postgresql.PgConnection</code> class is created. <code class="highlighter-rouge">PgConnection</code> is a huge class that wraps the calls and operations to underlying database. We will check the detail of this class later.</p>
+
+<p>In <code class="highlighter-rouge">org.postgresql.Driver</code>, there is static code that will be called during class loading. Here is the relative code:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="kd">static</span> <span class="o">{</span>
+	<span class="k">try</span> <span class="o">{</span>
+	  <span class="c1">// moved the registerDriver from the constructor to here</span>
+	  <span class="c1">// because some clients call the driver themselves (I know, as</span>
+	  <span class="c1">// my early jdbc work did - and that was based on other examples).</span>
+	  <span class="c1">// Placing it here, means that the driver is registered once only.</span>
+	  <span class="n">register</span><span class="o">();</span>
+	<span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">SQLException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+	  <span class="k">throw</span> <span class="k">new</span> <span class="nf">ExceptionInInitializerError</span><span class="o">(</span><span class="n">e</span><span class="o">);</span>
+	<span class="o">}</span>
+<span class="o">}</span>
+</code></pre>
+</div>
+
+<p>The above static code will call <code class="highlighter-rouge">register()</code> method to register the driver itself into <code class="highlighter-rouge">java.sql.DriverManager</code>. Here is the code of <code class="highlighter-rouge">register()</code> method:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="cm">/**
+ * Register the driver against {@link DriverManager}. This is done automatically when the class is
+ * loaded. Dropping the driver from DriverManager's list is possible using {@link #deregister()}
+ * method.
+ *
+ * @throws IllegalStateException if the driver is already registered
+ * @throws SQLException if registering the driver fails
+ */</span>
+<span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">register</span><span class="o">()</span> <span class="kd">throws</span> <span class="n">SQLException</span> <span class="o">{</span>
+  <span class="k">if</span> <span class="o">(</span><span class="n">isRegistered</span><span class="o">())</span> <span class="o">{</span>
+    <span class="k">throw</span> <span class="k">new</span> <span class="nf">IllegalStateException</span><span class="o">(</span>
+        <span class="s">"Driver is already registered. It can only be registered once."</span><span class="o">);</span>
+  <span class="o">}</span>
+  <span class="n">Driver</span> <span class="n">registeredDriver</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Driver</span><span class="o">();</span>
+  <span class="n">DriverManager</span><span class="o">.</span><span class="na">registerDriver</span><span class="o">(</span><span class="n">registeredDriver</span><span class="o">);</span>
+  <span class="n">Driver</span><span class="o">.</span><span class="na">registeredDriver</span> <span class="o">=</span> <span class="n">registeredDriver</span><span class="o">;</span>
+<span class="o">}</span>
+</code></pre>
+</div>
+
+<p>From above code, we can see the <code class="highlighter-rouge">register()</code> method in <code class="highlighter-rouge">org.postgresql.Driver</code> class register itself into the <code class="highlighter-rouge">java.sql.DriverManager</code> class. The <code class="highlighter-rouge">java.sql.DriverManager</code> is provided by JDK. It’s not an interface,  instead it is a class provided by JDBC library that for managing all the database drivers loaded into Java virtual machine. All the driver implementations need to register itself into DriverManager during class loading phase. The <code class="highlighter-rouge">org.postgresql.Driver</code> follows this rule as we see in above. Here is the class diagram of the <code class="highlighter-rouge">java.sql.DriverManager</code> class:</p>
+
+<p><img src="/assets/jdbc/DriverManager.png" alt="/assets/jdbc/DriverManager.png" /></p>
+
+<p>From the above diagram, we can see that the <code class="highlighter-rouge">java.sql.DriverManager</code> provides methods like <code class="highlighter-rouge">registerDriver(...)</code> and <code class="highlighter-rouge">deregisterDriver(...)</code> for the drivers to register or deregister themselves. In addition, it provides <code class="highlighter-rouge">getConnection(...)</code> methods to the users. In our own <code class="highlighter-rouge">DirectConnection</code> example, we use the <code class="highlighter-rouge">java.sql.DriverManager</code> to get the connection, and here is the relative code:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="n">String</span> <span class="n">url</span> <span class="o">=</span> <span class="s">"jdbc:postgresql://localhost/weli"</span><span class="o">;</span>
+<span class="n">Properties</span> <span class="n">props</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Properties</span><span class="o">();</span>
+<span class="n">props</span><span class="o">.</span><span class="na">setProperty</span><span class="o">(</span><span class="s">"user"</span><span class="o">,</span><span class="s">"weli"</span><span class="o">);</span>
+<span class="n">props</span><span class="o">.</span><span class="na">setProperty</span><span class="o">(</span><span class="s">"password"</span><span class="o">,</span><span class="s">""</span><span class="o">);</span>
+<span class="n">props</span><span class="o">.</span><span class="na">setProperty</span><span class="o">(</span><span class="s">"ssl"</span><span class="o">,</span><span class="s">"false"</span><span class="o">);</span>
+
+<span class="n">Connection</span> <span class="n">conn</span> <span class="o">=</span> <span class="n">DriverManager</span><span class="o">.</span><span class="na">getConnection</span><span class="o">(</span><span class="n">url</span><span class="o">,</span> <span class="n">props</span><span class="o">);</span>
+</code></pre>
+</div>
+
+<p>The above code defines the properties of our local database server, and pass it to <code class="highlighter-rouge">java.sql.DriverManager</code> to get the connection. Because the <code class="highlighter-rouge">org.postgresql.Driver</code> has been registered into <code class="highlighter-rouge">java.sql.DriverManager</code>, so it can find the the correct driver and call it the make physical connections to underlying database system.</p>
+
+<p>The url to connect to our PostgreSQL database server is <code class="highlighter-rouge">jdbc:postgresql://localhost/weli</code>. The <code class="highlighter-rouge">java.sql.DriverManager</code> used this information to find the correct driver to use. On the other side, the <code class="highlighter-rouge">org.postgresql.Driver</code> class needs to detect the <code class="highlighter-rouge">jdbc:postgresql</code> string correctly to handle the connection request sent by <code class="highlighter-rouge">java.sql.DriverManager</code>. Here is the relative code in the <code class="highlighter-rouge">connect(...)</code> method of <code class="highlighter-rouge">org.postgresql.Driver</code>:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="kd">public</span> <span class="n">java</span><span class="o">.</span><span class="na">sql</span><span class="o">.</span><span class="na">Connection</span> <span class="nf">connect</span><span class="o">(</span><span class="n">String</span> <span class="n">url</span><span class="o">,</span> <span class="n">Properties</span> <span class="n">info</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">SQLException</span> <span class="o">{</span>
+  <span class="c1">// get defaults</span>
+  <span class="n">Properties</span> <span class="n">defaults</span><span class="o">;</span>
+
+  <span class="k">if</span> <span class="o">(!</span><span class="n">url</span><span class="o">.</span><span class="na">startsWith</span><span class="o">(</span><span class="s">"jdbc:postgresql:"</span><span class="o">))</span> <span class="o">{</span>
+    <span class="k">return</span> <span class="kc">null</span><span class="o">;</span>
+  <span class="o">}</span>
+<span class="o">...</span>
+</code></pre>
+</div>
+
+<p>The above code shows that the <code class="highlighter-rouge">connect(...)</code> method of the <code class="highlighter-rouge">org.postgresql.Driver</code> will check if the request is for “jdbc:postgresql:”. If the connection request isn’t for PostgreSQL database, it will just return null and let <code class="highlighter-rouge">java.sql.DriverManager</code> to try other database drivers. The <code class="highlighter-rouge">getConnection(...)</code> method in <code class="highlighter-rouge">java.sql.DriverManager</code> will traverse the registered database drivers to see who can handle the connection request from the user. Here is the relative code in <code class="highlighter-rouge">getConnection(...)</code> method:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="k">for</span><span class="o">(</span><span class="n">DriverInfo</span> <span class="n">aDriver</span> <span class="o">:</span> <span class="n">registeredDrivers</span><span class="o">)</span> <span class="o">{</span>
+    <span class="c1">// If the caller does not have permission to load the driver then</span>
+    <span class="c1">// skip it.</span>
+    <span class="k">if</span><span class="o">(</span><span class="n">isDriverAllowed</span><span class="o">(</span><span class="n">aDriver</span><span class="o">.</span><span class="na">driver</span><span class="o">,</span> <span class="n">callerCL</span><span class="o">))</span> <span class="o">{</span>
+        <span class="k">try</span> <span class="o">{</span>
+            <span class="n">println</span><span class="o">(</span><span class="s">"    trying "</span> <span class="o">+</span> <span class="n">aDriver</span><span class="o">.</span><span class="na">driver</span><span class="o">.</span><span class="na">getClass</span><span class="o">().</span><span class="na">getName</span><span class="o">());</span>
+            <span class="n">Connection</span> <span class="n">con</span> <span class="o">=</span> <span class="n">aDriver</span><span class="o">.</span><span class="na">driver</span><span class="o">.</span><span class="na">connect</span><span class="o">(</span><span class="n">url</span><span class="o">,</span> <span class="n">info</span><span class="o">);</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">con</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+                <span class="c1">// Success!</span>
+                <span class="n">println</span><span class="o">(</span><span class="s">"getConnection returning "</span> <span class="o">+</span> <span class="n">aDriver</span><span class="o">.</span><span class="na">driver</span><span class="o">.</span><span class="na">getClass</span><span class="o">().</span><span class="na">getName</span><span class="o">());</span>
+                <span class="k">return</span> <span class="o">(</span><span class="n">con</span><span class="o">);</span>
+            <span class="o">}</span>
+        <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">SQLException</span> <span class="n">ex</span><span class="o">)</span> <span class="o">{</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">reason</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+                <span class="n">reason</span> <span class="o">=</span> <span class="n">ex</span><span class="o">;</span>
+            <span class="o">}</span>
+        <span class="o">}</span>
+
+    <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+        <span class="n">println</span><span class="o">(</span><span class="s">"    skipping: "</span> <span class="o">+</span> <span class="n">aDriver</span><span class="o">.</span><span class="na">getClass</span><span class="o">().</span><span class="na">getName</span><span class="o">());</span>
+    <span class="o">}</span>
+
+<span class="o">}</span>
+</code></pre>
+</div>
+
+<p>From the above code, we can see <code class="highlighter-rouge">java.sql.DriverManager</code> will check each registered database driver, and try to use it to handle the connect request. If a driver can handle the connection, it will return the <code class="highlighter-rouge">java.sql.Connection</code> class. For PostgreSQL driver, it will return the <code class="highlighter-rouge">PgConnection</code> class instance. We have seen this in <code class="highlighter-rouge">makeConnection(...)</code> method of <code class="highlighter-rouge">org.postgresql.Driver</code> class, which is called by the <code class="highlighter-rouge">connect(...)</code> method.</p>
+
+<p>Until now, we have learned the loading process of the JDBC driver. In addition, we hav checked how does JDBC manages the drivers and use them to interact with the underlying database system. In the next part of the articles, let’s check the <code class="highlighter-rouge">java.sql.Connection</code> and <code class="highlighter-rouge">org.postgresql.PGConnection</code> classes in detail.</p>

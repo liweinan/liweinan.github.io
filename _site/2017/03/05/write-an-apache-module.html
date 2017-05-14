@@ -1,0 +1,237 @@
+<p>In this article I’d like to show you how to write a module for Apache HTTPD.</p>
+
+<p>I’m using <em>Fedora Linux</em>, So I can use the <em>httpd</em> and <em>httpd-devel</em> provided by system:</p>
+
+<p><img src="/assets/httpd_module_01.jpg" alt="img" /></p>
+
+<p>The reason to install <em>httpd-devel</em> is that we need the header files relative to module development provided by it<sup id="fnref:1"><a href="#fn:1" class="footnote">1</a></sup>. Now let’s write a simple module:</p>
+
+<div class="language-c highlighter-rouge"><pre class="highlight"><code><span class="c1">// foo_module.c
+</span><span class="cp">#include &lt;stdio.h&gt;
+#include "apr_hash.h"
+#include "ap_config.h"
+#include "ap_provider.h"
+#include "httpd.h"
+#include "http_core.h"
+#include "http_config.h"
+#include "http_log.h"
+#include "http_protocol.h"
+#include "http_request.h"
+</span>
+<span class="k">static</span> <span class="kt">int</span> <span class="nf">foo_handler</span><span class="p">(</span><span class="n">request_rec</span> <span class="o">*</span><span class="n">r</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">r</span><span class="o">-&gt;</span><span class="n">handler</span> <span class="o">||</span> <span class="n">strcmp</span><span class="p">(</span><span class="n">r</span><span class="o">-&gt;</span><span class="n">handler</span><span class="p">,</span> <span class="s">"foo_handler"</span><span class="p">))</span> <span class="k">return</span> <span class="p">(</span><span class="n">DECLINED</span><span class="p">);</span>
+
+  <span class="n">ap_set_content_type</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="s">"text/html"</span><span class="p">);</span>
+  <span class="n">ap_rprintf</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="s">"Hello, martian!"</span><span class="p">);</span>
+
+  <span class="k">return</span> <span class="n">OK</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">static</span> <span class="kt">void</span> <span class="nf">foo_hooks</span><span class="p">(</span><span class="n">apr_pool_t</span> <span class="o">*</span><span class="n">pool</span><span class="p">)</span> <span class="p">{</span>
+  <span class="n">ap_hook_handler</span><span class="p">(</span><span class="n">foo_handler</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">,</span> <span class="n">APR_HOOK_MIDDLE</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="n">module</span> <span class="n">AP_MODULE_DECLARE_DATA</span> <span class="n">foo_module</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="n">STANDARD20_MODULE_STUFF</span><span class="p">,</span>
+  <span class="nb">NULL</span><span class="p">,</span>
+  <span class="nb">NULL</span><span class="p">,</span>
+  <span class="nb">NULL</span><span class="p">,</span>
+  <span class="nb">NULL</span><span class="p">,</span>
+  <span class="nb">NULL</span><span class="p">,</span>
+  <span class="n">foo_hooks</span>
+<span class="p">};</span>
+</code></pre>
+</div>
+
+<p>This module will use <code class="highlighter-rouge">AP_MODULE_DECLARE_DATA</code> to register a <code class="highlighter-rouge">foo_module</code>：</p>
+
+<div class="language-c highlighter-rouge"><pre class="highlight"><code><span class="n">module</span> <span class="n">AP_MODULE_DECLARE_DATA</span> <span class="n">foo_module</span> <span class="o">=</span> <span class="p">...</span>
+</code></pre>
+</div>
+
+<p>And it will use <code class="highlighter-rouge">foo_hooks</code> to call <code class="highlighter-rouge">ap_hook_handler</code>, and <code class="highlighter-rouge">ap_hook_handler</code> will load our <code class="highlighter-rouge">foo_handler</code> into <em>httpd</em>：</p>
+
+<div class="language-c highlighter-rouge"><pre class="highlight"><code><span class="k">static</span> <span class="kt">void</span> <span class="nf">foo_hooks</span><span class="p">(</span><span class="n">apr_pool_t</span> <span class="o">*</span><span class="n">pool</span><span class="p">)</span> <span class="p">{</span>
+  <span class="n">ap_hook_handler</span><span class="p">(</span><span class="n">foo_handler</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">,</span> <span class="n">APR_HOOK_MIDDLE</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>Our main function <code class="highlighter-rouge">foo_handler</code> is very simple. You can see it doesn’t deal with <code class="highlighter-rouge">request_rec</code>. It will just output some HTML data：</p>
+
+<div class="language-c highlighter-rouge"><pre class="highlight"><code><span class="n">ap_set_content_type</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="s">"text/html"</span><span class="p">);</span>
+<span class="n">ap_rprintf</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="s">"Hello, martian!"</span><span class="p">);</span>
+</code></pre>
+</div>
+
+<p>As we have understood the meaning of this simple module, now we can compile it. <em>Apache HTTPD</em> has provided a module compiling and installing tool for us called <code class="highlighter-rouge">apxs</code>:</p>
+
+<p><img src="/assets/httpd_module_02.jpg" alt="img" /></p>
+
+<p>We can use it to compile our <code class="highlighter-rouge">foo_module</code>:</p>
+
+<p><img src="/assets/httpd_module_03.jpg" alt="img" /></p>
+
+<p>As the snapshot shown above，we have used <code class="highlighter-rouge">apxs</code> to compile <em>foo_module.c</em>:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>$ apxs -a -c foo_module.c
+</code></pre>
+</div>
+
+<p>The output of compling process is like this:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>/usr/lib64/apr-1/build/libtool --silent --mode=compile gcc -prefer-pic -O2 -g -pipe -Wall -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector-strong --param=ssp-buffer-size=4 -grecord-gcc-switches -specs=/usr/lib/rpm/redhat/redhat-hardened-cc1 -m64 -mtune=generic  -DLINUX -D_REENTRANT -D_GNU_SOURCE -pthread -I/usr/include/httpd  -I/usr/include/apr-1   -I/usr/include/apr-1   -c -o foo_module.lo foo_module.c &amp;&amp; touch foo_module.slo
+/usr/lib64/apr-1/build/libtool --silent --mode=link gcc -Wl,-z,relro,-z,now   -o foo_module.la  -rpath /usr/lib64/httpd/modules -module -avoid-version    foo_module.lo
+</code></pre>
+</div>
+
+<p>As the output shown above, we can see <code class="highlighter-rouge">apxs</code> used <em>libtool</em> to compile our module, and generated many files:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>$ ls
+foo_module.c  foo_module.la  foo_module.lo  foo_module.o  foo_module.slo
+</code></pre>
+</div>
+
+<p>There are also generated files in <em>.libs</em> directory：</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>$ ls -l ./.libs/
+total 104
+-rw-rw-r--. 1 weli weli 35580 Jan 27 02:55 foo_module.a
+lrwxrwxrwx. 1 weli weli    16 Jan 27 02:55 foo_module.la -&gt; ../foo_module.la
+-rw-rw-r--. 1 weli weli   938 Jan 27 02:55 foo_module.lai
+-rw-rw-r--. 1 weli weli 35432 Jan 27 02:55 foo_module.o
+-rwxrwxr-x. 1 weli weli 25560 Jan 27 02:55 foo_module.so
+</code></pre>
+</div>
+
+<p>Most of the files on above are intermediate libraries genereated during compile process, what we care is the shared library, which is <em>.so</em> file. This is the module file that can be loaded by Apache HTTPD.</p>
+
+<p>Nevertheless, we don’t have to install the module manually, we can also use the <code class="highlighter-rouge">apxs</code> utility to install it to default <em>httpd</em> installation location. Here is the command to install the module:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>$ sudo apxs -i foo_module.la
+</code></pre>
+</div>
+
+<p>Please note we have used <code class="highlighter-rouge">sudo</code> to invoke <code class="highlighter-rouge">apxs</code>, because the module will be installed to system provided <em>httpd</em>, and its directories need root permission to modify. In addition, the <code class="highlighter-rouge">foo_module.la</code> is a <em>libtool</em> description file that describes the libraries it generated, and it is a pure text file if you’d like to check. Here is the output of above command:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>/usr/lib64/httpd/build/instdso.sh SH_LIBTOOL='/usr/lib64/apr-1/build/libtool' foo_module.la /usr/lib64/httpd/modules
+/usr/lib64/apr-1/build/libtool --mode=install install foo_module.la /usr/lib64/httpd/modules/
+libtool: install: install .libs/foo_module.so /usr/lib64/httpd/modules/foo_module.so
+libtool: install: install .libs/foo_module.lai /usr/lib64/httpd/modules/foo_module.la
+libtool: install: install .libs/foo_module.a /usr/lib64/httpd/modules/foo_module.a
+libtool: install: chmod 644 /usr/lib64/httpd/modules/foo_module.a
+libtool: install: ranlib /usr/lib64/httpd/modules/foo_module.a
+libtool: finish: PATH="/sbin:/bin:/usr/sbin:/usr/bin:/sbin" ldconfig -n /usr/lib64/httpd/modules
+----------------------------------------------------------------------
+Libraries have been installed in:
+   /usr/lib64/httpd/modules
+
+If you ever happen to want to link against installed libraries
+in a given directory, LIBDIR, you must either use libtool, and
+specify the full pathname of the library, or use the '-LLIBDIR'
+flag during linking and do at least one of the following:
+   - add LIBDIR to the 'LD_LIBRARY_PATH' environment variable
+     during execution
+   - add LIBDIR to the 'LD_RUN_PATH' environment variable
+     during linking
+   - use the '-Wl,-rpath -Wl,LIBDIR' linker flag
+   - have your system administrator add LIBDIR to '/etc/ld.so.conf'
+
+See any operating system documentation about shared libraries for
+more information, such as the ld(1) and ld.so(8) manual pages.
+----------------------------------------------------------------------
+chmod 755 /usr/lib64/httpd/modules/foo_module.so
+</code></pre>
+</div>
+
+<p>The important line is at the bottom of above log, from which we can see <em>foo_module.so</em> is installed to the default installation location of Fedora Linux provided <em>httpd</em>.</p>
+
+<p>The above <code class="highlighter-rouge">apxs</code> command will just install the <em>.so</em> file into httpd module directory, but it won’t load it in <em>httpd</em> config file for you. If you’d like to activate your module by adding it into <em>httpd</em> config file, you can use the following command:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>$ sudo apxs -ia foo_module.la
+</code></pre>
+</div>
+
+<p>And this time there is an additional line in the output:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>chmod 755 /usr/lib64/httpd/modules/foo_module.so
+[activating module 'foo' in /etc/httpd/conf/httpd.conf]
+</code></pre>
+</div>
+
+<p>As the log shown above, we can see <code class="highlighter-rouge">foo</code> module is added into <code class="highlighter-rouge">/etc/httpd/conf/httpd.conf</code>, and we can check it:</p>
+
+<div class="language-conf highlighter-rouge"><pre class="highlight"><code>$ <span class="n">grep</span> <span class="n">foo</span> /<span class="n">etc</span>/<span class="n">httpd</span>/<span class="n">conf</span>/<span class="n">httpd</span>.<span class="n">conf</span>
+<span class="c"># LoadModule foo_module modules/mod_foo.so
+</span><span class="n">LoadModule</span> <span class="n">foo_module</span>         /<span class="n">usr</span>/<span class="n">lib64</span>/<span class="n">httpd</span>/<span class="n">modules</span>/<span class="n">foo_module</span>.<span class="n">so</span>
+</code></pre>
+</div>
+
+<p>Now we should configure the module in httpd. From the source code of the module we saw:</p>
+
+<div class="language-c highlighter-rouge"><pre class="highlight"><code><span class="k">static</span> <span class="kt">int</span> <span class="nf">foo_handler</span><span class="p">(</span><span class="n">request_rec</span> <span class="o">*</span><span class="n">r</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">r</span><span class="o">-&gt;</span><span class="n">handler</span> <span class="o">||</span> <span class="n">strcmp</span><span class="p">(</span><span class="n">r</span><span class="o">-&gt;</span><span class="n">handler</span><span class="p">,</span> <span class="s">"foo_handler"</span><span class="p">))</span> <span class="k">return</span> <span class="p">(</span><span class="n">DECLINED</span><span class="p">);</span>
+  <span class="n">ap_set_content_type</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="s">"text/html"</span><span class="p">);</span>
+  <span class="n">ap_rprintf</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="s">"Hello, martian!"</span><span class="p">);</span>
+</code></pre>
+</div>
+
+<p>So if the handler name is set to <code class="highlighter-rouge">foo_handler</code>, it will accept the request and return a simple text to the client. We can add following lines into <code class="highlighter-rouge">httpd.conf</code>:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>&lt;Location /foo&gt;
+SetHandler foo_handler
+&lt;/Location&gt;
+</code></pre>
+</div>
+
+<p>With the above configuraton, we set the <code class="highlighter-rouge">foo_handler</code> to serve the location <code class="highlighter-rouge">/foo</code>, and our module will be used to deal with this location. Now we can start the httpd server:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>$ sudo service httpd start
+Redirecting to /bin/systemctl start  httpd.service
+</code></pre>
+</div>
+
+<p>If the service started correctly, we can see from the log like this:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>$ systemctl status httpd.service
+● httpd.service - The Apache HTTP Server
+   Loaded: loaded (/usr/lib/systemd/system/httpd.service; disabled; vendor preset: disabled)
+   Active: active (running) since Thu 2017-04-13 18:04:46 CST; 20s ago
+ Main PID: 16184 (httpd)
+   Status: "Total requests: 0; Idle/Busy workers 100/0;Requests/sec: 0; Bytes served/sec:   0 B/sec"
+    Tasks: 32 (limit: 512)
+   Memory: 3.9M
+      CPU: 133ms
+   CGroup: /system.slice/httpd.service
+           ├─16184 /usr/sbin/httpd -DFOREGROUND
+           ├─16211 /usr/sbin/httpd -DFOREGROUND
+           ├─16212 /usr/sbin/httpd -DFOREGROUND
+           ├─16213 /usr/sbin/httpd -DFOREGROUND
+           ├─16214 /usr/sbin/httpd -DFOREGROUND
+           └─16215 /usr/sbin/httpd -DFOREGROUND
+
+Apr 13 18:04:37 fedora.shared systemd[1]: Starting The Apache HTTP Server...
+Apr 13 18:04:46 fedora.shared systemd[1]: Started The Apache HTTP Server.
+</code></pre>
+</div>
+
+<p>Now we can access the location <code class="highlighter-rouge">/foo</code> to see if our module works properly:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>$  curl http://localhost/foo
+Hello, martian!
+</code></pre>
+</div>
+
+<p>As the command output shown above, our module works as expected.</p>
+
+<h3 id="references"><em>References</em></h3>
+
+<hr />
+
+<div class="footnotes">
+  <ol>
+    <li id="fn:1">
+      <p>Kew, Nick. The Apache modules book: application development with Apache. Prentice Hall Professional, 2007.&nbsp;<a href="#fnref:1" class="reversefootnote">&#8617;</a></p>
+    </li>
+  </ol>
+</div>

@@ -1,0 +1,248 @@
+<p>In this article I’d like to share with you my study on JAX-RS SPEC 2.0 Section 3.7 and relative implementations in RESTEasy.</p>
+
+<p><em>JAX-RS SPEC 2.0</em><sup id="fnref:spec"><a href="#fn:spec" class="footnote">1</a></sup> shows us how to match a URI path to actual Java method in <em>Section 3.7</em>:</p>
+
+<blockquote>
+  <ol>
+    <li>Identify a set of candidate root resource classes matching the request</li>
+    <li>Obtain a set of candidate resource methods for the request</li>
+    <li>Identify the method that will handle the request</li>
+  </ol>
+</blockquote>
+
+<p>To implement the above logic, RESTEasy has provided several classes in package <code class="highlighter-rouge">org.jboss.resteasy.registry</code>, and here are the classes:</p>
+
+<p><img src="/assets/spec3.7.png" alt="RESTEasy classes" /></p>
+
+<p>From the above class diagram, we can see some relationships about these classes. Firstly, there are four <code class="highlighter-rouge">Node</code> classes, which are <code class="highlighter-rouge">RootClassNode</code>, <code class="highlighter-rouge">ClassNode</code>, <code class="highlighter-rouge">RootNode</code> and <code class="highlighter-rouge">SegmentNode</code>. Secondly, there one <code class="highlighter-rouge">Expression</code> interface and its two implementations, which are <code class="highlighter-rouge">ClassExpression</code> and <code class="highlighter-rouge">MethodExpression</code>.</p>
+
+<p>From the class name, we can deduce that the <code class="highlighter-rouge">Expression</code> classes must contain information for matching the URI path. The <code class="highlighter-rouge">ClassExpression</code> class should be used to match classes, and the <code class="highlighter-rouge">MethodExpression</code> should be used to match methods.</p>
+
+<p>For the <code class="highlighter-rouge">Node</code> classes, we can see <code class="highlighter-rouge">RootClassNode</code> is only connected with <code class="highlighter-rouge">ClassNode</code>, as its <code class="highlighter-rouge">root</code> attribute. From the name of the class, we can deduce that <code class="highlighter-rouge">RootClassNode</code> is the top data structure in matching process. We can verify this deduction later.</p>
+
+<p>Next we should check <code class="highlighter-rouge">ClassNode</code>. We can see <code class="highlighter-rouge">ClassNode</code> is connected with <code class="highlighter-rouge">ClassExpression</code> bidirectionally. <code class="highlighter-rouge">ClassNode</code> contains <code class="highlighter-rouge">targets</code> field, which has the type <code class="highlighter-rouge">ArrayList&lt;ClassExpression&gt;</code>. In another direction, <code class="highlighter-rouge">ClassExpression</code> has a <code class="highlighter-rouge">parent</code> field, and the type of the field is <code class="highlighter-rouge">ClassNode</code>. So this is a <em>One-To-Many</em> relationship: one <code class="highlighter-rouge">ClassNode</code> instance contains many <code class="highlighter-rouge">ClassExpression</code> instances.</p>
+
+<p>We need to examine <code class="highlighter-rouge">ClassExpression</code> now. <code class="highlighter-rouge">ClassExpression</code> also contains a <code class="highlighter-rouge">root</code> field, which has a type of <code class="highlighter-rouge">RootNode</code>. <code class="highlighter-rouge">RootNode</code> contains a <code class="highlighter-rouge">root</code> field too, which type is <code class="highlighter-rouge">SegmentNode</code>.</p>
+
+<p>Now we can check <code class="highlighter-rouge">SegmentNode</code>. This class has a bidirectional relationship with <code class="highlighter-rouge">MethodExpression</code>, which is simliar to the relationship between <code class="highlighter-rouge">ClassNode</code> and <code class="highlighter-rouge">ClassExpression</code>.</p>
+
+<p>From the above analyze, we can deduce that <code class="highlighter-rouge">RootNode</code> and <code class="highlighter-rouge">SegmentNode</code> are two abstract concepts that connects the class matching and method matching processes. The relationship between these classes is like this:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>RootClassNode -&gt; ClassNode &lt;-&gt; ClassExpression -&gt; RootNode -&gt; SegmentNode &lt;-&gt; MethodExpression
+</code></pre>
+</div>
+
+<p>So the whole matching process should start from <code class="highlighter-rouge">RootClassNode</code>. We can verify our deduction by analyzing the real codes in RESTEasy. I have done this work, and I can say that the entry point of the matching process is <code class="highlighter-rouge">ResourceMethodRegistry.getResourceInvoker</code> method call. Here is the sequence diagram of the method call:</p>
+
+<p><img src="/assets/org.jboss.resteasy.core.ResourceMethodRegistry.getResourceInvoker.png" alt="org.jboss.resteasy.core.ResourceMethodRegistry.getResourceInvoker.png" /></p>
+
+<p>The above diagram reflects the following codes in <code class="highlighter-rouge">ResourceMethodRegistry.getResourceInvoker</code> method call:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="kd">public</span> <span class="n">ResourceInvoker</span> <span class="nf">getResourceInvoker</span><span class="o">(</span><span class="n">HttpRequest</span> <span class="n">request</span><span class="o">)</span>
+<span class="o">{</span>
+   <span class="k">try</span>
+   <span class="o">{</span>
+      <span class="k">if</span> <span class="o">(</span><span class="n">widerMatching</span><span class="o">)</span> <span class="k">return</span> <span class="n">rootNode</span><span class="o">.</span><span class="na">match</span><span class="o">(</span><span class="n">request</span><span class="o">,</span> <span class="mi">0</span><span class="o">);</span>
+      <span class="k">else</span> <span class="k">return</span> <span class="n">root</span><span class="o">.</span><span class="na">match</span><span class="o">(</span><span class="n">request</span><span class="o">,</span> <span class="mi">0</span><span class="o">);</span>
+   <span class="o">}</span>
+   <span class="k">catch</span> <span class="o">(</span><span class="n">RuntimeException</span> <span class="n">e</span><span class="o">)</span>
+   <span class="o">{</span>
+      <span class="k">throw</span> <span class="n">e</span><span class="o">;</span>
+   <span class="o">}</span>
+<span class="o">}</span>
+</code></pre>
+</div>
+
+<p>We can see that <code class="highlighter-rouge">rootNode : RootNode</code> and <code class="highlighter-rouge">root : RootClassNode</code> are used in two different conditions, and the <code class="highlighter-rouge">widerMatching</code> variable controls the above logic.</p>
+
+<p>The <code class="highlighter-rouge">widerMatching</code> variable is defined by <code class="highlighter-rouge">ResteasyDeployment</code> class. In <code class="highlighter-rouge">ResteasyDeployment</code> class it contains a variable called <code class="highlighter-rouge">widerRequestMatching</code>:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">class</span> <span class="nc">ResteasyDeployment</span>
+<span class="o">{</span>
+   <span class="kd">protected</span> <span class="kt">boolean</span> <span class="n">widerRequestMatching</span><span class="o">;</span>
+<span class="o">}</span>
+</code></pre>
+</div>
+
+<p>And it is set by user controlled <code class="highlighter-rouge">Configuration Switches</code><sup id="fnref:switch"><a href="#fn:switch" class="footnote">2</a></sup>:</p>
+
+<p><img src="/assets/2017-03-10-switch.png" alt="2017-03-10-switch.png" /></p>
+
+<p>From the above screenshot of RESTEasy document, we can see the meaning of ` resteasy.wider.request.matching` switch:</p>
+
+<blockquote>
+  <p>Turns off the JAX-RS spec defined class-level expression filtering and instead tries to match version every method’s full path.</p>
+</blockquote>
+
+<p>From the above descrption, we can see the switch is to override some <em>SPEC</em> defined behaviors, and the default value is <code class="highlighter-rouge">false</code>. In this article I’ll focus on analyzing the <em>SPEC</em> defined behavior, so I will ignore the logic:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="k">if</span> <span class="o">(</span><span class="n">widerMatching</span><span class="o">)</span> <span class="k">return</span> <span class="n">rootNode</span><span class="o">.</span><span class="na">match</span><span class="o">(</span><span class="n">request</span><span class="o">,</span> <span class="mi">0</span><span class="o">);</span>
+</code></pre>
+</div>
+
+<p>And treat this as the matching logic entry point:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="k">else</span> <span class="k">return</span> <span class="n">root</span><span class="o">.</span><span class="na">match</span><span class="o">(</span><span class="n">request</span><span class="o">,</span> <span class="mi">0</span><span class="o">);</span>
+</code></pre>
+</div>
+
+<p>Now let’s check the <code class="highlighter-rouge">Node</code> classes. For all the <code class="highlighter-rouge">Node</code> classes, there are <code class="highlighter-rouge">match()</code> method inside. Let’s check these methods one by one. First is the <code class="highlighter-rouge">match</code> method of <code class="highlighter-rouge">RootClassNode</code>:</p>
+
+<p><img src="/assets/org.jboss.resteasy.core.registry.RootClassNode.match.png" alt="org.jboss.resteasy.core.registry.RootClassNode.match.png" /></p>
+
+<p>From above diagram, we can see the call chain like this: <code class="highlighter-rouge">RootClassNode.match() -&gt; ClassNode.match() -&gt; RootNode.match()</code>. Now let’s check the <code class="highlighter-rouge">match</code> method of <code class="highlighter-rouge">ClassNode</code>:</p>
+
+<p><img src="/assets/org.jboss.resteasy.core.registry.ClassNode.match.png" alt="org.jboss.resteasy.core.registry.ClassNode.match.png" /></p>
+
+<p>From above digram, we can see the <code class="highlighter-rouge">ClassNode -&gt; RootNode</code> matching process is complex, and it uses the <code class="highlighter-rouge">ClassExpression</code> in matching process. We’ll check the detail later. Now we should check <code class="highlighter-rouge">RootNode.match()</code>:</p>
+
+<p><img src="/assets/org.jboss.resteasy.core.registry.RootNode.match.png" alt="org.jboss.resteasy.core.registry.RootNode.match.png" /></p>
+
+<p>We can see <code class="highlighter-rouge">RootNode -&gt; SegmentNode</code> is easy, because <code class="highlighter-rouge">RootNode.match()</code> will just call <code class="highlighter-rouge">SegmentNode.match()</code>. Let’s check the sequence diagram of <code class="highlighter-rouge">SegmentNode.match()</code>:</p>
+
+<p><img src="/assets/org.jboss.resteasy.core.registry.SegmentNode.match.png" alt="org.jboss.resteasy.core.registry.SegmentNode.match.png" /></p>
+
+<p>From the above diagram, we can see <code class="highlighter-rouge">SegmentNode</code> matching process is simliar to the <code class="highlighter-rouge">ClassNode</code> matching process, however the <code class="highlighter-rouge">MethodExpression</code> class is used instead of the <code class="highlighter-rouge">ClassExpression</code>.</p>
+
+<p>In conclusion, the matching processes are mainly in <code class="highlighter-rouge">ClassNode</code> and <code class="highlighter-rouge">SegmentNode</code>. <code class="highlighter-rouge">ClassNode</code> deals with class matching process, and <code class="highlighter-rouge">SegmentNode</code> processes the method matching process.</p>
+
+<p>Now let’s go back to <em>SPEC</em> document and learn the terminology defined in <em>Section 1.5</em>:</p>
+
+<p><img src="/assets/2017-03-10-terminology.png" alt="2017-03-10-terminology.png" /></p>
+
+<p>From the above definitions, we need to understand the definitions of <code class="highlighter-rouge">Resource class</code>, <code class="highlighter-rouge">Root resource class</code>, <code class="highlighter-rouge">Sub-resource locator</code> and <code class="highlighter-rouge">Sub-resource method</code>.</p>
+
+<p>Now let’s check <em>Section 3.7.2, Request Matching</em>. If you read through this section, regardless of the detail algorithms, you should catch some basic requirements: Firstly we need to have some candidate resources classes for the matching processes, secondly we need a relative regular expression to each class. This regular expression is actually the pattern of the resource classes that can be checked against the URL requests.</p>
+
+<p>Besides the candidate classes, we also need to have candidate methods inside the classes, and we need to store the relative regular expressions of these methods.</p>
+
+<p>To sum up the above requirements, RESTEasy has provided a <code class="highlighter-rouge">Registry</code> interface and its implementation, the <code class="highlighter-rouge">ResourceMethodRegistry</code> class, to support the storage of candidate resource classes.</p>
+
+<p>In addition, we have seen there is an abstract class <code class="highlighter-rouge">Expression</code> and its two extended classes, <code class="highlighter-rouge">ClassExpression</code> and <code class="highlighter-rouge">MethodExpression</code> classes to store the relative regular expressions of the resource classes and methods.</p>
+
+<p>The <code class="highlighter-rouge">Expression</code> and <code class="highlighter-rouge">Registry</code> implementations provides basic data unit for multiple <code class="highlighter-rouge">Node</code> classes to implement their <code class="highlighter-rouge">match()</code> methods. The finally goal is to get a <code class="highlighter-rouge">ResourceInvoker</code>, which contains the matched “class.method” and other useful information.</p>
+
+<p>Now let’s check the <code class="highlighter-rouge">Registry</code> firstly, and then let’s see <code class="highlighter-rouge">ResourceInvoker</code>. Here is the class diagram with <code class="highlighter-rouge">Registry</code> and <code class="highlighter-rouge">ResourceMethodRegistry</code> included:</p>
+
+<p><img src="/assets/2017-03-10-registry.png" alt="2017-03-10-registry.png" /></p>
+
+<p>From the above diagram, we can see <code class="highlighter-rouge">Registry</code> is mainly designed to store different kinds of resource classes. The name of <code class="highlighter-rouge">ResourceMethodRegistry</code> is a little bit confusing, be cause we can see in this class are actually stored resource classes.</p>
+
+<p>We can see <code class="highlighter-rouge">ResourceMethodRegistry</code> connects with <code class="highlighter-rouge">RootNode</code> and <code class="highlighter-rouge">RootClassNode</code>.</p>
+
+<p>We know that <code class="highlighter-rouge">RootClassNode</code> and <code class="highlighter-rouge">ClassNode</code> are for class matching, and <code class="highlighter-rouge">RootNode</code> and <code class="highlighter-rouge">SegmentNode</code> are for method processing.</p>
+
+<p>And we also know the class and method matching processes are majoyly in <code class="highlighter-rouge">ClassNode.match()</code> and <code class="highlighter-rouge">SegmentNode</code>.</p>
+
+<p>We can also see <code class="highlighter-rouge">MethodExpression</code> is connected with <code class="highlighter-rouge">SegmentNode</code>, and <code class="highlighter-rouge">ClassExpression</code> has a <code class="highlighter-rouge">parent</code> of <code class="highlighter-rouge">ClassNode</code>, and has a <code class="highlighter-rouge">root</code> of <code class="highlighter-rouge">RootNode</code>.</p>
+
+<p>Now let’s check the <code class="highlighter-rouge">ResourceInvoker</code> class:</p>
+
+<p><img src="/assets/2017-03-10-resource-invoker.png" alt="2017-03-10-resource-invoker.png" /></p>
+
+<p>We can see there are two types of <code class="highlighter-rouge">ResourceInvoker</code>, one is <code class="highlighter-rouge">ResourceLocatorInvoker</code> and the other is <code class="highlighter-rouge">ResourceMethodInvoker</code>. The <code class="highlighter-rouge">ResourceMethodInvoker</code> is for the method finally will be invoked by the request, and the <code class="highlighter-rouge">ResourceLocatorInvoker</code> is used for invoking <code class="highlighter-rouge">Sub-resource locator</code>.</p>
+
+<p>There is another important class we haven’t investigated till now, the <code class="highlighter-rouge">UriInfo</code> and <code class="highlighter-rouge">ResteasyUriInfo</code>:</p>
+
+<p><img src="/assets/2017-03-11-resteasy-uri-info.png" alt="2017-03-11-resteasy-uri-info.png" /></p>
+
+<p>We can see the <code class="highlighter-rouge">UriInfo</code> interface is in <code class="highlighter-rouge">javax.ws.rs.core</code> package, which means this is an interface defined by the SPEC that should be implemented by RESTEasy. The <code class="highlighter-rouge">ResteasyUriInfo</code> is an implementation of this <code class="highlighter-rouge">UriInfo</code> interface. Here is the javadoc in <code class="highlighter-rouge">UriInfo</code> that describes the purpose of the interface:</p>
+
+<blockquote>
+  <p>An injectable interface that provides access to application and request URI information.</p>
+</blockquote>
+
+<p>Besides the meaning of encapsulating URI info, it also defines many methods that deals with URI info. Here is the javadoc for <code class="highlighter-rouge">UriInfo.getMatchedURIs()</code> method:</p>
+
+<p><img src="/assets/2017-03-13-get-matched-uri.png" alt="2017-03-13-get-matched-uri.png" /></p>
+
+<p>And the <code class="highlighter-rouge">getMatchedURIs()</code> method in the RESTEasy implementation, <code class="highlighter-rouge">ResteasyUriInfo</code>, should implement the behavior as described in above text.</p>
+
+<p>The <code class="highlighter-rouge">UriInfo</code> interface defines the methods to retrieve the URI info, but it doesn’t define how to build this info. It depends on the implementation side to build it properly. We can check the <code class="highlighter-rouge">ResteasyUriInfo</code> to see how does RESTEasy build the URI info. Firstly here is the <code class="highlighter-rouge">initialize</code> method used by the constructor of <code class="highlighter-rouge">ResteasyUriInfo</code>:</p>
+
+<p><img src="/assets/org.jboss.resteasy.spi.ResteasyUriInfo.initialize.png" alt="org.jboss.resteasy.spi.ResteasyUriInfo.initialize.png" /></p>
+
+<p>We can see <code class="highlighter-rouge">UriBuilder</code> and <code class="highlighter-rouge">ResteasyUriBuilder</code> are involved in the initializing process to build the initial variables. Here are part of the codes in the method:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="n">ResteasyUriBuilder</span> <span class="n">absoluteBuilder</span> <span class="o">=</span> <span class="o">(</span><span class="n">ResteasyUriBuilder</span><span class="o">)</span> <span class="n">UriBuilder</span><span class="o">.</span><span class="na">fromUri</span><span class="o">(</span><span class="n">absoluteUri</span><span class="o">);</span>
+<span class="n">absolutePath</span> <span class="o">=</span> <span class="n">absoluteBuilder</span><span class="o">.</span><span class="na">build</span><span class="o">();</span>
+<span class="n">requestURI</span> <span class="o">=</span> <span class="n">absoluteBuilder</span><span class="o">.</span><span class="na">replaceQuery</span><span class="o">(</span><span class="n">queryString</span><span class="o">).</span><span class="na">build</span><span class="o">();</span>
+<span class="n">encodedPath</span> <span class="o">=</span> <span class="n">PathHelper</span><span class="o">.</span><span class="na">getEncodedPathInfo</span><span class="o">(</span><span class="n">absolutePath</span><span class="o">.</span><span class="na">getRawPath</span><span class="o">(),</span> <span class="n">contextPath</span><span class="o">);</span>
+<span class="n">baseURI</span> <span class="o">=</span> <span class="n">absolutePath</span><span class="o">;</span>
+<span class="n">path</span> <span class="o">=</span> <span class="n">UriBuilder</span><span class="o">.</span><span class="na">fromPath</span><span class="o">(</span><span class="n">encodedPath</span><span class="o">).</span><span class="na">build</span><span class="o">().</span><span class="na">getPath</span><span class="o">();</span>
+</code></pre>
+</div>
+
+<p>The <code class="highlighter-rouge">UriBuilder</code> is a SPEC interface, and <code class="highlighter-rouge">ResteasyUriBuilder</code> is its implementation. Here is the class diagram:</p>
+
+<p><img src="/assets/2017-03-13-uribuilder.png" alt="2017-03-13-uribuilder.png" /></p>
+
+<p>Here is the javadoc of the <code class="highlighter-rouge">UriBuilder</code>:</p>
+
+<p><img src="/assets/2017-03-13-uribuilder-doc.png" alt="2017-03-13-uribuilder-doc.png" /></p>
+
+<p>Here is the javadoc of the <code class="highlighter-rouge">javax.ws.rs.Path</code> annotation:</p>
+
+<p><img src="/assets/2017-03-13-path.png" alt="2017-03-13-path.png" /></p>
+
+<p>Here is the javadoc of the <code class="highlighter-rouge">Path.value()</code> attribute:</p>
+
+<p><img src="/assets/2017-03-13-path-value.png" alt="2017-03-13-path.png" /></p>
+
+<p>Before going back to <code class="highlighter-rouge">ResteasyUriInfo</code>, we should check another SPEC interface called <code class="highlighter-rouge">PathSegment</code>, and its RESTEasy implementation <code class="highlighter-rouge">PathSegmentImpl</code>:</p>
+
+<p><img src="/assets/2017-03-13-pathsegment.png" alt="2017-03-13-pathsegment.png" /></p>
+
+<p>Here is the javadoc of <code class="highlighter-rouge">PathSegment</code>:</p>
+
+<p><img src="/assets/2017-03-13-pathsegment-javadoc.png" alt="2017-03-13-pathsegment-javadoc.png" /></p>
+
+<p>In <em>Section 5.3 Client Targets</em> of the document, it uses the term “path segment” like this:</p>
+
+<p><img src="/assets/2017-03-13-pathsegment-spec.png" alt="2017-03-13-pathsegment-spec.png" /></p>
+
+<p>Here is the sequence diagram of <code class="highlighter-rouge">PathSegmentImpl.parseSegmentsOptimization()</code> method:</p>
+
+<p><img src="/assets/org.jboss.resteasy.specimpl.PathSegmentImpl.parseSegmentsOptimization.png" alt="org.jboss.resteasy.specimpl.PathSegmentImpl.parseSegmentsOptimization.png" /></p>
+
+<p>This method is used to split full URL path into path segments. The javadoc of the method is here:</p>
+
+<p><img src="/assets/org.jboss.resteasy.specimpl.PathSegmentImpl.parseSegmentsOptimization-javadoc.png" alt="org.jboss.resteasy.specimpl.PathSegmentImpl.parseSegmentsOptimization-javadoc.png" /></p>
+
+<p>The above method is used in <code class="highlighter-rouge">ResteasyUriInfo.processPath()</code> method:</p>
+
+<p><img src="/assets/org.jboss.resteasy.spi.ResteasyUriInfo.processPath.png" alt="org.jboss.resteasy.spi.ResteasyUriInfo.processPath.png" /></p>
+
+<p>As we have built a knowledge base on <code class="highlighter-rouge">UriInfo</code> and its <code class="highlighter-rouge">UriBuilder</code>, now we can come back to review the sequence diagrams of the <code class="highlighter-rouge">ClassNode.match()</code> method and the <code class="highlighter-rouge">SegmentNode.match()</code> method to see how they use the <code class="highlighter-rouge">UriInfo</code>. Here is the sequence diagram of the <code class="highlighter-rouge">ClassNode.match()</code> method we have seen previously:</p>
+
+<p><img src="/assets/org.jboss.resteasy.core.registry.ClassNode.match.png" alt="org.jboss.resteasy.core.registry.ClassNode.match.png" /></p>
+
+<p>Here is the sequence diagram of the <code class="highlighter-rouge">SegmentNode.match()</code> method:</p>
+
+<p><img src="/assets/org.jboss.resteasy.core.registry.SegmentNode.match.png" alt="org.jboss.resteasy.core.registry.SegmentNode.match.png" /></p>
+
+<p>Here is the whole picture of RESTEasy implementation related with resource matching process:</p>
+
+<p><img src="/assets/2017-03-13-whole-picture.png" alt="2017-03-13-whole-picture.png" /></p>
+
+<p>From the above class diagram, we can clearly see the design of RESTeasy core part. Firstly, the <code class="highlighter-rouge">ResourceMethodRegistry</code> is the center of these <code class="highlighter-rouge">Node</code> classes. The purpose of this part is to implement the matching process described in <em>JAX-RS SPEC 2.0 Section 3.7</em>. The matching result we finally get is a <code class="highlighter-rouge">MethodExpression</code>, which has a <code class="highlighter-rouge">invoker</code> instance. The <code class="highlighter-rouge">Invoker</code> interface will do the real job to run the Java method, so we can see <code class="highlighter-rouge">ResourceMethodInvoker</code> is the center of this part. We should remember the call sequence in <code class="highlighter-rouge">ResourceMethodRegistry.getResourceInvoker</code> we have already seen in above:</p>
+
+<p><img src="/assets/org.jboss.resteasy.core.ResourceMethodRegistry.getResourceInvoker.png" alt="org.jboss.resteasy.core.ResourceMethodRegistry.getResourceInvoker.png" /></p>
+
+<p>In conclusion, we can see the whole picture is divided into two halves: The bottom half has the <code class="highlighter-rouge">ResourceMethodRegistry</code> at center with some <code class="highlighter-rouge">Node</code> classes to do the URL path to <code class="highlighter-rouge">MethodExpression</code> matching work. The upper half has the <code class="highlighter-rouge">ResourceMethodInvoker</code> at center, to do the real method running job. The name of <code class="highlighter-rouge">ResourceMethodRegistry</code> is a little bit confusing, actually it doesn’t merely contain and deal with the method information, but also deal with resource classes. Maybe a more proper name should be <code class="highlighter-rouge">ResourceClassAndMethodRegistry</code>.</p>
+
+<p>We didn’t check the upper half in much detail in this article, because this article is focused on the bottom half of the above diagram. In future, I’ll write the article that focus on the <code class="highlighter-rouge">ResourceMethodInvoker</code> side to check how does RESTEasy invoke the matched resource methods.</p>
+
+<h3 id="references"><em>References</em></h3>
+
+<hr />
+<div class="footnotes">
+  <ol>
+    <li id="fn:spec">
+      <p><a href="https://jcp.org/aboutJava/communityprocess/final/jsr339/index.html.">“JSR-000339 The Javatm API For Restful Web Services”.</a> 2017. Jcp.Org.&nbsp;<a href="#fnref:spec" class="reversefootnote">&#8617;</a></p>
+    </li>
+    <li id="fn:switch">
+      <p><a href="https://docs.jboss.org/resteasy/docs/3.1.0.Final/userguide/html/Installation_Configuration.html.">“RESTFul Web Services for Java - Chapter 3. Installation/Configuration - 3.4. Configuration switches”.</a> 2017. Docs.Jboss.Org.&nbsp;<a href="#fnref:switch" class="reversefootnote">&#8617;</a></p>
+    </li>
+  </ol>
+</div>

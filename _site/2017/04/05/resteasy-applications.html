@@ -1,0 +1,157 @@
+<p>In this article I’d like to give you a brief introduction on RESTEasy Application Support.</p>
+
+<p>Application is an JAX-RS spec defined feature that support users to register restful resources into containers. Here are the descriptions to the Application in section <code class="highlighter-rouge">2.3.2 Servlet</code> of the <code class="highlighter-rouge">jsr339-jaxrs-2.0-final-spec</code>:</p>
+
+<p><img src="/assets/2016-04-05-spec1.png" alt="2016-04-05-spec1.png" /></p>
+
+<p><img src="/assets/2016-04-05-spec2.png" alt="2016-04-05-spec2.png" /></p>
+
+<p><img src="/assets/2016-04-05-spec3.png" alt="2016-04-05-spec3.png" /></p>
+
+<p><img src="/assets/2016-04-05-spec4.png" alt="2016-04-05-spec4.png" /></p>
+
+<p>Please note Application is used with Servlet container, that means, not all the containers need to follow this Application workflow to register resources. For example, <code class="highlighter-rouge">resteasy-netty4</code> container doesn’t need Application to work. Here is an example to use <code class="highlighter-rouge">resteasy-netty4</code>:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="n">ResteasyDeployment</span> <span class="n">deployment</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ResteasyDeployment</span><span class="o">();</span>
+
+<span class="n">netty</span> <span class="o">=</span> <span class="k">new</span> <span class="n">NettyJaxrsServer</span><span class="o">();</span>
+<span class="n">netty</span><span class="o">.</span><span class="na">setDeployment</span><span class="o">(</span><span class="n">deployment</span><span class="o">);</span>
+<span class="n">netty</span><span class="o">.</span><span class="na">setPort</span><span class="o">(</span><span class="n">port</span><span class="o">);</span>
+<span class="n">netty</span><span class="o">.</span><span class="na">setRootResourcePath</span><span class="o">(</span><span class="s">""</span><span class="o">);</span>
+<span class="n">netty</span><span class="o">.</span><span class="na">setSecurityDomain</span><span class="o">(</span><span class="kc">null</span><span class="o">);</span>
+<span class="n">netty</span><span class="o">.</span><span class="na">start</span><span class="o">();</span>
+
+<span class="n">deployment</span><span class="o">.</span><span class="na">getRegistry</span><span class="o">().</span><span class="na">addPerRequestResource</span><span class="o">(</span><span class="n">BasicResource</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+</code></pre>
+</div>
+
+<p>As the example shown above, we can see that the <code class="highlighter-rouge">BasicResource</code> is added into <code class="highlighter-rouge">Registry</code> directly, and <code class="highlighter-rouge">Registry</code> is contained in <code class="highlighter-rouge">ResteasyDeployment</code>. We can see the whole process doesn’t involve Application. This makes us understanding two things: The first one is that Application is just a way to provide root resource path and resources to the container; The second thing is that RESTEasy can directly accept resource classes and store it in its classes.</p>
+
+<p>Now let’s check how does RESTEasy deals with the Application. There is a <code class="highlighter-rouge">createApplication()</code> method defined in <code class="highlighter-rouge">ResteasyDeployment</code>:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">static</span> <span class="n">Application</span> <span class="nf">createApplication</span><span class="o">(</span><span class="n">String</span> <span class="n">applicationClass</span><span class="o">,</span> <span class="n">Dispatcher</span> <span class="n">dispatcher</span><span class="o">,</span> <span class="n">ResteasyProviderFactory</span> <span class="n">providerFactory</span><span class="o">)</span> <span class="o">{</span>
+    <span class="n">Class</span><span class="o">&lt;?&gt;</span> <span class="n">clazz</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+    <span class="k">try</span> <span class="o">{</span>
+        <span class="n">clazz</span> <span class="o">=</span> <span class="n">Thread</span><span class="o">.</span><span class="na">currentThread</span><span class="o">().</span><span class="na">getContextClassLoader</span><span class="o">().</span><span class="na">loadClass</span><span class="o">(</span><span class="n">applicationClass</span><span class="o">);</span>
+    <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">ClassNotFoundException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">throw</span> <span class="k">new</span> <span class="nf">RuntimeException</span><span class="o">(</span><span class="n">e</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="n">Application</span> <span class="n">app</span> <span class="o">=</span> <span class="o">(</span><span class="n">Application</span><span class="o">)</span> <span class="n">providerFactory</span><span class="o">.</span><span class="na">createProviderInstance</span><span class="o">(</span><span class="n">clazz</span><span class="o">);</span>
+    <span class="n">dispatcher</span><span class="o">.</span><span class="na">getDefaultContextObjects</span><span class="o">().</span><span class="na">put</span><span class="o">(</span><span class="n">Application</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="n">app</span><span class="o">);</span>
+    <span class="n">ResteasyProviderFactory</span><span class="o">.</span><span class="na">pushContext</span><span class="o">(</span><span class="n">Application</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="n">app</span><span class="o">);</span>
+    <span class="n">PropertyInjector</span> <span class="n">propertyInjector</span> <span class="o">=</span> <span class="n">providerFactory</span><span class="o">.</span><span class="na">getInjectorFactory</span><span class="o">().</span><span class="na">createPropertyInjector</span><span class="o">(</span><span class="n">clazz</span><span class="o">,</span> <span class="n">providerFactory</span><span class="o">);</span>
+    <span class="n">propertyInjector</span><span class="o">.</span><span class="na">inject</span><span class="o">(</span><span class="n">app</span><span class="o">);</span>
+    <span class="k">return</span> <span class="n">app</span><span class="o">;</span>
+<span class="o">}</span>
+</code></pre>
+</div>
+
+<p>From the above code, we can see the method will create an Application class instance from the <code class="highlighter-rouge">String applicationClass</code> defined by user, so it will be the user extended Application class. The following is the sequence diagram of above code:</p>
+
+<p><img src="/assets/2016-04-05-org.jboss.resteasy.spi.ResteasyDeployment.createApplication.png" alt="2016-04-05-org.jboss.resteasy.spi.ResteasyDeployment.createApplication.png" /></p>
+
+<p>From the above analysis, we can see the instance of Application will be stored into multiple classes, such as <code class="highlighter-rouge">Dispatcher</code> and <code class="highlighter-rouge">ResteasyProviderFactory</code>. Here are the two places that are using <code class="highlighter-rouge">createApplication()</code> method:</p>
+
+<p><img src="/assets/2017-04-05-create-application.png" alt="2017-04-05-create-application.png" /></p>
+
+<p>As the screenshot shown above, one is in <code class="highlighter-rouge">ServletContainerDispatcher.init()</code>, and the other one is <code class="highlighter-rouge">ResteasyDeployment.start()</code>. Here is the usage of <code class="highlighter-rouge">createApplication()</code> method in <code class="highlighter-rouge">ServletContainerDispatcher.init()</code>:</p>
+
+<p><img src="/assets/2017-04-05-servletcontainerdispatcher.png" alt="2017-04-05-servletcontainerdispatcher.png" /></p>
+
+<p>We can see there is a <code class="highlighter-rouge">processApplication()</code> method after <code class="highlighter-rouge">createApplication()</code> method. Here is the sequence diagram of the <code class="highlighter-rouge">ServletContainerDispatcher.processApplication()</code> method:</p>
+
+<p><img src="/assets/2017-04-05-processapplication.png" alt="2017-04-05-processapplication.png" /></p>
+
+<p>We can see the <code class="highlighter-rouge">processApplication()</code> method will fetch the resources from Application instance and register them into various classes. This is the usage of Application in RESTEasy. Next let’s see the <code class="highlighter-rouge">createApplication()</code> method in <code class="highlighter-rouge">ResteasyDeployment.start()</code>:</p>
+
+<p><img src="/assets/2017-04-05-resteasydeployment.png" alt="2017-04-05-resteasydeployment.png" /></p>
+
+<p>Please note RESTEasy doesn’t process the <code class="highlighter-rouge">@ApplicationPath</code> annotation by itself, it’s the container’s responsibility to deal with it. <code class="highlighter-rouge">WadlUndertowConnector</code> is a good example:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="kn">package</span> <span class="n">org</span><span class="o">.</span><span class="na">jboss</span><span class="o">.</span><span class="na">resteasy</span><span class="o">.</span><span class="na">wadl</span><span class="o">;</span>
+
+<span class="kn">import</span> <span class="nn">io.undertow.servlet.api.DeploymentInfo</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">io.undertow.servlet.api.ServletInfo</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.jboss.resteasy.plugins.server.servlet.HttpServlet30Dispatcher</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.jboss.resteasy.plugins.server.undertow.UndertowJaxrsServer</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.jboss.resteasy.spi.ResteasyDeployment</span><span class="o">;</span>
+
+<span class="kn">import</span> <span class="nn">javax.ws.rs.ApplicationPath</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">javax.ws.rs.core.Application</span><span class="o">;</span>
+
+<span class="kn">import</span> <span class="nn">static</span> <span class="n">io</span><span class="o">.</span><span class="na">undertow</span><span class="o">.</span><span class="na">servlet</span><span class="o">.</span><span class="na">Servlets</span><span class="o">.</span><span class="na">servlet</span><span class="o">;</span>
+
+<span class="cm">/**
+ * Created by weli on 7/26/16.
+ */</span>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">WadlUndertowConnector</span> <span class="o">{</span>
+    <span class="kd">public</span> <span class="n">UndertowJaxrsServer</span> <span class="nf">deployToServer</span><span class="o">(</span><span class="n">UndertowJaxrsServer</span> <span class="n">server</span><span class="o">,</span> <span class="n">Class</span><span class="o">&lt;?</span> <span class="kd">extends</span> <span class="n">Application</span><span class="o">&gt;</span> <span class="n">application</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">ApplicationPath</span> <span class="n">appPath</span> <span class="o">=</span> <span class="n">application</span><span class="o">.</span><span class="na">getAnnotation</span><span class="o">(</span><span class="n">ApplicationPath</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+        <span class="n">String</span> <span class="n">path</span> <span class="o">=</span> <span class="s">"/"</span><span class="o">;</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">appPath</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="n">path</span> <span class="o">=</span> <span class="n">appPath</span><span class="o">.</span><span class="na">value</span><span class="o">();</span>
+
+        <span class="k">return</span> <span class="nf">deployToServer</span><span class="o">(</span><span class="n">server</span><span class="o">,</span> <span class="n">application</span><span class="o">,</span> <span class="n">path</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="kd">public</span> <span class="n">UndertowJaxrsServer</span> <span class="nf">deployToServer</span><span class="o">(</span><span class="n">UndertowJaxrsServer</span> <span class="n">server</span><span class="o">,</span> <span class="n">Class</span><span class="o">&lt;?</span> <span class="kd">extends</span> <span class="n">Application</span><span class="o">&gt;</span> <span class="n">application</span><span class="o">,</span> <span class="n">String</span> <span class="n">contextPath</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">ResteasyDeployment</span> <span class="n">deployment</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ResteasyDeployment</span><span class="o">();</span>
+        <span class="n">deployment</span><span class="o">.</span><span class="na">setApplicationClass</span><span class="o">(</span><span class="n">application</span><span class="o">.</span><span class="na">getName</span><span class="o">());</span>
+
+        <span class="n">DeploymentInfo</span> <span class="n">di</span> <span class="o">=</span> <span class="n">server</span><span class="o">.</span><span class="na">undertowDeployment</span><span class="o">(</span><span class="n">deployment</span><span class="o">);</span>
+
+        <span class="n">ServletInfo</span> <span class="n">resteasyWadlServlet</span> <span class="o">=</span> <span class="n">servlet</span><span class="o">(</span><span class="s">"ResteasyWadlServlet"</span><span class="o">,</span> <span class="n">ResteasyWadlServlet</span><span class="o">.</span><span class="na">class</span><span class="o">)</span>
+                <span class="o">.</span><span class="na">setAsyncSupported</span><span class="o">(</span><span class="kc">false</span><span class="o">)</span>
+                <span class="o">.</span><span class="na">setLoadOnStartup</span><span class="o">(</span><span class="mi">1</span><span class="o">)</span>
+                <span class="o">.</span><span class="na">addMapping</span><span class="o">(</span><span class="s">"/application.xml"</span><span class="o">);</span>
+        <span class="n">di</span><span class="o">.</span><span class="na">addServlet</span><span class="o">(</span><span class="n">resteasyWadlServlet</span><span class="o">);</span>
+
+        <span class="n">di</span><span class="o">.</span><span class="na">setClassLoader</span><span class="o">(</span><span class="n">application</span><span class="o">.</span><span class="na">getClassLoader</span><span class="o">());</span>
+        <span class="n">di</span><span class="o">.</span><span class="na">setContextPath</span><span class="o">(</span><span class="n">contextPath</span><span class="o">);</span>
+        <span class="n">di</span><span class="o">.</span><span class="na">setDeploymentName</span><span class="o">(</span><span class="s">"Resteasy"</span> <span class="o">+</span> <span class="n">contextPath</span><span class="o">);</span>
+        <span class="k">return</span> <span class="n">server</span><span class="o">.</span><span class="na">deploy</span><span class="o">(</span><span class="n">di</span><span class="o">);</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre>
+</div>
+
+<p>From the above code, we can see the <code class="highlighter-rouge">ApplicationPath</code> is extracted from Application instance:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="n">ApplicationPath</span> <span class="n">appPath</span> <span class="o">=</span> <span class="n">application</span><span class="o">.</span><span class="na">getAnnotation</span><span class="o">(</span><span class="n">ApplicationPath</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+</code></pre>
+</div>
+
+<p>And then it’s injected into the Undertow<sup id="fnref:undertow"><a href="#fn:undertow" class="footnote">1</a></sup> container:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="n">di</span><span class="o">.</span><span class="na">setContextPath</span><span class="o">(</span><span class="n">contextPath</span><span class="o">);</span>
+</code></pre>
+</div>
+
+<p>From the above study, we know that Application can help users to register resources into Servlet container in a cleaner way, nevertheless RESTEasy doesn’t rely on Application to register classes. In addition, some RESTEasy non-servlet containers such as Netty4 and Sun JDK HTTP Server doesn’t need Application to register resources.</p>
+
+<p>For Servlet Container, RESTEasy provides helper classes such as <code class="highlighter-rouge">ServletContainerDispatcher</code> to help the container to prepare RESTEasy classes more conveniently. Here are the relative classes:</p>
+
+<p><img src="/assets/2017-04-05-dispatcher.png" alt="2017-04-05-dispatcher.png" /></p>
+
+<p>RESTEasy Undertow server is a servlet container, and <code class="highlighter-rouge">UndertowJaxrsServer</code> uses <code class="highlighter-rouge">ServletContainerDispatcher</code> like this:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="n">ServletInfo</span> <span class="n">resteasyServlet</span> <span class="o">=</span> <span class="n">servlet</span><span class="o">(</span><span class="s">"ResteasyServlet"</span><span class="o">,</span> <span class="n">HttpServlet30Dispatcher</span><span class="o">.</span><span class="na">class</span><span class="o">)</span>
+        <span class="o">.</span><span class="na">setAsyncSupported</span><span class="o">(</span><span class="kc">true</span><span class="o">)</span>
+        <span class="o">.</span><span class="na">setLoadOnStartup</span><span class="o">(</span><span class="mi">1</span><span class="o">)</span>
+        <span class="o">.</span><span class="na">addMapping</span><span class="o">(</span><span class="n">mapping</span><span class="o">);</span>
+</code></pre>
+</div>
+
+<p>I won’t dig into more details in this article, but you should get a good understanding on RESTEasy Application support now.</p>
+
+<h3 id="references"><em>References</em></h3>
+
+<hr />
+
+<div class="footnotes">
+  <ol>
+    <li id="fn:undertow">
+      <p><a href="http://undertow.io/">http://undertow.io.</a>&nbsp;<a href="#fnref:undertow" class="reversefootnote">&#8617;</a></p>
+    </li>
+  </ol>
+</div>

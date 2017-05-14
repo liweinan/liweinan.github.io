@@ -1,0 +1,86 @@
+<p>Jersey supports multiple Application classes to be registered, on the other side currently RESTEasy doesn’t support multiple Application classes deployment yet. In this article I’d like to give a brief introduction on Jersey implementation and compare it with RESTEasy current design.</p>
+
+<p>Firstly, we can see <code class="highlighter-rouge">ResteasyDeployment</code> doesn’t store multiple <code class="highlighter-rouge">Application</code> classes:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="n">ResteasyDeployment</span> <span class="n">deployment</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ResteasyDeployment</span><span class="o">();</span>
+<span class="n">deployment</span><span class="o">.</span><span class="na">setApplicationClass</span><span class="o">(</span><span class="n">application</span><span class="o">.</span><span class="na">getName</span><span class="o">());</span>
+</code></pre>
+</div>
+
+<p>The <code class="highlighter-rouge">applicationClass</code> will be used to create an <code class="highlighter-rouge">Application</code> instance. Here is the relative code in <code class="highlighter-rouge">ResteasyDeployment.start()</code>:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code> <span class="k">if</span> <span class="o">(</span><span class="n">applicationClass</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span>
+ <span class="o">{</span>
+     <span class="n">application</span> <span class="o">=</span> <span class="n">createApplication</span><span class="o">(</span><span class="n">applicationClass</span><span class="o">,</span> <span class="n">dispatcher</span><span class="o">,</span> <span class="n">providerFactory</span><span class="o">);</span>
+ <span class="o">}</span>
+</code></pre>
+</div>
+
+<p>From the above code we can see <code class="highlighter-rouge">createApplication()</code> method accepts the <code class="highlighter-rouge">applicationClass</code>, <code class="highlighter-rouge">dispatcher</code> and <code class="highlighter-rouge">providerFactory</code> as parameters, and here is the internal process of <code class="highlighter-rouge">createApplication()</code>:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="n">clazz</span> <span class="o">=</span> <span class="n">Thread</span><span class="o">.</span><span class="na">currentThread</span><span class="o">().</span><span class="na">getContextClassLoader</span><span class="o">().</span><span class="na">loadClass</span><span class="o">(</span><span class="n">applicationClass</span><span class="o">);</span>
+<span class="n">Application</span> <span class="n">app</span> <span class="o">=</span> <span class="o">(</span><span class="n">Application</span><span class="o">)</span><span class="n">providerFactory</span><span class="o">.</span><span class="na">createProviderInstance</span><span class="o">(</span><span class="n">clazz</span><span class="o">);</span>
+<span class="n">dispatcher</span><span class="o">.</span><span class="na">getDefaultContextObjects</span><span class="o">().</span><span class="na">put</span><span class="o">(</span><span class="n">Application</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="n">app</span><span class="o">);</span>
+<span class="n">ResteasyProviderFactory</span><span class="o">.</span><span class="na">pushContext</span><span class="o">(</span><span class="n">Application</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="n">app</span><span class="o">);</span>
+<span class="n">PropertyInjector</span> <span class="n">propertyInjector</span> <span class="o">=</span> <span class="n">providerFactory</span><span class="o">.</span><span class="na">getInjectorFactory</span><span class="o">().</span><span class="na">createPropertyInjector</span><span class="o">(</span><span class="n">clazz</span><span class="o">,</span> <span class="n">providerFactory</span><span class="o">);</span>
+<span class="n">propertyInjector</span><span class="o">.</span><span class="na">inject</span><span class="o">(</span><span class="n">app</span><span class="o">);</span>
+</code></pre>
+</div>
+
+<p>From the above code, we can see RESTEasy stores a single <code class="highlighter-rouge">Application</code> instance internally. The data structure needs to be modified to store multiple <code class="highlighter-rouge">Application</code> instances. In Jersey, the <code class="highlighter-rouge">JerseyServletContainerInitializer</code> class accepts multiple <code class="highlighter-rouge">Application</code> definitions. Here is the relative code in <code class="highlighter-rouge">onStartupImpl()</code> method<sup id="fnref:1"><a href="#fn:1" class="footnote">1</a></sup>:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="k">for</span> <span class="o">(</span><span class="kd">final</span> <span class="n">Class</span><span class="o">&lt;?</span> <span class="kd">extends</span> <span class="n">Application</span><span class="o">&gt;</span> <span class="n">applicationClass</span> <span class="o">:</span> <span class="n">getApplicationClasses</span><span class="o">(</span><span class="n">classes</span><span class="o">))</span> <span class="o">{</span>
+    <span class="n">addServletWithExistingRegistration</span><span class="o">(</span><span class="n">servletContext</span><span class="o">,</span> <span class="n">servletRegistration</span><span class="o">,</span> <span class="n">applicationClass</span><span class="o">,</span> <span class="n">classes</span><span class="o">);</span>
+<span class="o">}</span>
+</code></pre>
+</div>
+
+<p>From the above code we can see Jersey accepts multiple <code class="highlighter-rouge">Application</code> classes with <code class="highlighter-rouge">getApplicationClasses()</code> method and deals with them in a loop. Here is the implementation of <code class="highlighter-rouge">getApplicationsClasses()</code> method:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="kd">private</span> <span class="kd">static</span> <span class="n">Set</span><span class="o">&lt;</span><span class="n">Class</span><span class="o">&lt;?</span> <span class="kd">extends</span> <span class="n">Application</span><span class="o">&gt;&gt;</span> <span class="nf">getApplicationClasses</span><span class="o">(</span><span class="kd">final</span> <span class="n">Set</span><span class="o">&lt;</span><span class="n">Class</span><span class="o">&lt;?&gt;&gt;</span> <span class="n">classes</span><span class="o">)</span> <span class="o">{</span>
+    <span class="kd">final</span> <span class="n">Set</span><span class="o">&lt;</span><span class="n">Class</span><span class="o">&lt;?</span> <span class="kd">extends</span> <span class="n">Application</span><span class="o">&gt;&gt;</span> <span class="n">s</span> <span class="o">=</span> <span class="k">new</span> <span class="n">LinkedHashSet</span><span class="o">&lt;&gt;();</span>
+    <span class="k">for</span> <span class="o">(</span><span class="kd">final</span> <span class="n">Class</span><span class="o">&lt;?&gt;</span> <span class="n">c</span> <span class="o">:</span> <span class="n">classes</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">Application</span><span class="o">.</span><span class="na">class</span> <span class="o">!=</span> <span class="n">c</span> <span class="o">&amp;&amp;</span> <span class="n">Application</span><span class="o">.</span><span class="na">class</span><span class="o">.</span><span class="na">isAssignableFrom</span><span class="o">(</span><span class="n">c</span><span class="o">))</span> <span class="o">{</span>
+            <span class="n">s</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">c</span><span class="o">.</span><span class="na">asSubclass</span><span class="o">(</span><span class="n">Application</span><span class="o">.</span><span class="na">class</span><span class="o">));</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+
+    <span class="k">return</span> <span class="n">s</span><span class="o">;</span>
+<span class="o">}</span>
+</code></pre>
+</div>
+
+<p>Now we can go back to <code class="highlighter-rouge">addServletWithExistingRegistration()</code> method to see how does it deals with <code class="highlighter-rouge">Application</code> class:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="c1">// create a new servlet container for a given app.</span>
+<span class="kd">final</span> <span class="n">ResourceConfig</span> <span class="n">resourceConfig</span> <span class="o">=</span> <span class="n">ResourceConfig</span><span class="o">.</span><span class="na">forApplicationClass</span><span class="o">(</span><span class="n">clazz</span><span class="o">,</span> <span class="n">classes</span><span class="o">)</span>
+    <span class="o">.</span><span class="na">addProperties</span><span class="o">(</span><span class="n">getInitParams</span><span class="o">(</span><span class="n">registration</span><span class="o">))</span>
+    <span class="o">.</span><span class="na">addProperties</span><span class="o">(</span><span class="n">Utils</span><span class="o">.</span><span class="na">getContextParams</span><span class="o">(</span><span class="n">context</span><span class="o">));</span>
+</code></pre>
+</div>
+
+<p>The main logic of <code class="highlighter-rouge">addServletWithExistingRegistration()</code> is shown above. It will create an instance of <code class="highlighter-rouge">ResourceConfig</code> class<sup id="fnref:2"><a href="#fn:2" class="footnote">2</a></sup>. This class contains <code class="highlighter-rouge">Application</code> and the resource classes registered under the <code class="highlighter-rouge">Application</code>. Here is the class diagram of the <code class="highlighter-rouge">ResourceConfig</code>:</p>
+
+<p><img src="/assets/2017-04-10-ResourceConfig.png" alt="2017-04-10-ResourceConfig.png" /></p>
+
+<p>From the above diagram, we can see <code class="highlighter-rouge">WrappingResourceConfig</code> contains <code class="highlighter-rouge">application : javax.ws.rs.core.Application</code> and <code class="highlighter-rouge">defaultClasses : java.util.Set&lt;Class&lt;?&gt;&gt; = new HashSet&lt;&gt;()</code>, this provides the <code class="highlighter-rouge">application -&gt; resources</code> mapping. If RESTEasy wants to support multiple <code class="highlighter-rouge">Application</code> deployment, it also needs to have a data structure to record the relationship between each Application instance and its included resources.</p>
+
+<p>Please note <code class="highlighter-rouge">Application</code> is just a method to help users to register their resteful resources easier in Servlet container, both Jersey and RESTEasy core design don’t merely rely on the <code class="highlighter-rouge">Application</code> to find and register resources, and other non-servet containers just don’t need <code class="highlighter-rouge">Application</code> to register resources. You can refer to RESTEasy’s Netty container document<sup id="fnref:3"><a href="#fn:3" class="footnote">3</a></sup> to see how it register resource classes via programmable interfaces.</p>
+
+<h3 id="references"><em>References</em></h3>
+
+<hr />
+
+<div class="footnotes">
+  <ol>
+    <li id="fn:1">
+      <p><a href="https://github.com/jersey/jersey/blob/master/containers/jersey-servlet/src/main/java/org/glassfish/jersey/servlet/init/JerseyServletContainerInitializer.java#L156">JerseyServletContainerInitializer.java</a>&nbsp;<a href="#fnref:1" class="reversefootnote">&#8617;</a></p>
+    </li>
+    <li id="fn:2">
+      <p><a href="https://github.com/jersey/jersey/blob/master/core-server/src/main/java/org/glassfish/jersey/server/ResourceConfig.java#L108">ResourceConfig.java</a>&nbsp;<a href="#fnref:2" class="reversefootnote">&#8617;</a></p>
+    </li>
+    <li id="fn:3">
+      <p><a href="http://docs.jboss.org/resteasy/docs/3.1.2.Final/userguide/html/RESTEasy_Embedded_Container.html#d4e1597">RESTEasy_Embedded_Container.html.</a>&nbsp;<a href="#fnref:3" class="reversefootnote">&#8617;</a></p>
+    </li>
+  </ol>
+</div>

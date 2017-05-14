@@ -1,0 +1,203 @@
+<p>I’m playing Java RegExp Engine recently and I’d like to share some use experiences with you in this article.</p>
+
+<p>Here is the first example:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="n">Pattern</span> <span class="n">p</span> <span class="o">=</span> <span class="n">Pattern</span><span class="o">.</span><span class="na">compile</span><span class="o">(</span><span class="s">"(^[A-Za-z]+)( [0-9]+)( [A-Za-z]+)(.*)"</span><span class="o">);</span>
+<span class="n">String</span> <span class="n">text</span> <span class="o">=</span> <span class="s">"foo 42 bar xyz"</span><span class="o">;</span>
+<span class="n">Matcher</span> <span class="n">matcher</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="na">matcher</span><span class="o">(</span><span class="n">text</span><span class="o">);</span>
+<span class="n">matcher</span><span class="o">.</span><span class="na">find</span><span class="o">();</span>
+</code></pre>
+</div>
+
+<p>We have used parentheses to group our pattern into four parts:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>(^[A-Za-z]+)( [0-9]+)( [A-Za-z]+)(.*)
+</code></pre>
+</div>
+
+<p>The <code class="highlighter-rouge">matcher.find()</code> method will help to match the text using our <code class="highlighter-rouge">Pattern</code>:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;=</span> <span class="n">matcher</span><span class="o">.</span><span class="na">groupCount</span><span class="o">();</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+    <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">i</span> <span class="o">+</span> <span class="s">": "</span> <span class="o">+</span> <span class="n">matcher</span><span class="o">.</span><span class="na">group</span><span class="o">(</span><span class="n">i</span><span class="o">));</span>
+<span class="o">}</span>
+</code></pre>
+</div>
+
+<p>And the <code class="highlighter-rouge">matcher.group()</code> can help us to print the matched group defined in pattern string:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>0: foo 42 bar xyz
+1: foo
+2:  42
+3:  bar
+4:  xyz
+</code></pre>
+</div>
+
+<p>Please note the <code class="highlighter-rouge">group(0)</code> is the whole text matched by the pattern. The groups are defined by parentheses in pattern. For example, if we change our pattern from:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="n">Pattern</span> <span class="n">p</span> <span class="o">=</span> <span class="n">Pattern</span><span class="o">.</span><span class="na">compile</span><span class="o">(</span><span class="s">"(^[A-Za-z]+)( [0-9]+)( [A-Za-z]+)(.*)"</span><span class="o">);</span>
+</code></pre>
+</div>
+
+<p>to:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="n">Pattern</span> <span class="n">p</span> <span class="o">=</span> <span class="n">Pattern</span><span class="o">.</span><span class="na">compile</span><span class="o">(</span><span class="s">"(^[A-Za-z]+)( [0-9]+)( [A-Za-z]+).*"</span><span class="o">);</span>
+</code></pre>
+</div>
+
+<p>The difference is that this time we don’t quote the last <code class="highlighter-rouge">.*</code> part into parentheses. And let’s rerun the matching process:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;=</span> <span class="n">matcher</span><span class="o">.</span><span class="na">groupCount</span><span class="o">();</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+    <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">i</span> <span class="o">+</span> <span class="s">": "</span> <span class="o">+</span> <span class="n">matcher</span><span class="o">.</span><span class="na">group</span><span class="o">(</span><span class="n">i</span><span class="o">));</span>
+<span class="o">}</span>
+</code></pre>
+</div>
+
+<p>The result becomes:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>0: foo 42 bar xyz
+1: foo
+2:  42
+3:  bar
+</code></pre>
+</div>
+
+<p>We can see this time <code class="highlighter-rouge">xyz</code> does not show，because the last <code class="highlighter-rouge">.*</code> does not belong to any <code class="highlighter-rouge">group</code>. Now let’s see how to use <code class="highlighter-rouge">region</code> method. Here is the code example:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="n">Pattern</span> <span class="n">p</span> <span class="o">=</span> <span class="n">Pattern</span><span class="o">.</span><span class="na">compile</span><span class="o">(</span><span class="s">"(.* )(.* )"</span><span class="o">);</span>
+<span class="n">String</span> <span class="n">text</span> <span class="o">=</span> <span class="s">"foo 42 bar xyz"</span><span class="o">;</span>
+<span class="n">Matcher</span> <span class="n">matcher</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="na">matcher</span><span class="o">(</span><span class="n">text</span><span class="o">);</span>
+<span class="n">matcher</span><span class="o">.</span><span class="na">region</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span> <span class="n">text</span><span class="o">.</span><span class="na">length</span><span class="o">());</span>
+<span class="n">matcher</span><span class="o">.</span><span class="na">find</span><span class="o">();</span>
+</code></pre>
+</div>
+
+<p>The <code class="highlighter-rouge">matcher.region(1, text.length())</code> is to set the start index and the end index of the text that the matcher will search for. As you can see, we have set the matcher to search from text index <code class="highlighter-rouge">1</code> till the end of the text, so the first character(which is index 0) of <code class="highlighter-rouge">text</code> will be ignored. Here’s the search code:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;=</span> <span class="n">matcher</span><span class="o">.</span><span class="na">groupCount</span><span class="o">();</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+    <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">i</span> <span class="o">+</span> <span class="s">": "</span> <span class="o">+</span> <span class="n">matcher</span><span class="o">.</span><span class="na">group</span><span class="o">(</span><span class="n">i</span><span class="o">));</span>
+<span class="o">}</span>
+</code></pre>
+</div>
+
+<p>And here is the result:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>0: oo 42 bar
+1: oo 42
+2: bar
+</code></pre>
+</div>
+
+<p>We can see the first character in <code class="highlighter-rouge">text</code>, which is <code class="highlighter-rouge">f</code> of the <code class="highlighter-rouge">foo</code>, is bypassed. We can also see from the result that Java RegExp engine is greedy by default, because the group 1 returns <code class="highlighter-rouge">oo 42</code>, which matches maximum text of pattern <code class="highlighter-rouge">(.* )</code>. Now let’s see the difference between <code class="highlighter-rouge">matches</code> and <code class="highlighter-rouge">find</code> methods of <code class="highlighter-rouge">Matcher</code> class.</p>
+
+<p>The <code class="highlighter-rouge">matches</code> method will try to match the pattern with whole text. If the pattern doesn’t match the whole text, the method fails. Otherwise, if there are contents in the text that can match the pattern, the <code class="highlighter-rouge">find</code> method will match it. Here is the code example:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="n">Pattern</span> <span class="n">p</span> <span class="o">=</span> <span class="n">Pattern</span><span class="o">.</span><span class="na">compile</span><span class="o">(</span><span class="s">"[a-z][a-z][a-z]"</span><span class="o">);</span>
+<span class="n">String</span> <span class="n">text</span> <span class="o">=</span> <span class="s">"foo 42 bar xyz"</span><span class="o">;</span>
+<span class="n">Matcher</span> <span class="n">matcher</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="na">matcher</span><span class="o">(</span><span class="n">text</span><span class="o">);</span>
+</code></pre>
+</div>
+
+<p>I have written a pattern that will match three consecutive alphabets. Now let’s try to use ‘matches()’ method firstly:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">matcher</span><span class="o">.</span><span class="na">matches</span><span class="o">());</span>
+</code></pre>
+</div>
+
+<p>The result is <code class="highlighter-rouge">false</code>. Because the pattern can’t match the whole <code class="highlighter-rouge">text</code>. Now let’s try <code class="highlighter-rouge">find()</code> method:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">matcher</span><span class="o">.</span><span class="na">find</span><span class="o">());</span>
+</code></pre>
+</div>
+
+<p>The result is <code class="highlighter-rouge">true</code>, because the pattern can match partial contents in text, which could be <code class="highlighter-rouge">foo</code>. And each time we call <code class="highlighter-rouge">find()</code>, it will try to search the next partial text that can match the pattern. Let’s see the code example:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="n">Pattern</span> <span class="n">p</span> <span class="o">=</span> <span class="n">Pattern</span><span class="o">.</span><span class="na">compile</span><span class="o">(</span><span class="s">"[a-z][a-z][a-z]"</span><span class="o">);</span>
+<span class="n">String</span> <span class="n">text</span> <span class="o">=</span> <span class="s">"foo 42 bar xyz"</span><span class="o">;</span>
+<span class="n">Matcher</span> <span class="n">matcher</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="na">matcher</span><span class="o">(</span><span class="n">text</span><span class="o">);</span>
+
+<span class="k">while</span> <span class="o">(</span><span class="n">matcher</span><span class="o">.</span><span class="na">find</span><span class="o">())</span> <span class="o">{</span>
+    <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">matcher</span><span class="o">.</span><span class="na">group</span><span class="o">());</span>
+<span class="o">}</span>
+</code></pre>
+</div>
+
+<p>As the example shown above, we will call <code class="highlighter-rouge">find()</code> method until it can’t find anything more. Here’s the result:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>foo
+bar
+xyz
+</code></pre>
+</div>
+
+<p>As the result shown above, we can see each time the <code class="highlighter-rouge">find()</code> method call match the pattern with partial text. We used <code class="highlighter-rouge">group()</code> method to return the whole matched text. Because our pattern has parentheses, so we can also use <code class="highlighter-rouge">group</code> method to get the substring we want. Here’s the code example:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="n">Pattern</span> <span class="n">p</span> <span class="o">=</span> <span class="n">Pattern</span><span class="o">.</span><span class="na">compile</span><span class="o">(</span><span class="s">"([a-z])([a-z])([a-z])"</span><span class="o">);</span>
+<span class="n">String</span> <span class="n">text</span> <span class="o">=</span> <span class="s">"foo 42 bar xyz"</span><span class="o">;</span>
+<span class="n">Matcher</span> <span class="n">matcher</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="na">matcher</span><span class="o">(</span><span class="n">text</span><span class="o">);</span>
+
+<span class="k">while</span> <span class="o">(</span><span class="n">matcher</span><span class="o">.</span><span class="na">find</span><span class="o">())</span> <span class="o">{</span>
+    <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">matcher</span><span class="o">.</span><span class="na">group</span><span class="o">(</span><span class="mi">1</span><span class="o">));</span>
+<span class="o">}</span>
+</code></pre>
+</div>
+
+<p>Because our pattern is <code class="highlighter-rouge">([a-z])([a-z])([a-z])</code>，so <code class="highlighter-rouge">group(1)</code> will be the first <code class="highlighter-rouge">[a-z]</code> in matched text. Here’s the result:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>f
+b
+x
+</code></pre>
+</div>
+
+<p>The result is the first group in the pattern for each found text. Please note both <code class="highlighter-rouge">matches</code> and <code class="highlighter-rouge">find</code> will alter the internal state of the matcher. As we can see above, each <code class="highlighter-rouge">find</code> will search next part of the text. Let’s see this code example:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="n">Pattern</span> <span class="n">p</span> <span class="o">=</span> <span class="n">Pattern</span><span class="o">.</span><span class="na">compile</span><span class="o">(</span><span class="s">"([a-z])([a-z])([a-z])"</span><span class="o">);</span>
+<span class="n">String</span> <span class="n">text</span> <span class="o">=</span> <span class="s">"foo"</span><span class="o">;</span>
+<span class="n">Matcher</span> <span class="n">matcher</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="na">matcher</span><span class="o">(</span><span class="n">text</span><span class="o">);</span>
+
+<span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">matcher</span><span class="o">.</span><span class="na">matches</span><span class="o">());</span>
+
+<span class="k">while</span> <span class="o">(</span><span class="n">matcher</span><span class="o">.</span><span class="na">find</span><span class="o">())</span> <span class="o">{</span>
+    <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">matcher</span><span class="o">.</span><span class="na">group</span><span class="o">(</span><span class="mi">1</span><span class="o">));</span>
+<span class="o">}</span>
+</code></pre>
+</div>
+
+<p>We used <code class="highlighter-rouge">matches</code> method to match <code class="highlighter-rouge">text</code> will the pattern, and it will succeed. So the <code class="highlighter-rouge">find</code> method won’t match anything at all, because the previous <code class="highlighter-rouge">matches</code> method already processed the text and matches the text successfully. The result of above code will be <code class="highlighter-rouge">true</code> and nothing else. If we remove the <code class="highlighter-rouge">matcher.matches()</code>, then the result will be <code class="highlighter-rouge">f</code>, which is the <code class="highlighter-rouge">matcher.group(1)</code> output.</p>
+
+<p>Non-capturing group is a concept that supports you to group something in the pattern but don’t count it in the result. Let’s see this code example:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="n">Pattern</span> <span class="n">p</span> <span class="o">=</span> <span class="n">Pattern</span><span class="o">.</span><span class="na">compile</span><span class="o">(</span><span class="s">"([a-z])([a-z])([a-z])"</span><span class="o">);</span>
+<span class="n">String</span> <span class="n">text</span> <span class="o">=</span> <span class="s">"foo bar"</span><span class="o">;</span>
+<span class="n">Matcher</span> <span class="n">matcher</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="na">matcher</span><span class="o">(</span><span class="n">text</span><span class="o">);</span>
+
+<span class="k">while</span> <span class="o">(</span><span class="n">matcher</span><span class="o">.</span><span class="na">find</span><span class="o">())</span> <span class="o">{</span>
+    <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">matcher</span><span class="o">.</span><span class="na">group</span><span class="o">(</span><span class="mi">1</span><span class="o">));</span>
+<span class="o">}</span>
+</code></pre>
+</div>
+
+<p>The pattern is to match three consecutive alphabets, so <code class="highlighter-rouge">foo</code> and <code class="highlighter-rouge">bar</code> will match for each <code class="highlighter-rouge">find()</code>. And group 1 is the first <code class="highlighter-rouge">[a-z]</code>, so it will match the first alphabet of <code class="highlighter-rouge">foo</code> and <code class="highlighter-rouge">bar</code>. The result of above code is:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>f
+b
+</code></pre>
+</div>
+
+<p>Which is the same like we expected. Now let’s modify the pattern a little bit:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="n">Pattern</span> <span class="n">p</span> <span class="o">=</span> <span class="n">Pattern</span><span class="o">.</span><span class="na">compile</span><span class="o">(</span><span class="s">"(?:[a-z])([a-z])([a-z])"</span><span class="o">);</span>
+</code></pre>
+</div>
+
+<p>Please note we have added <code class="highlighter-rouge">?:</code> into first group, which means this group is a non-capturing group. The matcher will still match it, but this group will not be counted in the result.</p>
+
+<p>So the <code class="highlighter-rouge">matcher.group(1)</code> this time will become the second <code class="highlighter-rouge">[a-z]</code>. Let’s rerun the codes and here’s the result:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>o
+a
+</code></pre>
+</div>
+
+<p>Please note the first group, <code class="highlighter-rouge">f</code> in <code class="highlighter-rouge">foo</code> and <code class="highlighter-rouge">b</code> in <code class="highlighter-rouge">bar</code>, are bypassed. Because the first group has been marked as non-capturing group with <code class="highlighter-rouge">?:</code>.</p>

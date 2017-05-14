@@ -1,0 +1,57 @@
+<p>RESTEasy has some embedded containers, such as the Netty container, the Sun JDK HTTP Server container, and the Undertow container. For each container, their basic requirement is to initialize the RESTEasy core classes properly so RESTEasy can provide resource classes and URL to method matching properly. In this article, I’d like to show you my researches on RESTEasy core classes.</p>
+
+<p>Here is the class diagram that shows the core classes of RESTEasy:</p>
+
+<p><img src="/assets/2017-03-15-resteasy-core.png" alt="2017-03-15-resteasy-core.png" /></p>
+
+<p>As the diagram shown above, there are three core classes that forms the RESTEasy basic structure: <code class="highlighter-rouge">ReseteasyDeployment</code>, <code class="highlighter-rouge">ResteasyProviderFactory</code>, and <code class="highlighter-rouge">ResourceMethodRegistry</code>. I have written <em>RESTEasy Implementation of JAX-RS SPEC 2.0 Section 3.7.</em><sup id="fnref:jaxrs-spec3_7"><a href="#fn:jaxrs-spec3_7" class="footnote">1</a></sup>(abbreviated as [sec3.7] in this article) to explain the design of <code class="highlighter-rouge">ResourceMethodRegistry</code> and the following URL matching classes. You may want to check the article for more details on RESTEasy implementation of URL matching process and method invoking process.</p>
+
+<p>Now let’s check the <code class="highlighter-rouge">ReseteasyDeployment</code> class. This is the basic container of the RESTEasy, and it contains <code class="highlighter-rouge">ResteasyProviderFactory</code> and <code class="highlighter-rouge">ResourceMethodRegistry</code> classes. The <code class="highlighter-rouge">ResteasyProviderFactory</code> contains many basic data that will be used during RESTEasy runtime. You can see from the diagram it is a very big class that contains a lot of data. For example, it contains multiple <code class="highlighter-rouge">MessageReader</code> classes, <code class="highlighter-rouge">MessageWriter</code> classes, <code class="highlighter-rouge">Filter</code> classes and <code class="highlighter-rouge">Interceptor</code> classes.</p>
+
+<p>We can see from the diagram that <code class="highlighter-rouge">ResourceMethodRegistry</code> uses the <code class="highlighter-rouge">ResteasyProviderFactory</code>. The following sequence diagram shows the <code class="highlighter-rouge">ResourceMethodRegistry.processMethod()</code> method call process and its usage of <code class="highlighter-rouge">ResteasyProviderFactory</code> and other core classes:</p>
+
+<p><img src="/assets/2017-03-15-call-digram.png" alt="2017-03-15-call-digram.png" /></p>
+
+<p>From the above diagram, we can see how does <code class="highlighter-rouge">ResourceMethodRegistry</code> coordinating various components to form a RESTEasy container for dealing with requests. We can see the info is fetched from <code class="highlighter-rouge">ResteasyProviderFactory</code>, and we can see <code class="highlighter-rouge">ResourceMethodInvoker</code> and <code class="highlighter-rouge">ResourceLocatorInvoker</code> are added into multiple <code class="highlighter-rouge">Node</code> classes. In this way, the <code class="highlighter-rouge">Node</code> classes with its <code class="highlighter-rouge">Invoker</code> classes can be used for later requests matching and processing work. For more details on this part, you can refer to the [sec3.7].</p>
+
+<p>Now we should check the <code class="highlighter-rouge">ResteasyDeployment</code> start process. The <code class="highlighter-rouge">ResteasyDeployment.start()</code> method is the initialization method of the RESTEasy container. Here is the sequence diagram of the method:</p>
+
+<p><img src="/assets/ResteasyProviderFactory.start.png" alt="ResteasyProviderFactory.start.png" /></p>
+
+<p>From the above diagram, we can see <code class="highlighter-rouge">ResteasyDeployment.start()</code> method will create and initialize <code class="highlighter-rouge">ResteasyProviderFactory</code>. In addition, it will initialize multiple dispatcher classes. In addition, we can see <em>Step 1.44</em> is a call to <code class="highlighter-rouge">registration()</code>. This method is to add providers into <code class="highlighter-rouge">ResteasyProviderFactory</code>, and to add resource classes into <code class="highlighter-rouge">ResourceMethodRegistry</code>. Here is the sequence diagram of the <code class="highlighter-rouge">registration</code> method:</p>
+
+<p><img src="/assets/ResteasyProviderFactory.registration.png" alt="ResteasyProviderFactory.registration.png" /></p>
+
+<p>After the <code class="highlighter-rouge">ResteasyDeployment.start()</code> is done, the provider factory and the registry is prepared to use for processing requests. Now let’s check the dispatchers. The <code class="highlighter-rouge">Dispatcher</code> interface is the runtime entry of the RESTEasy container. If you check the <code class="highlighter-rouge">ResteasyHttpHandler</code><sup id="fnref:handler"><a href="#fn:handler" class="footnote">2</a></sup>, then you can see how does it handles the incoming request in its <code class="highlighter-rouge">handle</code> method:</p>
+
+<p><img src="/assets/2017-03-15-ResteasyHttpHandler.handle.png" alt="/assets/2017-03-15-ResteasyHttpHandler.handle.png" /></p>
+
+<p>As the screenshot shown above, the <code class="highlighter-rouge">dispatcher.invoke()</code> method is the entry of whole processing work. The <code class="highlighter-rouge">ResteasyHttpHandler</code> class is the request handler of <code class="highlighter-rouge">resteasy-jdk-http</code> embedded server which uses <em>Sun JDK HTTP Server</em> as the webserver. Here is the class diagram show the dispatcher classes and the relationship with <code class="highlighter-rouge">Registry</code> and <code class="highlighter-rouge">ResteasyProviderFactory</code>:</p>
+
+<p><img src="/assets/2017-03-15-dispatchers.png" alt="/assets/2017-03-15-dispatchers.png" /></p>
+
+<p>Please check there are two kinds of dispatchers: one is synchronous and the other is asynchronous. You can guess the <code class="highlighter-rouge">AsynchronousDispatcher</code> is to support some asynchronous requests, and the <code class="highlighter-rouge">SynchronousDispatcher</code> is used for traditional request handling. We won’t dive into the details of two kinds of dispatchers in this article. Now let’s see sequence diagram of the <code class="highlighter-rouge">SynchronousDispatcher.invoke()</code> method:</p>
+
+<p><img src="/assets/2017-03-15-invoke.png" alt="/assets/2017-03-15-invoke.png" /></p>
+
+<p>From the above diagram we can see the main logic is to get the invoker and call the <code class="highlighter-rouge">invoke()</code> method of the invoker. Here is the sequence diagram of the <code class="highlighter-rouge">SynchronousDispatcher.getInvoker()</code> method:</p>
+
+<p><img src="/assets/2017-03-15-getinvoker.png" alt="/assets/2017-03-15-getinvoker.png" /></p>
+
+<p>From the above diagram we can see the main logic is <code class="highlighter-rouge">registry.getResourceInvoker(request)</code>. We have discussed the details about RESTEasy implementation on URL matching process in [sec3.7].</p>
+
+<p>After getting the invoker, the dispatcher will run <code class="highlighter-rouge">invoker.invoke()</code> method to call the real method matches the incoming request. The discussion on invoker is out of the scope in this article, and I’ll write another article to introduce the design on invoker.</p>
+
+<h3 id="references"><em>References</em></h3>
+
+<hr />
+<div class="footnotes">
+  <ol>
+    <li id="fn:jaxrs-spec3_7">
+      <p><a href="http://weinan.io/2017/03/04/jaxrs-spec3_7.html">RESTEasy Implementation of JAX-RS SPEC 2.0 Section 3.7</a>.&nbsp;<a href="#fnref:jaxrs-spec3_7" class="reversefootnote">&#8617;</a></p>
+    </li>
+    <li id="fn:handler">
+      <p><a href="https://github.com/resteasy/Resteasy/blob/master/server-adapters/resteasy-jdk-http/src/main/java/org/jboss/resteasy/plugins/server/sun/http/ResteasyHttpHandler.java">ResteasyHttpHandler.java</a>&nbsp;<a href="#fnref:handler" class="reversefootnote">&#8617;</a></p>
+    </li>
+  </ol>
+</div>

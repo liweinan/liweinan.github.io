@@ -1,0 +1,187 @@
+<p>This is the second part of the <code class="highlighter-rouge">Adventures in JDBC and the PostgreSQL JDBC driver</code> series of articles. In the first part, we have installed the PostgreSQL database server, and we have downloaded the PostgreSQL JDBC driver source and compile it. In this part we will create a sample application to use JDBC to interact with the underlying database system. The first step is the create a sample application.</p>
+
+<h2 id="creating-sample-application">Creating Sample Application</h2>
+
+<p>Now let’s write a sample application, and the project name will be <code class="highlighter-rouge">play-with-jdbc</code>. The first step is to create a directory for the project:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>$ mkdir play-with-jdbc
+</code></pre>
+</div>
+
+<p>The above command will create the <code class="highlighter-rouge">play-with-jdbc</code> directory. I’d like to use Gradle to manage this project, because Gradle can reuse the local Maven repository, and it’s more lightweight to start a small new project compared with Maven. Firstly we  need to enter the <code class="highlighter-rouge">play-with-jdbc</code> directory:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>$ cd play-with-jdbc/
+</code></pre>
+</div>
+
+<p>After entering the directory, we need to run the gradle <code class="highlighter-rouge">init</code> command to create a Java project. Here is the command and its output:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>$ gradle init --type java-library
+Starting a new Gradle Daemon for this build (subsequent builds will be faster).
+:wrapper
+:init
+
+BUILD SUCCESSFUL
+
+Total time: 20.568 secs
+</code></pre>
+</div>
+
+<p>The above command will create a project with type <code class="highlighter-rouge">java-library</code>. We can check the generated files in below:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>$ tree
+.
+├── build.gradle
+├── gradle
+│   └── wrapper
+│       ├── gradle-wrapper.jar
+│       └── gradle-wrapper.properties
+├── gradlew
+├── gradlew.bat
+├── settings.gradle
+└── src
+    ├── main
+    │   └── java
+    │       └── Library.java
+    └── test
+        └── java
+            └── LibraryTest.java
+
+7 directories, 8 files
+</code></pre>
+</div>
+
+<p>From the above output, we can see the project created by <code class="highlighter-rouge">gradle</code> is following the Maven project structure. In addition, it provides a <code class="highlighter-rouge">gradlew</code> command to wrap and invoke Gradle in this project.  Now let’s build the project with this command:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>$ ./gradlew build
+</code></pre>
+</div>
+
+<p>The above command will start to download Gradle into the project directory for the first time of running, and this is convenient for us to distribute our project to other people that don’t have Gradle installed on their machines. Here is the output of the above command:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>Starting a new Gradle Daemon for this build (subsequent builds will be faster).
+:compileJava
+:processResources UP-TO-DATE
+:classes
+:jar
+:assemble
+:compileTestJava
+:processTestResources UP-TO-DATE
+:testClasses
+:test
+:check
+:build
+
+BUILD SUCCESSFUL
+
+Total time: 16.79 secs
+</code></pre>
+</div>
+
+<p>From the above output, we can see the classes are compiled and packaged into a jar file. The compiled files will be put into <code class="highlighter-rouge">build</code> directory. Here is the generated content of the <code class="highlighter-rouge">build</code> directory:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>$ ls build
+classes          libs             test-results
+dependency-cache reports          tmp
+</code></pre>
+</div>
+
+<p>The above output shows the content in <code class="highlighter-rouge">build</code> directory. We can find the final jar file in the <code class="highlighter-rouge">libs</code> directory:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>$ ls build/libs/
+play-with-jdbc.jar
+</code></pre>
+</div>
+
+<p>The above jar file contains the classes in the project. Now we should configure the project to use the JDBC driver we compiled. Firstly we need to find the PostgreSQL JDBC driver we compiled. By convention, Maven puts its installed jar file into <code class="highlighter-rouge">~/.m2</code> directory, so I can find it here:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>$ ls ~/.m2/repository/org/postgresql/postgresql/42.0.1-SNAPSHOT/
+_remote.repositories           maven-metadata-local.xml       postgresql-42.0.1-SNAPSHOT.jar postgresql-42.0.1-SNAPSHOT.pom
+</code></pre>
+</div>
+
+<p>The above <code class="highlighter-rouge">postgresql-42.0.1-SNAPSHOT.jar</code> is the library I will use in my <code class="highlighter-rouge">play-with-jdbc</code> project. Now we need to open the <code class="highlighter-rouge">build.gradle</code> file in <code class="highlighter-rouge">play-with-jdbc</code>, and add a line into the <code class="highlighter-rouge">repositories</code> section:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>mavenLocal()
+</code></pre>
+</div>
+
+<p>The above repository refers to the local <code class="highlighter-rouge">~/.m2</code> repository managed by Maven. Then we need to add a line into <code class="highlighter-rouge">dependencies</code> section of <code class="highlighter-rouge">build.gradle</code>:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>compile 'org.postgresql:postgresql:42.0.1-SNAPSHOT'
+</code></pre>
+</div>
+
+<p>The above line will make sure the <code class="highlighter-rouge">postgresql-42.0.1-SNAPSHOT.jar</code> can be used during the compilation process. Now that we have prepared the project to use JDBC driver to connect to the database, let’s start to write some sample code to use the JDBC driver.</p>
+
+<h2 id="using-the-postgresql-jdbc-driver">Using the PostgreSQL JDBC driver</h2>
+
+<p>We can write a sample to use the JDBC interfaces and PostgreSQL driver to connect to the underlying database server. Here is the code:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="kn">package</span> <span class="n">io</span><span class="o">.</span><span class="na">weinan</span><span class="o">.</span><span class="na">jdbc</span><span class="o">;</span>
+
+<span class="kn">import</span> <span class="nn">java.sql.Connection</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.sql.DriverManager</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.util.Properties</span><span class="o">;</span>
+
+<span class="cm">/**
+ * Created by weli on 30/04/2017.
+ */</span>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">DirectConnection</span> <span class="o">{</span>
+
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
+        <span class="n">Class</span><span class="o">.</span><span class="na">forName</span><span class="o">(</span><span class="s">"org.postgresql.Driver"</span><span class="o">);</span>
+
+        <span class="n">String</span> <span class="n">url</span> <span class="o">=</span> <span class="s">"jdbc:postgresql://localhost/weli"</span><span class="o">;</span>
+        <span class="n">Properties</span> <span class="n">props</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Properties</span><span class="o">();</span>
+        <span class="n">props</span><span class="o">.</span><span class="na">setProperty</span><span class="o">(</span><span class="s">"user"</span><span class="o">,</span><span class="s">"weli"</span><span class="o">);</span>
+        <span class="n">props</span><span class="o">.</span><span class="na">setProperty</span><span class="o">(</span><span class="s">"password"</span><span class="o">,</span><span class="s">""</span><span class="o">);</span>
+        <span class="n">props</span><span class="o">.</span><span class="na">setProperty</span><span class="o">(</span><span class="s">"ssl"</span><span class="o">,</span><span class="s">"false"</span><span class="o">);</span>
+
+        <span class="n">Connection</span> <span class="n">conn</span> <span class="o">=</span> <span class="n">DriverManager</span><span class="o">.</span><span class="na">getConnection</span><span class="o">(</span><span class="n">url</span><span class="o">,</span> <span class="n">props</span><span class="o">);</span>
+
+        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">conn</span><span class="o">);</span>
+
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre>
+</div>
+
+<p>The above code loads the driver into the memory of virtual machine, and connects to the database server with the information like <code class="highlighter-rouge">user</code>, <code class="highlighter-rouge">password</code>. We can put the above code into our project like this:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>src/main/java/io/weinan/jdbc/DirectConnection.java
+</code></pre>
+</div>
+
+<p>After adding the class file, we need to build the project using Gradle. To build the project, we need to add a <code class="highlighter-rouge">fatJar</code> task into <code class="highlighter-rouge">build.gradle</code>:</p>
+
+<div class="language-groovy highlighter-rouge"><pre class="highlight"><code><span class="n">task</span> <span class="nf">fatJar</span><span class="o">(</span><span class="nl">type:</span> <span class="n">Jar</span><span class="o">)</span> <span class="o">{</span>
+    <span class="n">baseName</span> <span class="o">=</span> <span class="n">project</span><span class="o">.</span><span class="na">name</span> <span class="o">+</span> <span class="s1">'-all'</span>
+    <span class="n">from</span> <span class="o">{</span> <span class="n">configurations</span><span class="o">.</span><span class="na">compile</span><span class="o">.</span><span class="na">collect</span> <span class="o">{</span> <span class="n">it</span><span class="o">.</span><span class="na">isDirectory</span><span class="o">()</span> <span class="o">?</span> <span class="n">it</span> <span class="o">:</span> <span class="n">zipTree</span><span class="o">(</span><span class="n">it</span><span class="o">)</span> <span class="o">}</span> <span class="o">}</span>
+    <span class="n">with</span> <span class="n">jar</span>
+<span class="o">}</span>
+</code></pre>
+</div>
+
+<p>The above task can build a jar file with all the dependencies included, and we need this task to include the <code class="highlighter-rouge">postgresql-42.0.1-SNAPSHOT.jar</code> into the final jar for us. After the above task is added into <code class="highlighter-rouge">build.gradle</code>, we can build the project using the following command:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>$ ./gradlew -q fatJar
+</code></pre>
+</div>
+
+<p>The above command will build the whole project, and produce a jar file with dependencies included. Here is the output:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>$ ls build/libs/
+play-with-jdbc-all.jar
+</code></pre>
+</div>
+
+<p>As the output shown above, we get the <code class="highlighter-rouge">play-with-jdbc-all.jar</code>. Now we can use the above jar to invoke our class:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>$ java -cp build/libs/play-with-jdbc-all.jar io.weinan.jdbc.DirectConnection
+org.postgresql.jdbc.PgConnection@6267c3bb
+</code></pre>
+</div>
+
+<p>From the above output, we can see our code returns a connection to database, and the class that represents the connection is <code class="highlighter-rouge">org.postgresql.jdbc.PgConnection</code>. That’s all for this article. In the next article, we will examining the driver loading process to see how the PostgreSQL JDBC driver works internally.</p>
+

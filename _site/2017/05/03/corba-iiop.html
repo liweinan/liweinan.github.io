@@ -1,0 +1,599 @@
+<p>In this article, I’d like to introduce to you the Common Object Request Broker Architecture, which is abbreviated as CORBA<sup id="fnref:corba"><a href="#fn:corba" class="footnote">1</a></sup>, and its implementation in Java, which is named Java RMI-IIOP. You may think the CORBA is an outdated technology, actually it is still acting as the the basic architecture of distributed object invocation field. Many of state-of-the-art projects are built on top of CORBA. For example, Narayana, the transaction processing project provided by JBoss community, use many idl files to describe its OTS implementation interfaces. Narayana is acting as the transaction processing subsystem in Wildfly<sup id="fnref:wildfly"><a href="#fn:wildfly" class="footnote">2</a></sup>.</p>
+
+<p>Java RMI<sup id="fnref:rmi"><a href="#fn:rmi" class="footnote">3</a></sup> is an distributed object invocation solution provided from Java community, and it was then enhenced by the RMI-IIOP standard to fully compliant with the CORBA standard. Because CORBA provides platform independency, so the Java RMI-IIOP allows the Java applications to communicate with the systems that conforms to the CORBA that is not written in Java.</p>
+
+<p>The CORBA and Java RMI-IIOP technologies are usually hide from the application level to the end users, but they are broadly used in middleware level as implemenations of remoting and transaction processing subsystems. In this article, I’d like to give you an introduction on these technologies. First let’s learn how to write a CORBA application.</p>
+
+<h2 id="writing-an-corba-application-in-java">Writing an CORBA Application In Java</h2>
+
+<p>In this section, we need to know that CORBA uses a platform independent description language called <code class="highlighter-rouge">IDL</code><sup id="fnref:idl"><a href="#fn:idl" class="footnote">4</a></sup> for the users to describe their application interfaces. The fullname of <code class="highlighter-rouge">IDL</code> is <code class="highlighter-rouge">Interface description language</code>, and its grammar looks like C++ language but it’s not the same. Java has an IDL compiler called <code class="highlighter-rouge">idlj</code> that can compile the IDL file into Java classes. In this section, we will write an <code class="highlighter-rouge">Hello</code> interface using the IDL format, and then we will use the <code class="highlighter-rouge">idlj</code> compiler to compile it to Java classes. The first step is to write the IDL file to descibe our application interface.</p>
+
+<h3 id="writing-idl">Writing IDL</h3>
+
+<p>Firstly let’s write an IDL file named <code class="highlighter-rouge">Hello.idl</code> as following:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>module HelloApp
+{
+	interface Hello
+	{
+		string sayHello();
+	};
+};
+</code></pre>
+</div>
+
+<p>The above interface is named <code class="highlighter-rouge">Hello</code>, and it contains a <code class="highlighter-rouge">sayHello()</code> method that will return string typed data. Now we can use the <code class="highlighter-rouge">idlj</code> compiler to compile it.</p>
+
+<h3 id="generating-the-client-side-classes">Generating The Client Side Classes</h3>
+
+<p>Here is the <code class="highlighter-rouge">idlj</code> command to generate the client side Java classes from the idl file:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>$ idlj -fclient Hello.idl
+</code></pre>
+</div>
+
+<p>As the above command shows, we used We have used the <code class="highlighter-rouge">-fclient</code> option to tell <code class="highlighter-rouge">idlj</code> to generate the client side classes for us, and it generated these classes into a <code class="highlighter-rouge">HelloApp</code> directory. Here is the output:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>$ ls HelloApp/
+Hello.java           HelloHelper.java     HelloHolder.java     HelloOperations.java _HelloStub.java
+</code></pre>
+</div>
+
+<p>The above command output shows the classes that is related with the client side. Before explaining these classes, we need to have an understanding on the basic CORBA architecture. Generally speaking, CORBA divides the whole system into three parts: The naming service; The client side; The servant side.</p>
+
+<p>Firstly, we need to know CORBA is a netword based architecture, which means the three sides can be located at different places. The servant side acts like a server that accepts the calls from clients, and the client side will make the calls to the servant side. The naming service is used for the servant side to register the service it provides, and the client side will fetch the servant information from the naming service. The naming service is usally a server that listens to network for the servants to register/unregister themselves, and for the clients to fetch the servants information that they need.</p>
+
+<p>From the client side of the view, it will just call the interface methods like it is a local method, and all the underlying network communications and details are hidden from the perspective of users. The benefit to use CORBA is that we just need to define a common interface using the IDL file, and then we could use different languages to implement the interface. There are tools in each language to generate helper code from the IDL files. In this article, I will focus on Java implementation. Now let’s turn back to see the details of the client side classes generated by the <code class="highlighter-rouge">idlj</code> compiler. The relationship of above classes is shown as below:</p>
+
+<p><img src="/assets/2017-05-03/hello-clients.png" alt="" /></p>
+
+<p>From the above class diagram, we can see the <code class="highlighter-rouge">HelloOperations</code> interface defines the <code class="highlighter-rouge">sayHello()</code> method we wrote in <code class="highlighter-rouge">Hello.idl</code>, and then the <code class="highlighter-rouge">Hello</code> interface extends the <code class="highlighter-rouge">HelloOperations</code> interface. The <code class="highlighter-rouge">_HelloStub</code> class implements the <code class="highlighter-rouge">Hello</code> interface, and the client side will use it to call the <code class="highlighter-rouge">Hello</code> implementation on servant side. We haven’t written an implementation of <code class="highlighter-rouge">Hello</code> interface for servant side, and we’ll do it later. Now let’s check the <code class="highlighter-rouge">sayHello()</code> method generated in <code class="highlighter-rouge">_HelloStub</code>:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>public String sayHello ()
+{
+        org.omg.CORBA.portable.InputStream $in = null;
+        try {
+            org.omg.CORBA.portable.OutputStream $out = _request ("sayHello", true);
+            $in = _invoke ($out);
+            String $result = $in.read_string ();
+            return $result;
+        } catch (org.omg.CORBA.portable.ApplicationException $ex) {
+            $in = $ex.getInputStream ();
+            String _id = $ex.getId ();
+            throw new org.omg.CORBA.MARSHAL (_id);
+        } catch (org.omg.CORBA.portable.RemarshalException $rm) {
+            return sayHello (        );
+        } finally {
+            _releaseReply ($in);
+        }
+} // sayHello
+</code></pre>
+</div>
+
+<p>From the above code we can see the method uses the <code class="highlighter-rouge">InputStream</code> and <code class="highlighter-rouge">OutputStream</code> to represent the request and the response of the call. In addition, the <code class="highlighter-rouge">_request()</code> method and <code class="highlighter-rouge">_invoke()</code> method are called to get the result we need. We’ll check the detail of this process later. The other class I’d like to explain is the <code class="highlighter-rouge">HelloHelper</code> class. This class contains helper functions for us to deal with the objects transferred via the network, such as the data marshalling and unmarshalling work. For example, here is the <code class="highlighter-rouge">narrow(...)</code> method in <code class="highlighter-rouge">HelloHelper</code> class:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>public static HelloApp.Hello narrow (org.omg.CORBA.Object obj)
+ {
+   if (obj == null)
+     return null;
+   else if (obj instanceof HelloApp.Hello)
+     return (HelloApp.Hello)obj;
+   else if (!obj._is_a (id ()))
+     throw new org.omg.CORBA.BAD_PARAM ();
+   else
+   {
+     org.omg.CORBA.portable.Delegate delegate = ((org.omg.CORBA.portable.ObjectImpl)obj)._get_delegate ();
+     HelloApp._HelloStub stub = new HelloApp._HelloStub ();
+     stub._set_delegate(delegate);
+     return stub;
+   }
+}
+</code></pre>
+</div>
+
+<p>From the above code we can see the <code class="highlighter-rouge">org.omg.CORBA.Object</code> typed parameter is cast to <code class="highlighter-rouge">HelloApp.Hello</code> typed return value. We will use this <code class="highlighter-rouge">narrow(...)</code> method later. That’s all I’d like to explain for client side. The next step is to generate the servant side classes.</p>
+
+<h2 id="generating-the-servant-side-classes">Generating The Servant Side Classes</h2>
+
+<p>Now we need to generate the classes for the servant side. Most client side and servant side classes are the same, so we won’t get many more files by generating the servant side classes. Here is the command to generate the servant side classes:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>$ idlj -fserver Hello.idl
+</code></pre>
+</div>
+
+<p>The above command will generate the classes for servant side, and many classes are common with the client side, so there is just one additional class named <code class="highlighter-rouge">HelloPOA</code> added into the directory. We can check the files we have now:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>$ ls
+Hello.java           HelloHelper.java     HelloHolder.java     HelloOperations.java HelloPOA.java        _HelloStub.java
+</code></pre>
+</div>
+
+<p>The <code class="highlighter-rouge">POA</code> is abbreviation of <code class="highlighter-rouge">Portable Object Adapter</code><sup id="fnref:poa"><a href="#fn:poa" class="footnote">5</a></sup>, and is it part of the CORBA specification. The <code class="highlighter-rouge">HelloPOA</code> class is a servant side skeleton class that can help us to register the defined methods into naming service. Let’s see the defintion of this class:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>public abstract class HelloPOA extends org.omg.PortableServer.Servant
+ implements HelloApp.HelloOperations, org.omg.CORBA.portable.InvokeHandler
+</code></pre>
+</div>
+
+<p>From the above class definition, we can see the <code class="highlighter-rouge">HelloPOA</code> class extends the <code class="highlighter-rouge">org.omg.PortableServer.Servant</code> and implements <code class="highlighter-rouge">HelloApp.HelloOperations</code> and <code class="highlighter-rouge">org.omg.CORBA.portable.InvokeHandler</code>. This is an abstract class, and we need to extend this class and implement the <code class="highlighter-rouge">sayHello()</code> method in the <code class="highlighter-rouge">HelloOperations</code> interface. Firstly let’s check the detail code in <code class="highlighter-rouge">HelloPOA</code> class:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>private static java.util.Hashtable _methods = new java.util.Hashtable ();
+static
+{
+  _methods.put ("sayHello", new java.lang.Integer (0));
+}
+</code></pre>
+</div>
+
+<p>As the code shown above, it stores our defined methods into <code class="highlighter-rouge">_methods</code> hashtable. Then let’s check the <code class="highlighter-rouge">_invoke()</code> method:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>public org.omg.CORBA.portable.OutputStream _invoke (String $method,
+                              org.omg.CORBA.portable.InputStream in,
+                              org.omg.CORBA.portable.ResponseHandler $rh)
+{
+  org.omg.CORBA.portable.OutputStream out = null;
+  java.lang.Integer __method = (java.lang.Integer)_methods.get ($method);
+  if (__method == null)
+    throw new org.omg.CORBA.BAD_OPERATION (0, org.omg.CORBA.CompletionStatus.COMPLETED_MAYBE);
+
+  switch (__method.intValue ())
+  {
+     case 0:  // HelloApp/Hello/sayHello
+     {
+       String $result = null;
+       $result = this.sayHello ();
+       out = $rh.createReply();
+       out.write_string ($result);
+       break;
+     }
+
+     default:
+       throw new org.omg.CORBA.BAD_OPERATION (0, org.omg.CORBA.CompletionStatus.COMPLETED_MAYBE);
+  }
+
+  return out;
+} // _invoke
+</code></pre>
+</div>
+
+<p>As the code shown above, the <code class="highlighter-rouge">_invoke()</code> method will firstly call the <code class="highlighter-rouge">sayHello()</code> method in servant side with the actual <code class="highlighter-rouge">HelloOperations</code> implementation. Here is the relative part of the code in the method:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>$result = this.sayHello ();
+</code></pre>
+</div>
+
+<p>After the above local invocation is done in servant side, it will create the reply and write to client side via network like this:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>out = $rh.createReply();
+out.write_string ($result);
+</code></pre>
+</div>
+
+<p>The above code will transfer the the response of local invocation to client side via network. After looked at the code in <code class="highlighter-rouge">HelloPOA</code>, now let’s see this class diagram that includes all the classes we have generated:</p>
+
+<p><img src="/assets/2017-05-03/hello-server-client.png" alt="" /></p>
+
+<p>From the above diagram, we can see the relationship between these classes, and we can see the shared classes between client side and servant side. Nevertheless, these classes can not form a complete client or servant yet. We need to implement some client side and servant side classes by oursevles. Now let’s implment the servant side implementation of the <code class="highlighter-rouge">Hello</code> interface.</p>
+
+<h3 id="servant-implementation">Servant Implementation</h3>
+
+<p>For the servant side, we need to write a <code class="highlighter-rouge">HelloImpl</code> class that extends <code class="highlighter-rouge">HelloPOA</code> to implement the <code class="highlighter-rouge">sayHello()</code> method. Here is the code:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>package HelloApp;
+
+import org.omg.CORBA.ORB;
+
+/**
+ * Created by weli on 25/04/2017.
+ */
+public class HelloImpl extends HelloPOA {
+
+
+    private ORB orb;
+
+    public void setORB(ORB orbVal) {
+        orb = orbVal;
+    }
+
+
+
+    @Override
+    public String sayHello() {
+        return "\nHello, world!\n";
+    }
+
+}
+</code></pre>
+</div>
+
+<p>From the above code, we can see that the <code class="highlighter-rouge">HelloImpl</code> class I wrote implements the <code class="highlighter-rouge">sayHello()</code> method, and it will accept a <code class="highlighter-rouge">org.omg.CORBA.ORB</code> instance for network communication. We’ll check the detail of network communication layer later. The following diagram shows the servant side classes we have so far:</p>
+
+<p><img src="/assets/2017-05-03/HelloImpl.png" alt="" /></p>
+
+<p>From the above diagram, we can see the two generated classes by <code class="highlighter-rouge">idlj</code> compiler, which are <code class="highlighter-rouge">HelloOperations</code> and <code class="highlighter-rouge">HelloPOA</code>, and a handwritten class <code class="highlighter-rouge">HelloImpl</code>. Their relationship is shown in above diagram. Until now, we have <code class="highlighter-rouge">_HelloStub</code> class for client side to call the method in <code class="highlighter-rouge">HelloImpl</code> from server side, and the network communication detail in between is handled by the POA class. Actually the <code class="highlighter-rouge">ORB</code> layer will deal with the network communication, and it’s handled by the generated classes. We don’t have to dig into the network layer so deep now. Let’s write a <code class="highlighter-rouge">HelloServer</code> class that accepts the call from client and invocate the <code class="highlighter-rouge">HelloImpl.sayHello()</code> method, and then return the result back to the client. Here is the code of the <code class="highlighter-rouge">HelloServer</code> class:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>package HelloApp;
+
+import org.omg.CORBA.ORB;
+import org.omg.CosNaming.NameComponent;
+import org.omg.CosNaming.NamingContextExt;
+import org.omg.CosNaming.NamingContextExtHelper;
+import org.omg.PortableServer.POA;
+import org.omg.PortableServer.POAHelper;
+
+import java.util.Properties;
+
+/**
+ * Created by weli on 25/04/2017.
+ */
+public class HelloServer {
+    public static void main(String[] args) throws Exception {
+        ORB orb = ORB.init(args, null);
+
+        POA rootpoa = POAHelper.narrow(orb.resolve_initial_references("RootPOA"));
+
+        rootpoa.the_POAManager().activate();
+
+        HelloImpl helloImpl = new HelloImpl();
+        helloImpl.setORB(orb);
+
+        org.omg.CORBA.Object ref = rootpoa.servant_to_reference(helloImpl);
+        Hello href = HelloHelper.narrow(ref);
+
+        org.omg.CORBA.Object objRef = orb.resolve_initial_references("NameService");
+        NamingContextExt ncRef = NamingContextExtHelper.narrow(objRef);
+
+        String name = "Hello";
+        NameComponent path[] = ncRef.to_name(name);
+        ncRef.rebind(path, href);
+
+        System.out.println("Server started. Accepting requests...");
+
+        orb.run();
+
+    }
+}
+</code></pre>
+</div>
+
+<p>From the above code, we can see the <code class="highlighter-rouge">HelloServer</code> class generally performs three steps: Firstly, it activates the servant manager:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>POA rootpoa = POAHelper.narrow(orb.resolve_initial_references("RootPOA"));
+rootpoa.the_POAManager().activate();
+</code></pre>
+</div>
+
+<p>As the above code shows, the servant manager is in <code class="highlighter-rouge">rootpoa</code>, and it’s retrieved by <code class="highlighter-rouge">ORB</code> from naming service. The name of the <code class="highlighter-rouge">POA</code> object in naming service is <code class="highlighter-rouge">RootPOA</code>. This is the architecture defined by CORBA specification. There is a naming service for the servants to be registered and fetched. For example, our <code class="highlighter-rouge">HelloImpl</code> can be registered into the naming service. The naming service is provided by naming server. In this article, I’ll use a tool provided by JDK named <code class="highlighter-rouge">orbd</code> for this purpose. It is a CORBA naming service daemon provided by JDK.</p>
+
+<p>Secondly, the above code registers <code class="highlighter-rouge">HelloImpl</code> into naming service. The code is shown in below:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>HelloImpl helloImpl = new HelloImpl();
+helloImpl.setORB(orb);
+
+org.omg.CORBA.Object ref = rootpoa.servant_to_reference(helloImpl);
+Hello href = HelloHelper.narrow(ref);
+
+org.omg.CORBA.Object objRef = orb.resolve_initial_references("NameService");
+NamingContextExt ncRef = NamingContextExtHelper.narrow(objRef);
+
+String name = "Hello";
+NameComponent path[] = ncRef.to_name(name);
+ncRef.rebind(path, href);
+</code></pre>
+</div>
+
+<p>From the above code, we can see that we use <code class="highlighter-rouge">orb</code> to get <code class="highlighter-rouge">NameService</code> itself from naming service, and then we register our <code class="highlighter-rouge">HelloImpl</code> as <code class="highlighter-rouge">Hello</code> service.</p>
+
+<p>Thirdly, we start our service to listen to the client requests:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>System.out.println("Server started. Accepting requests...");
+
+orb.run();
+</code></pre>
+</div>
+
+<p>In above code, the last line will put the servant into listening status, and it will start to listen for requests from clients via network. As we have prepared the servant side, now we need to implement the client side.</p>
+
+<h3 id="client-side-implementation">Client Side Implementation</h3>
+
+<p>We should write a client side class named <code class="highlighter-rouge">HelloClient</code> that can help us to fetch the <code class="highlighter-rouge">Hello</code> servant from the naming service, and then issue a <code class="highlighter-rouge">Hello.sayHello()</code> call to the servant. Here is the call for <code class="highlighter-rouge">HelloClient</code>:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>package HelloApp;
+
+
+import org.omg.CORBA.ORB;
+import org.omg.CosNaming.NamingContext;
+import org.omg.CosNaming.NamingContextExt;
+import org.omg.CosNaming.NamingContextExtHelper;
+import org.omg.CosNaming.NamingContextHelper;
+
+import java.util.Properties;
+
+/**
+ * Created by weli on 25/04/2017.
+ */
+public class HelloClient {
+
+    static Hello helloImpl;
+
+    public static void main(String[] args) throws Exception {
+
+        ORB orb = ORB.init(args, null);
+
+        org.omg.CORBA.Object objRef = orb.resolve_initial_references("NameService");
+
+        NamingContextExt ncRef = NamingContextExtHelper.narrow(objRef);
+
+        String name = "Hello";
+
+        helloImpl = HelloHelper.narrow(ncRef.resolve_str(name));
+
+        System.out.println(helloImpl.sayHello());
+
+    }
+}
+</code></pre>
+</div>
+
+<p>Same like server side, the above client side implementation also uses the <code class="highlighter-rouge">orb</code> object to fetch <code class="highlighter-rouge">NameService</code>, and here is thre relative code in above <code class="highlighter-rouge">HelloClient</code> class:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>org.omg.CORBA.Object objRef = orb.resolve_initial_references("NameService");
+</code></pre>
+</div>
+
+<p>This happens via network, and we will see the detail later. And then the <code class="highlighter-rouge">NamingContextExtHelper</code> will help the client side to convert the <code class="highlighter-rouge">objRef</code> gotten from network to <code class="highlighter-rouge">NamingContextExt</code>:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>NamingContextExt ncRef = NamingContextExtHelper.narrow(objRef);
+</code></pre>
+</div>
+
+<p>The next step in client is to get the <code class="highlighter-rouge">Hello</code> interface via network, and here is the relative code:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>helloImpl = HelloHelper.narrow(ncRef.resolve_str(name));
+</code></pre>
+</div>
+
+<p>The above code is simliar to the process of getting <code class="highlighter-rouge">NameService</code> in above. We use <code class="highlighter-rouge">ncRef.resolve_str(...)</code> to fetch the remote object from naming server. If we check the type of <code class="highlighter-rouge">helloImpl</code>, we will see the type is <code class="highlighter-rouge">_HelloStub</code>, and this class will handle the network communication with server side. When we call <code class="highlighter-rouge">helloImpl.sayHello()</code> method later, the stub will actually invoke the <code class="highlighter-rouge">HelloImpl.sayHello()</code> implementation at servant side. Now let’s check how does servant side receives the call from client side and processes the request.</p>
+
+<h3 id="request-processing-of-servant-side">Request Processing Of Servant Side</h3>
+
+<p>At the servant side, the <code class="highlighter-rouge">HelloImpl</code> class extends the generated <code class="highlighter-rouge">HelloPOA</code> class as we saw in above. We have checked that the <code class="highlighter-rouge">_invoke()</code> method in <code class="highlighter-rouge">HelloPOA</code> class, and knows it will receive the network requests, and then dispatch the requests to local implementations. Let’s review the core part in the <code class="highlighter-rouge">HelloPOA._invoke(...)</code> method:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>private static java.util.Hashtable _methods = new java.util.Hashtable ();
+static
+{
+_methods.put ("sayHello", new java.lang.Integer (0));
+}
+
+...
+
+switch (__method.intValue ())
+{
+   case 0:  // HelloApp/Hello/sayHello
+   {
+	 String $result = null;
+	 $result = this.sayHello ();
+	 out = $rh.createReply();
+	 out.write_string ($result);
+	 break;
+   }
+
+   default:
+	 throw new org.omg.CORBA.BAD_OPERATION (0, org.omg.CORBA.CompletionStatus.COMPLETED_MAYBE);
+}
+
+return out;
+} // _invoke
+</code></pre>
+</div>
+
+<p>As the code shown above, we can see how does servant side deals with the request from client side. Now let’s see the <code class="highlighter-rouge">sayHello()</code> call in <code class="highlighter-rouge">_HelloStub</code> from client side:</p>
+
+<p><img src="/assets/2017-05-03/HelloApp._HelloStub.sayHello().png" alt="" /></p>
+
+<p>From the above sequence diagram, we can see how does <code class="highlighter-rouge">_HelloStub.sayHello()</code> method invokes a call to remote server side, and remarshal the reply message received from servant. Here is the sequence diagram of <code class="highlighter-rouge">HelloPOA._invoke(...)</code> method in server side:</p>
+
+<p><img src="/assets/2017-05-03/HelloApp.HelloPOA._invoke(String, org.omg.CORBA.portable.InputStream, org.omg.CORBA.portable.ResponseHandler).png" alt="" /></p>
+
+<p>From the above seqeuence diagram, we can see how does servant side deal with the requests from the client side. To sum up, here is the description of the whole process: Firstly, there is a naming service daemon started that allows multiple servants to be registered and client can fetch the servant from the naming service.</p>
+
+<p>Secondly, we register our <code class="highlighter-rouge">HelloImpl</code> servant into the naming service, and the service name is set to <code class="highlighter-rouge">Hello</code>. The client side fetches the <code class="highlighter-rouge">Hello</code> servant from the naming service, and knows the network location of the <code class="highlighter-rouge">Hello</code> servant. Then the client side invokes a request by using the <code class="highlighter-rouge">Hello.sayHello()</code> method. This is done via the <code class="highlighter-rouge">_HelloStub</code> class. The <code class="highlighter-rouge">_HelloStub</code> class deals with the network communication with the servant side. The servant side used <code class="highlighter-rouge">HelloPOA</code> class to deal with the request from client side. It invokes the <code class="highlighter-rouge">sayHello()</code> method in <code class="highlighter-rouge">HelloImpl</code>, and then marshal the return message and send back the message to client side.</p>
+
+<p>Thirdly, the client side receives the the network data reply from the servant side, and remarhal the data as the return value of the <code class="highlighter-rouge">sayHello()</code> method of <code class="highlighter-rouge">Hello</code> interface..</p>
+
+<p>From the user’s perspective, the client side invokes <code class="highlighter-rouge">Hello.sayHello()</code> method as if it’s a local method call, but actually it is a remote call to the <code class="highlighter-rouge">HelloImpl.sayHello()</code> in a servant. The network communication and server implementation details are hidden to users. This is one of the design purposes of the CORBA architecture. In addition, the client side, servant side and naming service side are independent from each other. Now let’s deploy our whole project into running state.</p>
+
+<h2 id="deployment-of-the-project">Deployment Of The Project</h2>
+
+<p>Now we can start the project deployment phase. We will use the <code class="highlighter-rouge">orbd</code> command to start the naming service, and then register our <code class="highlighter-rouge">Hello</code> servant into the naming service. After this, the client side will fetech the servant from naming service, and then make a remote call via stub interface. Here is the deployment diagram of naming service, servant side and client side:</p>
+
+<p><img src="/assets/2017-05-03/deployment.png" alt="" /></p>
+
+<p>From the above diagram, we can see the three sides will be deployed into different machines and they are connected by the network. That is what I’d like to show you in this section. I will start the <code class="highlighter-rouge">orbd</code> on machine A. The servant that has <code class="highlighter-rouge">HelloImpl</code> will be deployed on machine B, and  it will register itself into the naming service on machine A. At last I will deploy the client on machine C. The client side will fetch the <code class="highlighter-rouge">Hello</code> servant from naming service. The naming service will tell the client side that the <code class="highlighter-rouge">Hello</code> servant is on machine B, and then the client will make a remote call to the servant on machine B. Now let’s take the first step: starting the <code class="highlighter-rouge">orbd</code> on machine A.</p>
+
+<h3 id="start-the-orbd">Start the ORBD</h3>
+
+<p>The first step is to start the <code class="highlighter-rouge">orbd</code> on machine A. Here is the command and the output:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>$ orbd -ORBInitialPort 1050 -ORBInitialHost 10.0.1.155  &amp;
+[1] 20458
+</code></pre>
+</div>
+
+<p>As the command shown above, we have started the naming service daemon on machine A. The <code class="highlighter-rouge">ORBInitialHost</code> option defines the hostname or IP address that <code class="highlighter-rouge">orbd</code> will listen to. Because the public IP address of machine A is <code class="highlighter-rouge">10.0.1.155</code>, so the option is set to it. the <code class="highlighter-rouge">ORBInitialPort</code> option is used to set the port that <code class="highlighter-rouge">orbd</code> will allow servant or client to fetch the <code class="highlighter-rouge">NameService</code>. <code class="highlighter-rouge">NameService</code> is the default service provided by <code class="highlighter-rouge">orbd</code>, and servanta need to register itself into it. Meanwhile the client also need to fetch servants from <code class="highlighter-rouge">NameService</code>. Please note <code class="highlighter-rouge">orbd</code> has another port called <code class="highlighter-rouge">activation port</code> which accepts multiple commands to operate on servants. We will check the details later. The default port for activation is <code class="highlighter-rouge">1049</code>. Please make sure you have configured your firewall properly so the communication between three machines are not blocked. I recommend you to turn off the firewall on machine A, B, C for testing purpose. Next we should register our <code class="highlighter-rouge">HelloImpl</code> servant on machine B to the naming service on machine A.</p>
+
+<h3 id="servant-registration">Servant Registration</h3>
+
+<p>Now we should go to machine B and start the <code class="highlighter-rouge">HelloServer</code>. It will register the <code class="highlighter-rouge">HelloImpl</code> into the naming service on machine A. I added some options into <code class="highlighter-rouge">HelloServer</code> for it to connect to the naming service. Here is the detail of the code:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code> public static void main(String[] args) throws Exception {
+
+        Properties prop = new Properties();
+
+        prop.put("org.omg.CORBA.ORBInitialHost", "10.0.1.155");
+        prop.put("org.omg.CORBA.ORBInitialPort", "1050");
+
+        ORB orb = ORB.init(args, prop);
+
+        POA rootpoa = POAHelper.narrow(orb.resolve_initial_references("RootPOA"));
+
+        rootpoa.the_POAManager().activate();
+
+        HelloImpl helloImpl = new HelloImpl();
+...
+</code></pre>
+</div>
+
+<p>As the code shown above, I have set the <code class="highlighter-rouge">org.omg.CORBA.ORBInitialHost</code> and <code class="highlighter-rouge">org.omg.CORBA.ORBInitialPort</code> properties to point to machine A. Thre properties are injected into <code class="highlighter-rouge">orb</code> instance, which deals with the concrete network communication. Then the <code class="highlighter-rouge">HelloServer</code> will start the servant registration process. I set four breakpoints in IntelliJ IDEA, because these four steps involve network communication. The breakpoints are shown in the following screenshot:</p>
+
+<p><img src="/assets/2017-05-03/breakpoints.png" alt="" /></p>
+
+<p>From the above diagram, we can see there are four lines of code that involves network comunication. Now I start to debug running the code and it stops at the first line of breakpoint:</p>
+
+<p><img src="/assets/2017-05-03/first-line.png" alt="" /></p>
+
+<p>The above line of code is like this:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>org.omg.CORBA.Object objRef = orb.resolve_initial_references("NameService");
+</code></pre>
+</div>
+
+<p>The above line of code will fetch the <code class="highlighter-rouge">NameService</code> from the naming service running on machine A. I started the Wireshark network data analyzer on machine A to check how the above command looks like at network level, and here is the screenshot of the network data I got on machine A:</p>
+
+<p><img src="/assets/2017-05-03/-enp0s5_014.png" alt="" /></p>
+
+<p>From the above diagram, you can see I have applied a filter that will only show GIOP packets. GIOP is the protocol used by CORBA to transfer data. We can see the GIOP data is transferred via TCP protocol, and this is called IIOP. In a word, the GIOP data trasferred via TCP protocol is called IIOP.</p>
+
+<p>We can see the benefit to support a standard communication protocol in network level: Because Java RMI-IIOP standard supports the IIOP protocol, so it can interact with other systems with different language platoforms. Different language platforms just need to generate the interface from IDL file and make the invocation, and don’t need to worry about the detail implementation on the other side.</p>
+
+<p>In addition, we can see there is a request GIOP data from the source IP address <code class="highlighter-rouge">10.0.1.75</code> to the destination IP address <code class="highlighter-rouge">10.0.1.155</code>. The source IP address <code class="highlighter-rouge">10.0.1.75</code> is machine B, which wants to register <code class="highlighter-rouge">HelloImpl</code> servant, and the <code class="highlighter-rouge">10.0.1.155</code> is the naming service itself. Meanwhile, we can see the TCP port used by naming service is <code class="highlighter-rouge">1050</code>. Because the code is to fetch the <code class="highlighter-rouge">NameService</code>, from the Wireshark data analyzer we can see the request operation is <code class="highlighter-rouge">get</code>, and the service we want to get is <code class="highlighter-rouge">NameService</code>, here is the relative screenshot:</p>
+
+<p><img src="/assets/2017-05-03/-enp0s5_017.png" alt="" /></p>
+
+<p>From the above screenshot we can see GIOP data contains operations and data necessary for communication. Now we can check the reply data, and here is the screenshot of the reply data:</p>
+
+<p><img src="/assets/2017-05-03/-enp0s5_019.png" alt="" /></p>
+
+<p>We can see from above that the naming service will send the data requested by servant, which is the <code class="highlighter-rouge">NamingService</code>. Now we should let the code go to the next line, and here is the code:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>NamingContextExt ncRef = NamingContextExtHelper.narrow(objRef);
+</code></pre>
+</div>
+
+<p>The corresponding data of above request from <code class="highlighter-rouge">HelloServer</code> on machine B captured in machine A, and here is the screenshot of the captured data:</p>
+
+<p><img src="/assets/2017-05-03/op.png" alt="" /></p>
+
+<p>We can see the <code class="highlighter-rouge">NamingContextExtHelper.narrow(...)</code> will issue an <code class="highlighter-rouge">_is_a</code> operation on naming service side. This time the <code class="highlighter-rouge">_is_a</code> operation uses TCP port <code class="highlighter-rouge">1049</code> for communication:</p>
+
+<p><img src="/assets/2017-05-03/1049.png" alt="" /></p>
+
+<p>As the screenshot shown above, we can see the naming service uses two different ports for different purposes. The port <code class="highlighter-rouge">1050</code> is used for intially fetching the <code class="highlighter-rouge">NameService</code>, and all the following actions will use port <code class="highlighter-rouge">1049</code>. The code will then run to this line on in <code class="highlighter-rouge">HelloServer</code>:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>NameComponent path[] = ncRef.to_name(name);
+</code></pre>
+</div>
+
+<p>From the above <code class="highlighter-rouge">ncRef.to_name(...)</code> call, the relative GIOP message received at machine A is like this:</p>
+
+<p><img src="/assets/2017-05-03/to_name.png" alt="" /></p>
+
+<p>The GIOP message shows that the operation name at network level is also <code class="highlighter-rouge">to_name</code>. Next we come to this line of <code class="highlighter-rouge">HelloServer</code>:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>ncRef.rebind(path, href);
+</code></pre>
+</div>
+
+<p>This is the command that will register the <code class="highlighter-rouge">HelloImpl</code> into naming service, and here is the corresponding GIOP message:</p>
+
+<p><img src="/assets/2017-05-03/rebind.png" alt="" /></p>
+
+<p>From the above screenshot, we see the <code class="highlighter-rouge">rebind</code> operation has a protocol name called <code class="highlighter-rouge">COSNAMING</code>. This is actually part of the CORBA intefaces transferred via GIOP, and Wireshark has the ability to decode them, such as <code class="highlighter-rouge">CosEvents</code> and <code class="highlighter-rouge">CosNaming</code>. Here is the screenshot of the decoded <code class="highlighter-rouge">CosNaming</code> data:</p>
+
+<p><img src="/assets/2017-05-03/CosNaming.png" alt="" /></p>
+
+<p>From the above screenshot, we can see the information of the <code class="highlighter-rouge">Hello</code> servant has been registered into the naming service. The IP address <code class="highlighter-rouge">10.72.12.42</code> is another public IP of machine B, and later the client from machine C will fetch this info of <code class="highlighter-rouge">Hello</code> servant and use it to communicate with the servant on machine B.</p>
+
+<p>The whole message is encapulated in a data structure called <code class="highlighter-rouge">IOR</code>. The fullname of <code class="highlighter-rouge">IOR</code> is called <code class="highlighter-rouge">Interoperable Object Reference</code>, this data structure is part of the CORBA standard, and Java RMI-IIOP standard fully supports it and trafer it via the network. After the above registration is done, our <code class="highlighter-rouge">HelloServer</code> will be put into server mode by running <code class="highlighter-rouge">orb.run()</code> at last line, and finally the output is like this:</p>
+
+<p><img src="/assets/2017-05-03/server-started.png" alt="" /></p>
+
+<p>As the screenshot shown above, the servant is ready for accepting requests. We have analyzed the registration process of the servant to naming service, next we should start a client side call from machine C to see the network communication process.</p>
+
+<h3 id="client-call">Client Call</h3>
+
+<p>The client on machine C needs to communicate with the naming server on machine A to fetch the <code class="highlighter-rouge">NameService</code>, and then it will fetch the info of <code class="highlighter-rouge">Hello</code> servant from the <code class="highlighter-rouge">NameService</code>. After getting the info of <code class="highlighter-rouge">Hello</code> servant, it knows the servant server is located at machine B, and then the <code class="highlighter-rouge">_HelloStub</code> will communicate with machine B and remotely call the <code class="highlighter-rouge">HelloImpl</code>.</p>
+
+<p>In summary, client on machine C will firstly contact with the naming service on machine A, and get the info of <code class="highlighter-rouge">Hello</code> servant, and then it wil call the <code class="highlighter-rouge">Hello</code> servant server on machine B.</p>
+
+<p>Now let’s check the detail process and analyze the network data. This time we need to start Wireshark on both machine A and machine B, because the client on machine C will contact with both of them. Firstly, I added two lines into <code class="highlighter-rouge">HelloClient</code> on machine C:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>public static void main(String[] args) throws Exception {
+
+        Properties prop = new Properties();
+        prop.put("org.omg.CORBA.ORBInitialHost", "10.0.1.155");
+        prop.put("org.omg.CORBA.ORBInitialPort", "1050");
+
+        ORB orb = ORB.init(args, prop);
+...
+</code></pre>
+</div>
+
+<p>As the code shown above, I have configured the <code class="highlighter-rouge">ORB</code> to point to the naming service on machine A. Same like the analyze method on <code class="highlighter-rouge">HelloServer</code>, I have put four breakpoints on <code class="highlighter-rouge">HelloClient</code> code, it’s shown in following screenshot:</p>
+
+<p><img src="/assets/2017-05-03/client-breakpoints.png" alt="" /></p>
+
+<p>As the screenshot shown above, there are four lines of code related with network communication. The first three lines is to contact with the naming service on machine A to fetch the <code class="highlighter-rouge">Hello</code> servant info from <code class="highlighter-rouge">NameService</code>, the code is like this:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>org.omg.CORBA.Object objRef = orb.resolve_initial_references("NameService");
+NamingContextExt ncRef = NamingContextExtHelper.narrow(objRef);
+helloImpl = HelloHelper.narrow(ncRef.resolve_str(name));
+</code></pre>
+</div>
+
+<p>The first two lines is to fetch <code class="highlighter-rouge">NameService</code>, and the third line is to get the <code class="highlighter-rouge">Hello</code> servant. After these steps are done, now the client side knows where to called the <code class="highlighter-rouge">Hello</code> servant, because it gets the IP address of machine B from the naming server. Here is the corresponding GIOP messages fetched from machine A:</p>
+
+<p><img src="/assets/2017-05-03/fetcg.png" alt="" /></p>
+
+<p>As the screenshot shown above, we see the three requests corresponding to the three lines of code in above. Now as we have the servant info in client side, the last call will communicate to the servant. Here is the last line of code in <code class="highlighter-rouge">HelloClient</code> on machine C:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>System.out.println(helloImpl.sayHello());
+</code></pre>
+</div>
+
+<p>The <code class="highlighter-rouge">helloImpl</code> has the type of <code class="highlighter-rouge">_HelloStub</code>, and it will remotely call the servant on machine B. Here is the GIOP message captured from machine B:</p>
+
+<p><img src="/assets/2017-05-03/sayHello.png" alt="" /></p>
+
+<p>As the screenshot shown above, we can see the <code class="highlighter-rouge">sayHello</code> operation is requested from client machine C to servant machine B. Please note the IP address <code class="highlighter-rouge">10.72.12.42</code> is the public address of client machine C, and the address <code class="highlighter-rouge">10.72.12.42</code> is the second public IP address of servant machine B, which is registered into naming service on machine A. Here is the final output from client machine C:</p>
+
+<p><img src="/assets/2017-05-03/client-output.png" alt="" /></p>
+
+<p>From the above screenshot, we can see client on machine A gets the result from <code class="highlighter-rouge">HelloImpl.sayHello()</code> method on machine C. From user’s perspective, it seems like the <code class="highlighter-rouge">helloImpl.sayHello()</code> is a local method call, but actually it is a remote call to another machine. What’s amazing is that we fetch the servant from an independent naming service on machine B, and we could easily change the servant in future, because some other servant can replace the <code class="highlighter-rouge">Hello</code> service by registering itself into naming server by using the same service name. This gives us great flexibility during our distributed service deployment.</p>
+
+<h2 id="conclusion">Conclusion</h2>
+
+<p>In this article, we have written a Java application with CORBA standard and Java RMI-IIOP implementation. We have seen the achitecture defined by the CORBA, and we see how does Java platform provides us multiple tools to write the application that conforms to the standard. The CORBA and Java RMI-IIOP standards are the basis of many modern application servers. I wish this article is a good start for you to dig deeper in this area in future.</p>
+
+<h3 id="references"><em>References</em></h3>
+
+<hr />
+<div class="footnotes">
+  <ol>
+    <li id="fn:corba">
+      <p><a href="https://en.wikipedia.org/wiki/Common_Object_Request_Broker_Architecture">CORBA</a>&nbsp;<a href="#fnref:corba" class="reversefootnote">&#8617;</a></p>
+    </li>
+    <li id="fn:wildfly">
+      <p><a href="http://wildfly.org/">Wildfly</a>&nbsp;<a href="#fnref:wildfly" class="reversefootnote">&#8617;</a></p>
+    </li>
+    <li id="fn:rmi">
+      <p><a href="https://en.wikipedia.org/wiki/Java_remote_method_invocation">Java remote method invocation</a>&nbsp;<a href="#fnref:rmi" class="reversefootnote">&#8617;</a></p>
+    </li>
+    <li id="fn:idl">
+      <p><a href="https://en.wikipedia.org/wiki/Interface_description_language">Interface_description_language</a>&nbsp;<a href="#fnref:idl" class="reversefootnote">&#8617;</a></p>
+    </li>
+    <li id="fn:poa">
+      <p><a href="http://docs.oracle.com/javase/7/docs/technotes/guides/idl/POA.html">Portable Object Adapter (POA)</a>&nbsp;<a href="#fnref:poa" class="reversefootnote">&#8617;</a></p>
+    </li>
+  </ol>
+</div>
