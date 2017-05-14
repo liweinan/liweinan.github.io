@@ -4,5 +4,6 @@ email: l.weinan@gmail.com
 google_analytics: UA-98502720-1
 disqus:
    shortname: weinan-io
-theme: lanyon
+#theme: lanyon
 #paginate: 5
+theme: minima
