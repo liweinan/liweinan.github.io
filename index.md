@@ -1,0 +1,13 @@
+---
+layout: default
+title: Home
+---
+
+<!-- This loops through the paginated posts -->
+{% for post in paginator.posts %}
+  {% include post.html post=post content=post.content %}
+{% endfor %}
+
+{% if paginator.total_pages > 1 %}
+    {% include pagination.html maxPages=5 %}
+{% endif %}
