@@ -7,6 +7,45 @@
     
       
         <item>
+          <title>The articles &amp; books I read and the videos I watched last week</title>
+          <description>&lt;p&gt;Articles:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;a href=&quot;https://www.infoq.com/articles/invokedynamic&quot;&gt;JSR 292 and the Multi-lingual JVM&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://www.slideshare.net/CharlesNutter/invokedynamic-in-45-minutes&quot;&gt;Invokedynamic in 45 Minutes&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://www.infoq.com/articles/Invokedynamic-Javas-secret-weapon&quot;&gt;Invokedynamic - Java’s Secret Weapon&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;http://word-bits.flurg.com/presentations/bytecode-hacks/index.html#/&quot;&gt;Bytecode Hacks: Bridger and Seven2Six&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;http://web.cs.ucla.edu/~msb/cs239-tutorial/&quot;&gt;Instrumenting Java Bytecode with ASM&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;http://llbit.se/?p=3067&quot;&gt;Voxxed Days Zürich 2017&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;http://llbit.se/?p=3020&quot;&gt;I am Not Scared of the AI Singularity&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://docs.oracle.com/javase/tutorial/java/generics/bridgeMethods.html&quot;&gt;Effects of Type Erasure and Bridge Methods&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://apasca.blogspot.co.id/2012/02/java-bridge-methods.html&quot;&gt;Java Bridge Methods&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://www.google.com/url?sa=t&amp;amp;rct=j&amp;amp;q=&amp;amp;esrc=s&amp;amp;source=web&amp;amp;cd=4&amp;amp;sqi=2&amp;amp;ved=0ahUKEwjl5J3B5fDTAhVDNJQKHQdMDIYQFgg4MAM&amp;amp;url=http%3A%2F%2Fejournals.library.ualberta.ca%2Findex.php%2Fcomplicity%2Farticle%2Fdownload%2F8801%2F7121&amp;amp;usg=AFQjCNHPYURKcTUVGWNaHQgekLx1v0wwRw&amp;amp;sig2=Lp3cCbscQamnA4CjXyxSqw&amp;amp;cad=rjt&quot;&gt;Thinking in Complexity: A New Paradigm for Learning&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://dzone.com/articles/syntethic-and-bridge-methods&quot;&gt;Syntethic and Bridge Methods&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;http://stackoverflow.com/questions/41968996/removing-methods-with-java-asm&quot;&gt;Removing Methods with Java ASM&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Videos:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;a href=&quot;https://www.youtube.com/watch?v=gIffIZnmYBM&quot;&gt;CON7682 invokedynamic for Mere Mortals&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Books:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;a href=&quot;https://books.google.com/books?hl=en&amp;amp;lr=&amp;amp;id=VWgDkNdX9AgC&amp;amp;oi=fnd&amp;amp;pg=PA1&amp;amp;dq=thinking+in+complexity+the+computational&amp;amp;ots=i_UvMNnKhr&amp;amp;sig=gC83fM0cGWSxpLin7eJvhigPkkg#v=onepage&amp;amp;q=thinking%20in%20complexity%20the%20computational&amp;amp;f=false&quot;&gt;Mainzer, Klaus. Thinking in complexity: The computational dynamics of matter, mind, and mankind. Springer Science &amp;amp; Business Media, 2007.&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://www.google.com/url?sa=t&amp;amp;rct=j&amp;amp;q=&amp;amp;esrc=s&amp;amp;source=web&amp;amp;cd=15&amp;amp;ved=0ahUKEwiUtKro5PDTAhXFNJQKHdT8BTcQFghqMA4&amp;amp;url=http%3A%2F%2Fwww.seas.harvard.edu%2Fcourses%2Fcs254r%2F2000%2Fcorba-99-10-07.pdf.gz&amp;amp;usg=AFQjCNHU2O6SNlafVWkNQ7HJYx3OEJl-Iw&amp;amp;sig2=kl9qm0TnoIkLsPkik7IOIA&amp;amp;cad=rjt&quot;&gt;The Common Object Request Broker: Architecture and Specification&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+          <pubDate>2017-05-16T00:00:00+00:00</pubDate>
+          <link>/2017/05/16/the-articles-i-read.html</link>
+          <guid isPermaLink="true">/2017/05/16/the-articles-i-read.html</guid>
+        </item>
+      
+    
+      
+        <item>
           <title>Adventures in JDBC and the PostgreSQL JDBC driver: Part 4 - Connection pooling in JDBC</title>
           <description>&lt;p&gt;In the previous articles, we have learned the basic aspects of the JDBC specification and the implementation of the PostgreSQL driver. In this article, I’d like to go on checking another important part of the JDBC specification(&lt;a href=&quot;http://download.oracle.com/otn-pub/jcp/jdbc-4_1-mrel-spec/jdbc4.1-fr-spec.pdf?AuthParam=1494474283_bf1014b01227d16877a00b038e2e7e82&quot;&gt;JDBC™ 4.1  Specification&lt;/a&gt;): Connection pooling.&lt;/p&gt;
 
