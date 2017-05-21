@@ -1,5 +1,5 @@
 ---
-title: "2017-05-22 The articles & books I read and the videos I watched last week"
+title: "The articles & books I read and the videos I watched last week"
 ---
 
 Articles:
