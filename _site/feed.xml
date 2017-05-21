@@ -7,7 +7,7 @@
     
       
         <item>
-          <title>Adventures in JDBC and the PostgreSQL JDBC driver: Part 4 - The Effect Of Connection.setAutoCommit(...) method in JDBC</title>
+          <title>Adventures in JDBC and the PostgreSQL JDBC driver: Part 5 - The Effect Of Connection.setAutoCommit(...) method in JDBC</title>
           <description>&lt;p&gt;In database design, there are usually three levels of transaction support: No transaction, Local transaction, Distributed transaction.&lt;/p&gt;
 
 &lt;p&gt;No-transaction means each SQL command will be executed and their effects will be persisted into the database immediately. In PostgreSQL database, this is supported by setting &lt;code class=&quot;highlighter-rouge&quot;&gt;autocommit&lt;/code&gt; option to &lt;code class=&quot;highlighter-rouge&quot;&gt;true&lt;/code&gt;, and users are not issuing the &lt;code class=&quot;highlighter-rouge&quot;&gt;BEGIN&lt;/code&gt; command to start a transaction explicitly. In this situation, we can see each SQL command being in their own transaction.&lt;/p&gt;
