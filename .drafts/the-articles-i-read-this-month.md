@@ -1,18 +1,16 @@
 ---
-title: "The articles I read and the videos I watched in this month"
+title: "2017-05-20 The articles & books I read and the videos I watched last week"
 ---
 
 Articles:
 
-- [JSR 292 and the Multi-lingual JVM](https://www.infoq.com/articles/invokedynamic)
-- [Invokedynamic in 45 Minutes](https://www.slideshare.net/CharlesNutter/invokedynamic-in-45-minutes)
-- [Invokedynamic - Java’s Secret Weapon](https://www.infoq.com/articles/Invokedynamic-Javas-secret-weapon)
-- [Bytecode Hacks: Bridger and Seven2Six](http://word-bits.flurg.com/presentations/bytecode-hacks/index.html#/)
-- [Instrumenting Java Bytecode with ASM](http://web.cs.ucla.edu/~msb/cs239-tutorial/)
-- [Voxxed Days Zürich 2017](http://llbit.se/?p=3067)
-- [I am Not Scared of the AI Singularity](http://llbit.se/?p=3020)
+- [Composing Music With Recurrent Neural Networks](http://www.hexahedria.com/2015/08/03/composing-music-with-recurrent-neural-networks/)
+- [Deep Learning for Music](https://cs224d.stanford.edu/reports/allenh.pdf)
+- [Analyzing Six Deep Learning Tools for Music Generation Posted on October 5, 2016 by Frank Brinkkemper](http://www.asimovinstitute.org/analyzing-deep-learning-tools-music/)
+- [Tiered Compilation](https://blog.h2o.ai/2010/07/tiered-compilation/)
+- [Diving Into Bytecode Manipulation: Creating an Audit Log With ASM and Javassist](https://blog.newrelic.com/2014/09/29/diving-bytecode-manipulation-creating-audit-log-asm-javassist/)
+- [Detecting JNI Architecture Is A Pain In The](http://word-bits.flurg.com/detecting-jni-architecture-is-a-pain-in-the)
 
 Videos:
 
-- [CON7682 invokedynamic for Mere Mortals](https://www.youtube.com/watch?v=gIffIZnmYBM)
-
+- [DevNation 2014 - Jason Greene - JVM Finalize Pitfalls: How to Avoid the Danger](https://www.youtube.com/watch?v=UrGP6pfb0H8)
