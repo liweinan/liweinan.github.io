@@ -1,18 +1,22 @@
 <p>In database design, there are usually three levels of transaction support: No transaction, Local transaction, Distributed transaction.</p>
 
-<p>No-transaction means each SQL command will be executed and their effects will be persisted into the database immediately. In PostgreSQL database, this is supported by setting <code class="highlighter-rouge">autocommit</code> option to <code class="highlighter-rouge">true</code>, and users are not issuing the <code class="highlighter-rouge">BEGIN</code> command to start a transaction explicitly. In this situation, we can see each SQL command being in their own transaction.</p>
+<p>No-transaction means each SQL command will be executed and their effects will be persisted into the database immediately. In PostgreSQL database, this is supported by setting <code class="highlighter-rouge">autocommit</code> option to <code class="highlighter-rouge">true</code>, and user will not issue the <code class="highlighter-rouge">BEGIN</code> command to start a transaction explicitly. In this situation, we can see each SQL command being is encapsulated in their own in-place transaction.</p>
 
-<p>Local-transaction means the users will explicitly start a transaction by using the <code class="highlighter-rouge">BEGIN</code> command, and then the following SQL commands are in one transaction, until a <code class="highlighter-rouge">COMMIT</code> command is met, and all the effects of the commands will be persisted into database at once, or fail as a whole.</p>
+<p>Local-transaction means the user will explicitly start a transaction by using the <code class="highlighter-rouge">BEGIN</code> command, and then the following SQL commands are under the scope of this transaction, until a <code class="highlighter-rouge">COMMIT</code> command is met, and all the effects of the commands will be persisted into database at once, or fail as a whole.</p>
 
 <p>Distributed-transaction means the database will participate in a bigger transaction out of the database system scope itself. For example, we may have a transaction that includes several participants, which are: two databases, one EJB session bean, one webservice, etc. In this situation, our database is just one of the participants of the whole transaction.</p>
 
-<p>There are several specifications in distribution transaction area, and the most popular one is <code class="highlighter-rouge">X/Open XA</code> spec, and it’s adopted by the JDBC spec. You can see relative interfaces in JDBC library, such as the<code class="highlighter-rouge">XADataSource</code> interface. In PostgreSQL JDBC driver, you can see the classes that implements these interfaces. We will check the details on distributed transactions in another article.</p>
+<p>There are several specifications in distribution transaction area, and the most popular one is <code class="highlighter-rouge">X/Open XA</code> (See <a href="https://en.wikipedia.org/wiki/X/Open_XA">Wikipedia</a>) spec, and it’s adopted by the JDBC spec. You can see relative interfaces in JDBC library, such as the<code class="highlighter-rouge">XADataSource</code> interface. In PostgreSQL JDBC driver, you can see the classes that implements these interfaces. We will check the details on distributed transactions in another article.</p>
 
-<p>In this article, I will focus on the No-transaction and the Local-transaction situation to see how doesn the PostgreSQL driver to support them. I want to check the <code class="highlighter-rouge">setAutoCommit(...)</code> method defined in <code class="highlighter-rouge">java.sql.Connection</code> interface to see how it affects the transaction processing in underlying database system.</p>
+<p>In this article, I will focus on the No-transaction and the Local-transaction situation to see how does the PostgreSQL driver supporting them. I want to check the <code class="highlighter-rouge">setAutoCommit(...)</code> method defined in <code class="highlighter-rouge">java.sql.Connection</code> interface to see how it affects the transaction processing in underlying database system.</p>
 
-<p>Now let’s use the PostgreSQL JDBC driver to write an example to execute some SQL commands, and check how does the driver implements the JDBC interface. Firstly, I need to open the SQL logging capability of the PostgreSQL. I have installed my <code class="highlighter-rouge">postgresql</code> database by Homebrew(See <a href="https://brew.sh/">https://brew.sh/</a>) on my MacOS machine, and the configuration file is located at <code class="highlighter-rouge">/usr/local/pgsql/data/postgresql.conf</code>.</p>
+<p>Now let’s use the PostgreSQL JDBC driver to write an example to execute some SQL commands, and check how does the driver implements the JDBC interface. Firstly, I need to open the SQL logging capability of the PostgreSQL. I have installed my <code class="highlighter-rouge">postgresql</code> database by Homebrew(See <a href="https://brew.sh/">https://brew.sh/</a>) on my MacOS machine, and the configuration file is located at:</p>
 
-<p>Here is what I have changed in configuration file:</p>
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code>/usr/local/pgsql/data/postgresql.conf
+</code></pre>
+</div>
+
+<p>Here is what I have changed in the configuration file:</p>
 
 <div class="language-diff highlighter-rouge"><pre class="highlight"><code><span class="gd">--- postgresql.conf.orig    2017-05-03 23:23:53.000000000 +0800
 </span><span class="gi">+++ postgresql.conf 2017-05-03 23:11:48.000000000 +0800
@@ -113,13 +117,13 @@
 </code></pre>
 </div>
 
-<p>The above code will connect to my local database server, and run a <code class="highlighter-rouge">insert</code> SQL command to add an entry of data into the database. The important line is this:</p>
+<p>The above code will connect to my local database server, and run an <code class="highlighter-rouge">insert</code> SQL command to add an entry of data into the database. The important line is here:</p>
 
 <div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="n">conn</span><span class="o">.</span><span class="na">setAutoCommit</span><span class="o">(</span><span class="kc">true</span><span class="o">);</span>
 </code></pre>
 </div>
 
-<p>The above line of code will put the database into the <code class="highlighter-rouge">autocommit</code> mode. Please note we have commented out the <code class="highlighter-rouge">commit()</code> method of the connection in <code class="highlighter-rouge">finally</code> block. This is because in autocommit mode, the <code class="highlighter-rouge">executeQuery(...)</code> method of the statement will be implicitly included into its own transaction.</p>
+<p>The above line of code will put the database into the <code class="highlighter-rouge">autocommit</code> mode. Please note we have commented out the <code class="highlighter-rouge">commit()</code> method of the connection in <code class="highlighter-rouge">finally</code> block. This is because in autocommit mode, the <code class="highlighter-rouge">executeQuery(...)</code> method of the statement will be implicitly included into its own in-place transaction.</p>
 
 <p>Now we can compile the above class with PostgreSQL JDBC driver in class path:</p>
 

@@ -10,19 +10,23 @@
           <title>Adventures in JDBC and the PostgreSQL JDBC driver: Part 5 - The Effect Of Connection.setAutoCommit(...) method in JDBC</title>
           <description>&lt;p&gt;In database design, there are usually three levels of transaction support: No transaction, Local transaction, Distributed transaction.&lt;/p&gt;
 
-&lt;p&gt;No-transaction means each SQL command will be executed and their effects will be persisted into the database immediately. In PostgreSQL database, this is supported by setting &lt;code class=&quot;highlighter-rouge&quot;&gt;autocommit&lt;/code&gt; option to &lt;code class=&quot;highlighter-rouge&quot;&gt;true&lt;/code&gt;, and users are not issuing the &lt;code class=&quot;highlighter-rouge&quot;&gt;BEGIN&lt;/code&gt; command to start a transaction explicitly. In this situation, we can see each SQL command being in their own transaction.&lt;/p&gt;
+&lt;p&gt;No-transaction means each SQL command will be executed and their effects will be persisted into the database immediately. In PostgreSQL database, this is supported by setting &lt;code class=&quot;highlighter-rouge&quot;&gt;autocommit&lt;/code&gt; option to &lt;code class=&quot;highlighter-rouge&quot;&gt;true&lt;/code&gt;, and user will not issue the &lt;code class=&quot;highlighter-rouge&quot;&gt;BEGIN&lt;/code&gt; command to start a transaction explicitly. In this situation, we can see each SQL command being is encapsulated in their own in-place transaction.&lt;/p&gt;
 
-&lt;p&gt;Local-transaction means the users will explicitly start a transaction by using the &lt;code class=&quot;highlighter-rouge&quot;&gt;BEGIN&lt;/code&gt; command, and then the following SQL commands are in one transaction, until a &lt;code class=&quot;highlighter-rouge&quot;&gt;COMMIT&lt;/code&gt; command is met, and all the effects of the commands will be persisted into database at once, or fail as a whole.&lt;/p&gt;
+&lt;p&gt;Local-transaction means the user will explicitly start a transaction by using the &lt;code class=&quot;highlighter-rouge&quot;&gt;BEGIN&lt;/code&gt; command, and then the following SQL commands are under the scope of this transaction, until a &lt;code class=&quot;highlighter-rouge&quot;&gt;COMMIT&lt;/code&gt; command is met, and all the effects of the commands will be persisted into database at once, or fail as a whole.&lt;/p&gt;
 
 &lt;p&gt;Distributed-transaction means the database will participate in a bigger transaction out of the database system scope itself. For example, we may have a transaction that includes several participants, which are: two databases, one EJB session bean, one webservice, etc. In this situation, our database is just one of the participants of the whole transaction.&lt;/p&gt;
 
-&lt;p&gt;There are several specifications in distribution transaction area, and the most popular one is &lt;code class=&quot;highlighter-rouge&quot;&gt;X/Open XA&lt;/code&gt; spec, and it’s adopted by the JDBC spec. You can see relative interfaces in JDBC library, such as the&lt;code class=&quot;highlighter-rouge&quot;&gt;XADataSource&lt;/code&gt; interface. In PostgreSQL JDBC driver, you can see the classes that implements these interfaces. We will check the details on distributed transactions in another article.&lt;/p&gt;
+&lt;p&gt;There are several specifications in distribution transaction area, and the most popular one is &lt;code class=&quot;highlighter-rouge&quot;&gt;X/Open XA&lt;/code&gt; (See &lt;a href=&quot;https://en.wikipedia.org/wiki/X/Open_XA&quot;&gt;Wikipedia&lt;/a&gt;) spec, and it’s adopted by the JDBC spec. You can see relative interfaces in JDBC library, such as the&lt;code class=&quot;highlighter-rouge&quot;&gt;XADataSource&lt;/code&gt; interface. In PostgreSQL JDBC driver, you can see the classes that implements these interfaces. We will check the details on distributed transactions in another article.&lt;/p&gt;
 
-&lt;p&gt;In this article, I will focus on the No-transaction and the Local-transaction situation to see how doesn the PostgreSQL driver to support them. I want to check the &lt;code class=&quot;highlighter-rouge&quot;&gt;setAutoCommit(...)&lt;/code&gt; method defined in &lt;code class=&quot;highlighter-rouge&quot;&gt;java.sql.Connection&lt;/code&gt; interface to see how it affects the transaction processing in underlying database system.&lt;/p&gt;
+&lt;p&gt;In this article, I will focus on the No-transaction and the Local-transaction situation to see how does the PostgreSQL driver supporting them. I want to check the &lt;code class=&quot;highlighter-rouge&quot;&gt;setAutoCommit(...)&lt;/code&gt; method defined in &lt;code class=&quot;highlighter-rouge&quot;&gt;java.sql.Connection&lt;/code&gt; interface to see how it affects the transaction processing in underlying database system.&lt;/p&gt;
 
-&lt;p&gt;Now let’s use the PostgreSQL JDBC driver to write an example to execute some SQL commands, and check how does the driver implements the JDBC interface. Firstly, I need to open the SQL logging capability of the PostgreSQL. I have installed my &lt;code class=&quot;highlighter-rouge&quot;&gt;postgresql&lt;/code&gt; database by Homebrew(See &lt;a href=&quot;https://brew.sh/&quot;&gt;https://brew.sh/&lt;/a&gt;) on my MacOS machine, and the configuration file is located at &lt;code class=&quot;highlighter-rouge&quot;&gt;/usr/local/pgsql/data/postgresql.conf&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;Now let’s use the PostgreSQL JDBC driver to write an example to execute some SQL commands, and check how does the driver implements the JDBC interface. Firstly, I need to open the SQL logging capability of the PostgreSQL. I have installed my &lt;code class=&quot;highlighter-rouge&quot;&gt;postgresql&lt;/code&gt; database by Homebrew(See &lt;a href=&quot;https://brew.sh/&quot;&gt;https://brew.sh/&lt;/a&gt;) on my MacOS machine, and the configuration file is located at:&lt;/p&gt;
 
-&lt;p&gt;Here is what I have changed in configuration file:&lt;/p&gt;
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;/usr/local/pgsql/data/postgresql.conf
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Here is what I have changed in the configuration file:&lt;/p&gt;
 
 &lt;div class=&quot;language-diff highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;gd&quot;&gt;--- postgresql.conf.orig    2017-05-03 23:23:53.000000000 +0800
 &lt;/span&gt;&lt;span class=&quot;gi&quot;&gt;+++ postgresql.conf 2017-05-03 23:11:48.000000000 +0800
@@ -123,13 +127,13 @@
 &lt;/code&gt;&lt;/pre&gt;
 &lt;/div&gt;
 
-&lt;p&gt;The above code will connect to my local database server, and run a &lt;code class=&quot;highlighter-rouge&quot;&gt;insert&lt;/code&gt; SQL command to add an entry of data into the database. The important line is this:&lt;/p&gt;
+&lt;p&gt;The above code will connect to my local database server, and run an &lt;code class=&quot;highlighter-rouge&quot;&gt;insert&lt;/code&gt; SQL command to add an entry of data into the database. The important line is here:&lt;/p&gt;
 
 &lt;div class=&quot;language-java highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;n&quot;&gt;conn&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;setAutoCommit&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kc&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;
 &lt;/div&gt;
 
-&lt;p&gt;The above line of code will put the database into the &lt;code class=&quot;highlighter-rouge&quot;&gt;autocommit&lt;/code&gt; mode. Please note we have commented out the &lt;code class=&quot;highlighter-rouge&quot;&gt;commit()&lt;/code&gt; method of the connection in &lt;code class=&quot;highlighter-rouge&quot;&gt;finally&lt;/code&gt; block. This is because in autocommit mode, the &lt;code class=&quot;highlighter-rouge&quot;&gt;executeQuery(...)&lt;/code&gt; method of the statement will be implicitly included into its own transaction.&lt;/p&gt;
+&lt;p&gt;The above line of code will put the database into the &lt;code class=&quot;highlighter-rouge&quot;&gt;autocommit&lt;/code&gt; mode. Please note we have commented out the &lt;code class=&quot;highlighter-rouge&quot;&gt;commit()&lt;/code&gt; method of the connection in &lt;code class=&quot;highlighter-rouge&quot;&gt;finally&lt;/code&gt; block. This is because in autocommit mode, the &lt;code class=&quot;highlighter-rouge&quot;&gt;executeQuery(...)&lt;/code&gt; method of the statement will be implicitly included into its own in-place transaction.&lt;/p&gt;
 
 &lt;p&gt;Now we can compile the above class with PostgreSQL JDBC driver in class path:&lt;/p&gt;
 
