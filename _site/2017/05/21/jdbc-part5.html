@@ -147,13 +147,13 @@ STATEMENT:  insert into user_info <span class="o">(</span>id, name, age<span cla
 
 <p>Now let’s go back to the class file and this time we will set the <code class="highlighter-rouge">autoCommit</code> property to <code class="highlighter-rouge">false</code>:</p>
 
-<div class="language-java highlighter-rouge"><pre class="highlight"><code>            <span class="n">conn</span><span class="o">.</span><span class="na">setAutoCommit</span><span class="o">(</span><span class="kc">false</span><span class="o">);</span>
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="n">conn</span><span class="o">.</span><span class="na">setAutoCommit</span><span class="o">(</span><span class="kc">false</span><span class="o">);</span>
 </code></pre>
 </div>
 
 <p>After setting the auto commit property to <code class="highlighter-rouge">false</code>, we need to explicitly set commit the transaction in <code class="highlighter-rouge">final</code> block. Here is the code:</p>
 
-<div class="language-java highlighter-rouge"><pre class="highlight"><code>             <span class="n">conn</span><span class="o">.</span><span class="na">commit</span><span class="o">();</span>
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="n">conn</span><span class="o">.</span><span class="na">commit</span><span class="o">();</span>
 </code></pre>
 </div>
 
