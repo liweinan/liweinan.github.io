@@ -187,53 +187,53 @@ STATEMENT:  insert into user_info <span class="o">(</span>id, name, age<span cla
 
 <p>After the flags is set, it will finally affect the <code class="highlighter-rouge">sendQueryPreamble(...)</code> method in <code class="highlighter-rouge">org.postgresql.core.v3.QueryExecutorImpl</code> class. Here is the code of the method:</p>
 
-<div class="language-java highlighter-rouge"><pre class="highlight"><code> <span class="kd">private</span> <span class="n">ResultHandler</span> <span class="nf">sendQueryPreamble</span><span class="o">(</span><span class="kd">final</span> <span class="n">ResultHandler</span> <span class="n">delegateHandler</span><span class="o">,</span> <span class="kt">int</span> <span class="n">flags</span><span class="o">)</span>
-      <span class="kd">throws</span> <span class="n">IOException</span> <span class="o">{</span>
-    <span class="c1">// First, send CloseStatements for finalized SimpleQueries that had statement names assigned.</span>
-    <span class="n">processDeadParsedQueries</span><span class="o">();</span>
-    <span class="n">processDeadPortals</span><span class="o">();</span>
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="kd">private</span> <span class="n">ResultHandler</span> <span class="nf">sendQueryPreamble</span><span class="o">(</span><span class="kd">final</span> <span class="n">ResultHandler</span> <span class="n">delegateHandler</span><span class="o">,</span> <span class="kt">int</span> <span class="n">flags</span><span class="o">)</span>
+     <span class="kd">throws</span> <span class="n">IOException</span> <span class="o">{</span>
+   <span class="c1">// First, send CloseStatements for finalized SimpleQueries that had statement names assigned.</span>
+   <span class="n">processDeadParsedQueries</span><span class="o">();</span>
+   <span class="n">processDeadPortals</span><span class="o">();</span>
 
-    <span class="c1">// Send BEGIN on first statement in transaction.</span>
-    <span class="k">if</span> <span class="o">((</span><span class="n">flags</span> <span class="o">&amp;</span> <span class="n">QueryExecutor</span><span class="o">.</span><span class="na">QUERY_SUPPRESS_BEGIN</span><span class="o">)</span> <span class="o">!=</span> <span class="mi">0</span>
-        <span class="o">||</span> <span class="n">getTransactionState</span><span class="o">()</span> <span class="o">!=</span> <span class="n">TransactionState</span><span class="o">.</span><span class="na">IDLE</span><span class="o">)</span> <span class="o">{</span>
-      <span class="k">return</span> <span class="n">delegateHandler</span><span class="o">;</span>
-    <span class="o">}</span>
+   <span class="c1">// Send BEGIN on first statement in transaction.</span>
+   <span class="k">if</span> <span class="o">((</span><span class="n">flags</span> <span class="o">&amp;</span> <span class="n">QueryExecutor</span><span class="o">.</span><span class="na">QUERY_SUPPRESS_BEGIN</span><span class="o">)</span> <span class="o">!=</span> <span class="mi">0</span>
+       <span class="o">||</span> <span class="n">getTransactionState</span><span class="o">()</span> <span class="o">!=</span> <span class="n">TransactionState</span><span class="o">.</span><span class="na">IDLE</span><span class="o">)</span> <span class="o">{</span>
+     <span class="k">return</span> <span class="n">delegateHandler</span><span class="o">;</span>
+   <span class="o">}</span>
 
-    <span class="kt">int</span> <span class="n">beginFlags</span> <span class="o">=</span> <span class="n">QueryExecutor</span><span class="o">.</span><span class="na">QUERY_NO_METADATA</span><span class="o">;</span>
-    <span class="k">if</span> <span class="o">((</span><span class="n">flags</span> <span class="o">&amp;</span> <span class="n">QueryExecutor</span><span class="o">.</span><span class="na">QUERY_ONESHOT</span><span class="o">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
-      <span class="n">beginFlags</span> <span class="o">|=</span> <span class="n">QueryExecutor</span><span class="o">.</span><span class="na">QUERY_ONESHOT</span><span class="o">;</span>
-    <span class="o">}</span>
+   <span class="kt">int</span> <span class="n">beginFlags</span> <span class="o">=</span> <span class="n">QueryExecutor</span><span class="o">.</span><span class="na">QUERY_NO_METADATA</span><span class="o">;</span>
+   <span class="k">if</span> <span class="o">((</span><span class="n">flags</span> <span class="o">&amp;</span> <span class="n">QueryExecutor</span><span class="o">.</span><span class="na">QUERY_ONESHOT</span><span class="o">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+     <span class="n">beginFlags</span> <span class="o">|=</span> <span class="n">QueryExecutor</span><span class="o">.</span><span class="na">QUERY_ONESHOT</span><span class="o">;</span>
+   <span class="o">}</span>
 
-    <span class="n">beginFlags</span> <span class="o">|=</span> <span class="n">QueryExecutor</span><span class="o">.</span><span class="na">QUERY_EXECUTE_AS_SIMPLE</span><span class="o">;</span>
+   <span class="n">beginFlags</span> <span class="o">|=</span> <span class="n">QueryExecutor</span><span class="o">.</span><span class="na">QUERY_EXECUTE_AS_SIMPLE</span><span class="o">;</span>
 
-    <span class="n">beginFlags</span> <span class="o">=</span> <span class="n">updateQueryMode</span><span class="o">(</span><span class="n">beginFlags</span><span class="o">);</span>
+   <span class="n">beginFlags</span> <span class="o">=</span> <span class="n">updateQueryMode</span><span class="o">(</span><span class="n">beginFlags</span><span class="o">);</span>
 
-    <span class="n">sendOneQuery</span><span class="o">(</span><span class="n">beginTransactionQuery</span><span class="o">,</span> <span class="n">SimpleQuery</span><span class="o">.</span><span class="na">NO_PARAMETERS</span><span class="o">,</span> <span class="mi">0</span><span class="o">,</span> <span class="mi">0</span><span class="o">,</span> <span class="n">beginFlags</span><span class="o">);</span>
+   <span class="n">sendOneQuery</span><span class="o">(</span><span class="n">beginTransactionQuery</span><span class="o">,</span> <span class="n">SimpleQuery</span><span class="o">.</span><span class="na">NO_PARAMETERS</span><span class="o">,</span> <span class="mi">0</span><span class="o">,</span> <span class="mi">0</span><span class="o">,</span> <span class="n">beginFlags</span><span class="o">);</span>
 
-    <span class="c1">// Insert a handler that intercepts the BEGIN.</span>
-    <span class="k">return</span> <span class="k">new</span> <span class="nf">ResultHandlerDelegate</span><span class="o">(</span><span class="n">delegateHandler</span><span class="o">)</span> <span class="o">{</span>
-      <span class="kd">private</span> <span class="kt">boolean</span> <span class="n">sawBegin</span> <span class="o">=</span> <span class="kc">false</span><span class="o">;</span>
+   <span class="c1">// Insert a handler that intercepts the BEGIN.</span>
+   <span class="k">return</span> <span class="k">new</span> <span class="nf">ResultHandlerDelegate</span><span class="o">(</span><span class="n">delegateHandler</span><span class="o">)</span> <span class="o">{</span>
+     <span class="kd">private</span> <span class="kt">boolean</span> <span class="n">sawBegin</span> <span class="o">=</span> <span class="kc">false</span><span class="o">;</span>
 
-      <span class="kd">public</span> <span class="kt">void</span> <span class="nf">handleResultRows</span><span class="o">(</span><span class="n">Query</span> <span class="n">fromQuery</span><span class="o">,</span> <span class="n">Field</span><span class="o">[]</span> <span class="n">fields</span><span class="o">,</span> <span class="n">List</span><span class="o">&lt;</span><span class="kt">byte</span><span class="o">[][]&gt;</span> <span class="n">tuples</span><span class="o">,</span>
-          <span class="n">ResultCursor</span> <span class="n">cursor</span><span class="o">)</span> <span class="o">{</span>
-        <span class="k">if</span> <span class="o">(</span><span class="n">sawBegin</span><span class="o">)</span> <span class="o">{</span>
-          <span class="kd">super</span><span class="o">.</span><span class="na">handleResultRows</span><span class="o">(</span><span class="n">fromQuery</span><span class="o">,</span> <span class="n">fields</span><span class="o">,</span> <span class="n">tuples</span><span class="o">,</span> <span class="n">cursor</span><span class="o">);</span>
-        <span class="o">}</span>
-      <span class="o">}</span>
+     <span class="kd">public</span> <span class="kt">void</span> <span class="nf">handleResultRows</span><span class="o">(</span><span class="n">Query</span> <span class="n">fromQuery</span><span class="o">,</span> <span class="n">Field</span><span class="o">[]</span> <span class="n">fields</span><span class="o">,</span> <span class="n">List</span><span class="o">&lt;</span><span class="kt">byte</span><span class="o">[][]&gt;</span> <span class="n">tuples</span><span class="o">,</span>
+         <span class="n">ResultCursor</span> <span class="n">cursor</span><span class="o">)</span> <span class="o">{</span>
+       <span class="k">if</span> <span class="o">(</span><span class="n">sawBegin</span><span class="o">)</span> <span class="o">{</span>
+         <span class="kd">super</span><span class="o">.</span><span class="na">handleResultRows</span><span class="o">(</span><span class="n">fromQuery</span><span class="o">,</span> <span class="n">fields</span><span class="o">,</span> <span class="n">tuples</span><span class="o">,</span> <span class="n">cursor</span><span class="o">);</span>
+       <span class="o">}</span>
+     <span class="o">}</span>
 
-      <span class="kd">public</span> <span class="kt">void</span> <span class="nf">handleCommandStatus</span><span class="o">(</span><span class="n">String</span> <span class="n">status</span><span class="o">,</span> <span class="kt">int</span> <span class="n">updateCount</span><span class="o">,</span> <span class="kt">long</span> <span class="n">insertOID</span><span class="o">)</span> <span class="o">{</span>
-        <span class="k">if</span> <span class="o">(!</span><span class="n">sawBegin</span><span class="o">)</span> <span class="o">{</span>
-          <span class="n">sawBegin</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
-          <span class="k">if</span> <span class="o">(!</span><span class="n">status</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="s">"BEGIN"</span><span class="o">))</span> <span class="o">{</span>
-            <span class="n">handleError</span><span class="o">(</span><span class="k">new</span> <span class="n">PSQLException</span><span class="o">(</span><span class="n">GT</span><span class="o">.</span><span class="na">tr</span><span class="o">(</span><span class="s">"Expected command status BEGIN, got {0}."</span><span class="o">,</span> <span class="n">status</span><span class="o">),</span>
-                <span class="n">PSQLState</span><span class="o">.</span><span class="na">PROTOCOL_VIOLATION</span><span class="o">));</span>
-          <span class="o">}</span>
-        <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
-          <span class="kd">super</span><span class="o">.</span><span class="na">handleCommandStatus</span><span class="o">(</span><span class="n">status</span><span class="o">,</span> <span class="n">updateCount</span><span class="o">,</span> <span class="n">insertOID</span><span class="o">);</span>
-        <span class="o">}</span>
-      <span class="o">}</span>
-    <span class="o">};</span>
-  <span class="o">}</span>
+     <span class="kd">public</span> <span class="kt">void</span> <span class="nf">handleCommandStatus</span><span class="o">(</span><span class="n">String</span> <span class="n">status</span><span class="o">,</span> <span class="kt">int</span> <span class="n">updateCount</span><span class="o">,</span> <span class="kt">long</span> <span class="n">insertOID</span><span class="o">)</span> <span class="o">{</span>
+       <span class="k">if</span> <span class="o">(!</span><span class="n">sawBegin</span><span class="o">)</span> <span class="o">{</span>
+         <span class="n">sawBegin</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
+         <span class="k">if</span> <span class="o">(!</span><span class="n">status</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="s">"BEGIN"</span><span class="o">))</span> <span class="o">{</span>
+           <span class="n">handleError</span><span class="o">(</span><span class="k">new</span> <span class="n">PSQLException</span><span class="o">(</span><span class="n">GT</span><span class="o">.</span><span class="na">tr</span><span class="o">(</span><span class="s">"Expected command status BEGIN, got {0}."</span><span class="o">,</span> <span class="n">status</span><span class="o">),</span>
+               <span class="n">PSQLState</span><span class="o">.</span><span class="na">PROTOCOL_VIOLATION</span><span class="o">));</span>
+         <span class="o">}</span>
+       <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+         <span class="kd">super</span><span class="o">.</span><span class="na">handleCommandStatus</span><span class="o">(</span><span class="n">status</span><span class="o">,</span> <span class="n">updateCount</span><span class="o">,</span> <span class="n">insertOID</span><span class="o">);</span>
+       <span class="o">}</span>
+     <span class="o">}</span>
+   <span class="o">};</span>
+ <span class="o">}</span>
 </code></pre>
 </div>
 
