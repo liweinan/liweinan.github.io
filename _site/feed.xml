@@ -7,6 +7,345 @@
     
       
         <item>
+          <title>The articles &amp; books I read and the videos I watched last week</title>
+          <description>&lt;p&gt;Articles:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;a href=&quot;http://www.hexahedria.com/2015/08/03/composing-music-with-recurrent-neural-networks/&quot;&gt;Composing Music With Recurrent Neural Networks&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://cs224d.stanford.edu/reports/allenh.pdf&quot;&gt;Deep Learning for Music&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;http://www.asimovinstitute.org/analyzing-deep-learning-tools-music/&quot;&gt;Analyzing Six Deep Learning Tools for Music Generation Posted on October 5, 2016 by Frank Brinkkemper&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://blog.h2o.ai/2010/07/tiered-compilation/&quot;&gt;Tiered Compilation&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://blog.newrelic.com/2014/09/29/diving-bytecode-manipulation-creating-audit-log-asm-javassist/&quot;&gt;Diving Into Bytecode Manipulation: Creating an Audit Log With ASM and Javassist&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;http://word-bits.flurg.com/detecting-jni-architecture-is-a-pain-in-the&quot;&gt;Detecting JNI Architecture Is A Pain In The&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Videos:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;a href=&quot;https://www.youtube.com/watch?v=UrGP6pfb0H8&quot;&gt;DevNation 2014 - Jason Greene - JVM Finalize Pitfalls: How to Avoid the Danger&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+          <pubDate>2017-05-22T00:00:00+00:00</pubDate>
+          <link>/2017/05/22/the-articles-i-read-this-month.html</link>
+          <guid isPermaLink="true">/2017/05/22/the-articles-i-read-this-month.html</guid>
+        </item>
+      
+    
+      
+        <item>
+          <title>The compiled bytecode of Java 8 lambda expressions</title>
+          <description>&lt;p&gt;In this article, I’d like to check the compiled code of the Java 8 lambda expressions. Here are the sample classes(See &lt;a href=&quot;http://docs.oracle.com/javase/tutorial/java/javaOO/lambdaexpressions.html#approach7&quot;&gt;Lambda Expressions&lt;/a&gt;):&lt;/p&gt;
+
+&lt;div class=&quot;language-java highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;Calculator&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+
+    &lt;span class=&quot;kd&quot;&gt;interface&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;IntegerMath&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;operation&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;a&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;b&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+
+    &lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;operateBinary&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;a&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;b&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;IntegerMath&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;op&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;op&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;operation&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;a&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;b&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;The above class defines a &lt;code class=&quot;highlighter-rouge&quot;&gt;Calculator&lt;/code&gt; class and an inner &lt;code class=&quot;highlighter-rouge&quot;&gt;IntegerMath&lt;/code&gt; interface. Now let’s use it in lambda expression. Here is the sample code:&lt;/p&gt;
+
+&lt;div class=&quot;language-java highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;PlayWithLambda&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;static&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;main&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;[]&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;args&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;throws&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Exception&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;Calculator&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;myApp&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Calculator&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;();&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;Calculator&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;IntegerMath&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;addition&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;a&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;b&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;a&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;b&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;Calculator&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;IntegerMath&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;subtraction&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;a&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;b&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;a&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;b&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+
+        &lt;span class=&quot;n&quot;&gt;myApp&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;operateBinary&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;40&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;addition&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;myApp&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;operateBinary&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;20&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;10&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;subtraction&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;The above class has two lines of lambda expressions that use the &lt;code class=&quot;highlighter-rouge&quot;&gt;IntegerMath&lt;/code&gt; interface. Now let compile the above classes to see how does the lambda expressions compiled to bytecode. Here is the command and its output:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;ls
+Calculator&lt;span class=&quot;nv&quot;&gt;$IntegerMath&lt;/span&gt;.class Calculator.class             Calculator.java              PlayWithLambda.class         PlayWithLambda.java
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;From the above command output, we can see the inner &lt;code class=&quot;highlighter-rouge&quot;&gt;IntegerMath&lt;/code&gt; interface is compiled to &lt;code class=&quot;highlighter-rouge&quot;&gt;Calculator$IntegerMath.class&lt;/code&gt; interface. In addition, the &lt;code class=&quot;highlighter-rouge&quot;&gt;Calculator&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;PlayWithLambda&lt;/code&gt; are also compiled to its classes files.&lt;/p&gt;
+
+&lt;p&gt;Now let’s check the compiled code of &lt;code class=&quot;highlighter-rouge&quot;&gt;Calculator.class&lt;/code&gt; and the &lt;code class=&quot;highlighter-rouge&quot;&gt;Calculator$IntegerMath.class&lt;/code&gt;. Here is the bytecode of the &lt;code class=&quot;highlighter-rouge&quot;&gt;Calculator.class&lt;/code&gt;:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;javap -c Calculator.class
+Compiled from &lt;span class=&quot;s2&quot;&gt;&quot;Calculator.java&quot;&lt;/span&gt;
+public class Calculator &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+  public Calculator&lt;span class=&quot;o&quot;&gt;()&lt;/span&gt;;
+    Code:
+       0: aload_0
+       1: invokespecial &lt;span class=&quot;c&quot;&gt;#1                  // Method java/lang/Object.&quot;&amp;lt;init&amp;gt;&quot;:()V&lt;/span&gt;
+       4: &lt;span class=&quot;k&quot;&gt;return
+
+  &lt;/span&gt;public int operateBinary&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;int, int, Calculator&lt;span class=&quot;nv&quot;&gt;$IntegerMath&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;;
+    Code:
+       0: aload_3
+       1: iload_1
+       2: iload_2
+       3: invokeinterface &lt;span class=&quot;c&quot;&gt;#2,  3            // InterfaceMethod Calculator$IntegerMath.operation:(II)I&lt;/span&gt;
+       8: ireturn
+&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;The above bytecode does not contain anything special. We can see the &lt;code class=&quot;highlighter-rouge&quot;&gt;invokespecial&lt;/code&gt; instruction for the default constructor of the &lt;code class=&quot;highlighter-rouge&quot;&gt;Calculator&lt;/code&gt; class, and we can see the &lt;code class=&quot;highlighter-rouge&quot;&gt;invokeinterface&lt;/code&gt; instruction in &lt;code class=&quot;highlighter-rouge&quot;&gt;operateBinary(...)&lt;/code&gt; method to call the &lt;code class=&quot;highlighter-rouge&quot;&gt;Calculator$IntegerMath.operation(...)&lt;/code&gt; method. Here is the bytecode of the &lt;code class=&quot;highlighter-rouge&quot;&gt;Calculator$IntegerMath.class&lt;/code&gt;:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;javap -c Calculator&lt;span class=&quot;se&quot;&gt;\$&lt;/span&gt;IntegerMath.class
+Compiled from &lt;span class=&quot;s2&quot;&gt;&quot;Calculator.java&quot;&lt;/span&gt;
+interface Calculator&lt;span class=&quot;nv&quot;&gt;$IntegerMath&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+  public abstract int operation&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;int, int&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;;
+&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;The above class file just contain the signature of the interface. Now let’s check the bytecode of the  &lt;code class=&quot;highlighter-rouge&quot;&gt;PlayWithLambda.class&lt;/code&gt;.&lt;/p&gt;
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;javap -c PlayWithLambda.class
+Compiled from &lt;span class=&quot;s2&quot;&gt;&quot;PlayWithLambda.java&quot;&lt;/span&gt;
+public class PlayWithLambda &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+  public PlayWithLambda&lt;span class=&quot;o&quot;&gt;()&lt;/span&gt;;
+    Code:
+       0: aload_0
+       1: invokespecial &lt;span class=&quot;c&quot;&gt;#1                  // Method java/lang/Object.&quot;&amp;lt;init&amp;gt;&quot;:()V&lt;/span&gt;
+       4: &lt;span class=&quot;k&quot;&gt;return
+
+  &lt;/span&gt;public static void main&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;java.lang.String[]&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; throws java.lang.Exception;
+    Code:
+       0: new           &lt;span class=&quot;c&quot;&gt;#2                  // class Calculator&lt;/span&gt;
+       3: dup
+       4: invokespecial &lt;span class=&quot;c&quot;&gt;#3                  // Method Calculator.&quot;&amp;lt;init&amp;gt;&quot;:()V&lt;/span&gt;
+       7: astore_1
+       8: invokedynamic &lt;span class=&quot;c&quot;&gt;#4,  0              // InvokeDynamic #0:operation:()LCalculator$IntegerMath;&lt;/span&gt;
+      13: astore_2
+      14: invokedynamic &lt;span class=&quot;c&quot;&gt;#5,  0              // InvokeDynamic #1:operation:()LCalculator$IntegerMath;&lt;/span&gt;
+      19: astore_3
+      20: aload_1
+      21: bipush        40
+      23: iconst_2
+      24: aload_2
+      25: invokevirtual &lt;span class=&quot;c&quot;&gt;#6                  // Method Calculator.operateBinary:(IILCalculator$IntegerMath;)I&lt;/span&gt;
+      28: pop
+      29: aload_1
+      30: bipush        20
+      32: bipush        10
+      34: aload_3
+      35: invokevirtual &lt;span class=&quot;c&quot;&gt;#6                  // Method Calculator.operateBinary:(IILCalculator$IntegerMath;)I&lt;/span&gt;
+      38: pop
+      39: &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;From the above bytecode, we can see the two lines related with the lambda expression:&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;8: invokedynamic #4,  0              // InvokeDynamic #0:operation:()LCalculator$IntegerMath;
+14: invokedynamic #5,  0              // InvokeDynamic #1:operation:()LCalculator$IntegerMath;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;The above lines are related with the following Java code:&lt;/p&gt;
+
+&lt;div class=&quot;language-java highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;n&quot;&gt;Calculator&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;IntegerMath&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;addition&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;a&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;b&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;a&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;b&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;Calculator&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;IntegerMath&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;subtraction&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;a&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;b&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;a&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;b&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;We can see the Java compiler will compile the initialization code of the lambda expression code into &lt;code class=&quot;highlighter-rouge&quot;&gt;invokedyanmic&lt;/code&gt; instructions. If you don’t know &lt;code class=&quot;highlighter-rouge&quot;&gt;invokedynamic&lt;/code&gt; instruction yet, you can check this article: &lt;a href=&quot;https://www.infoq.com/articles/Invokedynamic-Javas-secret-weapon&quot;&gt;Invokedynamic - Java’s Secret Weapon&lt;/a&gt;. I will discuss the detail of &lt;code class=&quot;highlighter-rouge&quot;&gt;invokedyanmic&lt;/code&gt; instruction in another article.&lt;/p&gt;
+
+&lt;p&gt;Next there are two lines of bytecode related with the usage of the lambda expression:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;25: invokevirtual &lt;span class=&quot;c&quot;&gt;#6                  // Method Calculator.operateBinary:(IILCalculator$IntegerMath;)I&lt;/span&gt;
+35: invokevirtual &lt;span class=&quot;c&quot;&gt;#6                  // Method Calculator.operateBinary:(IILCalculator$IntegerMath;)I&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;The above two lines of code are related with the following Java code:&lt;/p&gt;
+
+&lt;div class=&quot;language-java highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;n&quot;&gt;myApp&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;operateBinary&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;40&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;addition&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;myApp&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;operateBinary&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;20&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;10&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;subtraction&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;From the above code, we can see using the classes created from lambda expressions are just plain &lt;code class=&quot;highlighter-rouge&quot;&gt;invokevirtual&lt;/code&gt; instructions.&lt;/p&gt;
+
+&lt;p&gt;We have checked the bytecode and its relationship with the Java code. This time I will use the &lt;code class=&quot;highlighter-rouge&quot;&gt;-verbose&lt;/code&gt; option to disassemble the code to get all the symbols from the class file:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Classfile /Users/weli/Desktop/lambda/PlayWithLambda.class
+  Last modified May 22, 2017; size 1161 bytes
+  MD5 checksum 54fe2e615e51b6eea59f94252110b2c9
+  Compiled from &lt;span class=&quot;s2&quot;&gt;&quot;PlayWithLambda.java&quot;&lt;/span&gt;
+public class PlayWithLambda
+  minor version: 0
+  major version: 52
+  flags: ACC_PUBLIC, ACC_SUPER
+Constant pool:
+   &lt;span class=&quot;c&quot;&gt;#1 = Methodref          #8.#22         // java/lang/Object.&quot;&amp;lt;init&amp;gt;&quot;:()V&lt;/span&gt;
+   &lt;span class=&quot;c&quot;&gt;#2 = Class              #23            // Calculator&lt;/span&gt;
+   &lt;span class=&quot;c&quot;&gt;#3 = Methodref          #2.#22         // Calculator.&quot;&amp;lt;init&amp;gt;&quot;:()V&lt;/span&gt;
+   &lt;span class=&quot;c&quot;&gt;#4 = InvokeDynamic      #0:#28         // #0:operation:()LCalculator$IntegerMath;&lt;/span&gt;
+   &lt;span class=&quot;c&quot;&gt;#5 = InvokeDynamic      #1:#28         // #1:operation:()LCalculator$IntegerMath;&lt;/span&gt;
+   &lt;span class=&quot;c&quot;&gt;#6 = Methodref          #2.#30         // Calculator.operateBinary:(IILCalculator$IntegerMath;)I&lt;/span&gt;
+   &lt;span class=&quot;c&quot;&gt;#7 = Class              #31            // PlayWithLambda&lt;/span&gt;
+   &lt;span class=&quot;c&quot;&gt;#8 = Class              #32            // java/lang/Object&lt;/span&gt;
+   &lt;span class=&quot;c&quot;&gt;#9 = Utf8               &amp;lt;init&amp;gt;&lt;/span&gt;
+  &lt;span class=&quot;c&quot;&gt;#10 = Utf8               ()V&lt;/span&gt;
+  &lt;span class=&quot;c&quot;&gt;#11 = Utf8               Code&lt;/span&gt;
+  &lt;span class=&quot;c&quot;&gt;#12 = Utf8               LineNumberTable&lt;/span&gt;
+  &lt;span class=&quot;c&quot;&gt;#13 = Utf8               main&lt;/span&gt;
+  &lt;span class=&quot;c&quot;&gt;#14 = Utf8               ([Ljava/lang/String;)V&lt;/span&gt;
+  &lt;span class=&quot;c&quot;&gt;#15 = Utf8               Exceptions&lt;/span&gt;
+  &lt;span class=&quot;c&quot;&gt;#16 = Class              #33            // java/lang/Exception&lt;/span&gt;
+  &lt;span class=&quot;c&quot;&gt;#17 = Utf8               lambda$main$1&lt;/span&gt;
+  &lt;span class=&quot;c&quot;&gt;#18 = Utf8               (II)I&lt;/span&gt;
+  &lt;span class=&quot;c&quot;&gt;#19 = Utf8               lambda$main$0&lt;/span&gt;
+  &lt;span class=&quot;c&quot;&gt;#20 = Utf8               SourceFile&lt;/span&gt;
+  &lt;span class=&quot;c&quot;&gt;#21 = Utf8               PlayWithLambda.java&lt;/span&gt;
+  &lt;span class=&quot;c&quot;&gt;#22 = NameAndType        #9:#10         // &quot;&amp;lt;init&amp;gt;&quot;:()V&lt;/span&gt;
+  &lt;span class=&quot;c&quot;&gt;#23 = Utf8               Calculator&lt;/span&gt;
+  &lt;span class=&quot;c&quot;&gt;#24 = Utf8               BootstrapMethods&lt;/span&gt;
+  &lt;span class=&quot;c&quot;&gt;#25 = MethodHandle       #6:#34         // invokestatic java/lang/invoke/LambdaMetafactory.metafactory:(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodHandle;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/CallSite;&lt;/span&gt;
+  &lt;span class=&quot;c&quot;&gt;#26 = MethodType         #18            //  (II)I&lt;/span&gt;
+  &lt;span class=&quot;c&quot;&gt;#27 = MethodHandle       #6:#35         // invokestatic PlayWithLambda.lambda$main$0:(II)I&lt;/span&gt;
+  &lt;span class=&quot;c&quot;&gt;#28 = NameAndType        #36:#40        // operation:()LCalculator$IntegerMath;&lt;/span&gt;
+  &lt;span class=&quot;c&quot;&gt;#29 = MethodHandle       #6:#41         // invokestatic PlayWithLambda.lambda$main$1:(II)I&lt;/span&gt;
+  &lt;span class=&quot;c&quot;&gt;#30 = NameAndType        #42:#43        // operateBinary:(IILCalculator$IntegerMath;)I&lt;/span&gt;
+  &lt;span class=&quot;c&quot;&gt;#31 = Utf8               PlayWithLambda&lt;/span&gt;
+  &lt;span class=&quot;c&quot;&gt;#32 = Utf8               java/lang/Object&lt;/span&gt;
+  &lt;span class=&quot;c&quot;&gt;#33 = Utf8               java/lang/Exception&lt;/span&gt;
+  &lt;span class=&quot;c&quot;&gt;#34 = Methodref          #44.#45        // java/lang/invoke/LambdaMetafactory.metafactory:(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodHandle;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/CallSite;&lt;/span&gt;
+  &lt;span class=&quot;c&quot;&gt;#35 = Methodref          #7.#46         // PlayWithLambda.lambda$main$0:(II)I&lt;/span&gt;
+  &lt;span class=&quot;c&quot;&gt;#36 = Utf8               operation&lt;/span&gt;
+  &lt;span class=&quot;c&quot;&gt;#37 = Class              #47            // Calculator$IntegerMath&lt;/span&gt;
+  &lt;span class=&quot;c&quot;&gt;#38 = Utf8               IntegerMath&lt;/span&gt;
+  &lt;span class=&quot;c&quot;&gt;#39 = Utf8               InnerClasses&lt;/span&gt;
+  &lt;span class=&quot;c&quot;&gt;#40 = Utf8               ()LCalculator$IntegerMath;&lt;/span&gt;
+  &lt;span class=&quot;c&quot;&gt;#41 = Methodref          #7.#48         // PlayWithLambda.lambda$main$1:(II)I&lt;/span&gt;
+  &lt;span class=&quot;c&quot;&gt;#42 = Utf8               operateBinary&lt;/span&gt;
+  &lt;span class=&quot;c&quot;&gt;#43 = Utf8               (IILCalculator$IntegerMath;)I&lt;/span&gt;
+  &lt;span class=&quot;c&quot;&gt;#44 = Class              #49            // java/lang/invoke/LambdaMetafactory&lt;/span&gt;
+  &lt;span class=&quot;c&quot;&gt;#45 = NameAndType        #50:#53        // metafactory:(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodHandle;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/CallSite;&lt;/span&gt;
+  &lt;span class=&quot;c&quot;&gt;#46 = NameAndType        #19:#18        // lambda$main$0:(II)I&lt;/span&gt;
+  &lt;span class=&quot;c&quot;&gt;#47 = Utf8               Calculator$IntegerMath&lt;/span&gt;
+  &lt;span class=&quot;c&quot;&gt;#48 = NameAndType        #17:#18        // lambda$main$1:(II)I&lt;/span&gt;
+  &lt;span class=&quot;c&quot;&gt;#49 = Utf8               java/lang/invoke/LambdaMetafactory&lt;/span&gt;
+  &lt;span class=&quot;c&quot;&gt;#50 = Utf8               metafactory&lt;/span&gt;
+  &lt;span class=&quot;c&quot;&gt;#51 = Class              #55            // java/lang/invoke/MethodHandles$Lookup&lt;/span&gt;
+  &lt;span class=&quot;c&quot;&gt;#52 = Utf8               Lookup&lt;/span&gt;
+  &lt;span class=&quot;c&quot;&gt;#53 = Utf8               (Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodHandle;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/CallSite;&lt;/span&gt;
+  &lt;span class=&quot;c&quot;&gt;#54 = Class              #56            // java/lang/invoke/MethodHandles&lt;/span&gt;
+  &lt;span class=&quot;c&quot;&gt;#55 = Utf8               java/lang/invoke/MethodHandles$Lookup&lt;/span&gt;
+  &lt;span class=&quot;c&quot;&gt;#56 = Utf8               java/lang/invoke/MethodHandles&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+  public PlayWithLambda&lt;span class=&quot;o&quot;&gt;()&lt;/span&gt;;
+    descriptor: &lt;span class=&quot;o&quot;&gt;()&lt;/span&gt;V
+    flags: ACC_PUBLIC
+    Code:
+      &lt;span class=&quot;nv&quot;&gt;stack&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;1, &lt;span class=&quot;nv&quot;&gt;locals&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;1, &lt;span class=&quot;nv&quot;&gt;args_size&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;1
+         0: aload_0
+         1: invokespecial &lt;span class=&quot;c&quot;&gt;#1                  // Method java/lang/Object.&quot;&amp;lt;init&amp;gt;&quot;:()V&lt;/span&gt;
+         4: &lt;span class=&quot;k&quot;&gt;return
+      &lt;/span&gt;LineNumberTable:
+        line 1: 0
+
+  public static void main&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;java.lang.String[]&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; throws java.lang.Exception;
+    descriptor: &lt;span class=&quot;o&quot;&gt;([&lt;/span&gt;Ljava/lang/String;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;V
+    flags: ACC_PUBLIC, ACC_STATIC
+    Code:
+      &lt;span class=&quot;nv&quot;&gt;stack&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;4, &lt;span class=&quot;nv&quot;&gt;locals&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;4, &lt;span class=&quot;nv&quot;&gt;args_size&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;1
+         0: new           &lt;span class=&quot;c&quot;&gt;#2                  // class Calculator&lt;/span&gt;
+         3: dup
+         4: invokespecial &lt;span class=&quot;c&quot;&gt;#3                  // Method Calculator.&quot;&amp;lt;init&amp;gt;&quot;:()V&lt;/span&gt;
+         7: astore_1
+         8: invokedynamic &lt;span class=&quot;c&quot;&gt;#4,  0              // InvokeDynamic #0:operation:()LCalculator$IntegerMath;&lt;/span&gt;
+        13: astore_2
+        14: invokedynamic &lt;span class=&quot;c&quot;&gt;#5,  0              // InvokeDynamic #1:operation:()LCalculator$IntegerMath;&lt;/span&gt;
+        19: astore_3
+        20: aload_1
+        21: bipush        40
+        23: iconst_2
+        24: aload_2
+        25: invokevirtual &lt;span class=&quot;c&quot;&gt;#6                  // Method Calculator.operateBinary:(IILCalculator$IntegerMath;)I&lt;/span&gt;
+        28: pop
+        29: aload_1
+        30: bipush        20
+        32: bipush        10
+        34: aload_3
+        35: invokevirtual &lt;span class=&quot;c&quot;&gt;#6                  // Method Calculator.operateBinary:(IILCalculator$IntegerMath;)I&lt;/span&gt;
+        38: pop
+        39: &lt;span class=&quot;k&quot;&gt;return
+      &lt;/span&gt;LineNumberTable:
+        line 3: 0
+        line 4: 8
+        line 5: 14
+        line 7: 20
+        line 8: 29
+        line 9: 39
+    Exceptions:
+      throws java.lang.Exception
+&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+SourceFile: &lt;span class=&quot;s2&quot;&gt;&quot;PlayWithLambda.java&quot;&lt;/span&gt;
+InnerClasses:
+     static &lt;span class=&quot;c&quot;&gt;#38= #37 of #2; //IntegerMath=class Calculator$IntegerMath of class Calculator&lt;/span&gt;
+     public static final &lt;span class=&quot;c&quot;&gt;#52= #51 of #54; //Lookup=class java/lang/invoke/MethodHandles$Lookup of class java/lang/invoke/MethodHandles&lt;/span&gt;
+BootstrapMethods:
+  0: &lt;span class=&quot;c&quot;&gt;#25 invokestatic java/lang/invoke/LambdaMetafactory.metafactory:(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodHandle;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/CallSite;&lt;/span&gt;
+    Method arguments:
+      &lt;span class=&quot;c&quot;&gt;#26 (II)I&lt;/span&gt;
+      &lt;span class=&quot;c&quot;&gt;#27 invokestatic PlayWithLambda.lambda$main$0:(II)I&lt;/span&gt;
+      &lt;span class=&quot;c&quot;&gt;#26 (II)I&lt;/span&gt;
+  1: &lt;span class=&quot;c&quot;&gt;#25 invokestatic java/lang/invoke/LambdaMetafactory.metafactory:(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodHandle;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/CallSite;&lt;/span&gt;
+    Method arguments:
+      &lt;span class=&quot;c&quot;&gt;#26 (II)I&lt;/span&gt;
+      &lt;span class=&quot;c&quot;&gt;#29 invokestatic PlayWithLambda.lambda$main$1:(II)I&lt;/span&gt;
+      &lt;span class=&quot;c&quot;&gt;#26 (II)I&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;The above output is very long, and I will pick out the lines related with lambda expressions. Here is the relative code:&lt;/p&gt;
+
+&lt;div class=&quot;language-java highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;err&quot;&gt;#&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;4&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;InvokeDynamic&lt;/span&gt;      &lt;span class=&quot;err&quot;&gt;#&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;#&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;28&lt;/span&gt;         &lt;span class=&quot;c1&quot;&gt;// #0:operation:()LCalculator$IntegerMath;&lt;/span&gt;
+&lt;span class=&quot;err&quot;&gt;#&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;5&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;InvokeDynamic&lt;/span&gt;      &lt;span class=&quot;err&quot;&gt;#&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;#&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;28&lt;/span&gt;         &lt;span class=&quot;c1&quot;&gt;// #1:operation:()LCalculator$IntegerMath;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;The above two symbols are the &lt;code class=&quot;highlighter-rouge&quot;&gt;invokedynamic&lt;/code&gt; instructions related with the creation of the two lambda expressions.&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;#17 = Utf8               lambda$main$1&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;#19 = Utf8               lambda$main$0&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;p&gt;The above two lines are the anonymous classes created by the lambda classes. So we can see the lambda expression will just create anonymous classes in bytecode level.&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;  &lt;span class=&quot;c&quot;&gt;#48 = NameAndType        #17:#18        // lambda$main$1:(II)I&lt;/span&gt;
+  &lt;span class=&quot;c&quot;&gt;#49 = Utf8               java/lang/invoke/LambdaMetafactory&lt;/span&gt;
+  &lt;span class=&quot;c&quot;&gt;#50 = Utf8               metafactory&lt;/span&gt;
+  &lt;span class=&quot;c&quot;&gt;#51 = Class              #55            // java/lang/invoke/MethodHandles$Lookup&lt;/span&gt;
+  &lt;span class=&quot;c&quot;&gt;#52 = Utf8               Lookup&lt;/span&gt;
+  &lt;span class=&quot;c&quot;&gt;#53 = Utf8               (Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodHandle;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/CallSite;&lt;/span&gt;
+  &lt;span class=&quot;c&quot;&gt;#54 = Class              #56            // java/lang/invoke/MethodHandles&lt;/span&gt;
+  &lt;span class=&quot;c&quot;&gt;#55 = Utf8               java/lang/invoke/MethodHandles$Lookup&lt;/span&gt;
+  &lt;span class=&quot;c&quot;&gt;#56 = Utf8               java/lang/invoke/MethodHandles&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;The above code are related with &lt;code class=&quot;highlighter-rouge&quot;&gt;invokedynamic&lt;/code&gt; feature and we can see classes like &lt;code class=&quot;highlighter-rouge&quot;&gt;java/lang/invoke/LambdaMetafactory&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;java/lang/invoke/MethodHandles&lt;/code&gt;. I won’t explain the detail of the &lt;code class=&quot;highlighter-rouge&quot;&gt;invokedynamic&lt;/code&gt; instruction and its supporting classes in this article.&lt;/p&gt;
+
+&lt;p&gt;In conclusion, the lambda expression is supported by &lt;code class=&quot;highlighter-rouge&quot;&gt;invokedynamic&lt;/code&gt; instruction and the lambda expression itself will be compiled to anonymous class.&lt;/p&gt;
+</description>
+          <pubDate>2017-05-22T00:00:00+00:00</pubDate>
+          <link>/2017/05/22/lambda.html</link>
+          <guid isPermaLink="true">/2017/05/22/lambda.html</guid>
+        </item>
+      
+    
+      
+        <item>
           <title>Adventures in JDBC and the PostgreSQL JDBC driver: Part 5 - The Effect Of Connection.setAutoCommit(...) method in JDBC</title>
           <description>&lt;p&gt;In database design, there are usually three levels of transaction support: No transaction, Local transaction, Distributed transaction.&lt;/p&gt;
 
