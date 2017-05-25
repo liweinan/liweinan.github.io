@@ -7,6 +7,100 @@
     
       
         <item>
+          <title></title>
+          <description>&lt;p&gt;In the previous article, we have learned how to add a JDBC database driver module into Wildfly, and how to configure a datasource to use hte driver. In this article, let’s see the JDBC driver loading process in Wildfly.&lt;/p&gt;
+
+&lt;p&gt;In Wildfly source code (See &lt;a href=&quot;https://github.com/wildfly/wildfly&quot;&gt;https://github.com/wildfly/wildfly&lt;/a&gt;), the &lt;code class=&quot;highlighter-rouge&quot;&gt;connector&lt;/code&gt; module contains the &lt;code class=&quot;highlighter-rouge&quot;&gt;datasources&lt;/code&gt; subsystem. Here is the screenshot of the source code structure of &lt;code class=&quot;highlighter-rouge&quot;&gt;wildfly&lt;/code&gt;:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/jdbc/datasources.png&quot; alt=&quot;/assets/jdbc/datasources.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;The above screenshot shows the &lt;code class=&quot;highlighter-rouge&quot;&gt;datasources&lt;/code&gt; subsystem. In the subsystem, we can find the &lt;code class=&quot;highlighter-rouge&quot;&gt;org.jboss.as.connector.subsystems.datasources.JdbcDriverAdd&lt;/code&gt; class, and here is its class diagram:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/jdbc/JdbcDriverAdd.png&quot; alt=&quot;/assets/jdbc/JdbcDriverAdd.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;The above diagram shows the methods in &lt;code class=&quot;highlighter-rouge&quot;&gt;JdbcDriverAdd&lt;/code&gt; class. Firstly we need to check the &lt;code class=&quot;highlighter-rouge&quot;&gt;performRuntime(...)&lt;/code&gt; method. Here is the sequence diagram of the method:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/jdbc/org.jboss.as.connector.subsystems.datasources.JdbcDriverAdd.performRuntime(OperationContext, ModelNode, ModelNode).png&quot; alt=&quot;/assets/jdbc/org.jboss.as.connector.subsystems.datasources.JdbcDriverAdd.performRuntime(OperationContext, ModelNode, ModelNode).png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;From the above diagram, we can find out two things: Firstly the method will try to fetch multiple values defined by the users. For example, there are &lt;code class=&quot;highlighter-rouge&quot;&gt;DRIVER_CLASS_NAME&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;DRIVER_XA_DATASOURCE_CLASS_NAME&lt;/code&gt; that users can set in the server configuration file.&lt;/p&gt;
+
+&lt;p&gt;Another thing we can see from the above diagram is that the method will try to find the JDBC driver class automatically if &lt;code class=&quot;highlighter-rouge&quot;&gt;driverClass&lt;/code&gt; is null, and it will invoke the &lt;code class=&quot;highlighter-rouge&quot;&gt;loadService(Driver.class)&lt;/code&gt; method for this task.&lt;/p&gt;
+
+&lt;p&gt;Let check the above notes one by one. First let’s see the origin class of the &lt;code class=&quot;highlighter-rouge&quot;&gt;DRIVER_CLASS_NAME&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;DRIVER_XA_DATASOURCE_CLASS_NAME&lt;/code&gt; constants. They are defined in the &lt;code class=&quot;highlighter-rouge&quot;&gt;org.jboss.as.connector.subsystems.datasources.Constants&lt;/code&gt; class, and here is its class diagram:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/jdbc/Constants.png&quot; alt=&quot;/assets/jdbc/Constants.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;The above diagram just show part of the whole class because it is too big. You can check the code directly to get all the constants defined in the class. These constants can mostly be defined in the server configuration file. For example, we can see the string value of &lt;code class=&quot;highlighter-rouge&quot;&gt;DATASOURCE_DRIVER_CLASS_NAME&lt;/code&gt; is &lt;code class=&quot;highlighter-rouge&quot;&gt;driver-class&lt;/code&gt;. Actually we can configure this in the &lt;code class=&quot;highlighter-rouge&quot;&gt;standalone/configuration/standalone.xml&lt;/code&gt;:&lt;/p&gt;
+
+&lt;div class=&quot;language-xml highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nt&quot;&gt;&amp;lt;driver&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;name=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;postgresql&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;module=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;org.postgresql&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
+	&lt;span class=&quot;nt&quot;&gt;&amp;lt;driver-class&amp;gt;&lt;/span&gt;org.postgresql.Driver&lt;span class=&quot;nt&quot;&gt;&amp;lt;/driver-class&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;/driver&amp;gt;&lt;/span&gt;				
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;But in the last article, we didn’t configure the &lt;code class=&quot;highlighter-rouge&quot;&gt;driver-class&lt;/code&gt;, but Wildfly can still load the driver class correctly. This is because the &lt;code class=&quot;highlighter-rouge&quot;&gt;loadService(...)&lt;/code&gt; method will help us to find the driver class in the module. Here is the relative code in the method:&lt;/p&gt;
+
+&lt;div class=&quot;language-java highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt; &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;driverClassName&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;null&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;kd&quot;&gt;final&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ServiceLoader&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Driver&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;serviceLoader&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;module&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;loadService&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Driver&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;class&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+            &lt;span class=&quot;kt&quot;&gt;boolean&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;driverLoaded&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;false&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;serviceLoader&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;!=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;null&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+                &lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Driver&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;driver&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;serviceLoader&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+                    &lt;span class=&quot;n&quot;&gt;startDriverServices&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;target&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;moduleId&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;driver&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;driverName&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;majorVersion&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;minorVersion&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;dataSourceClassName&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;xaDataSourceClassName&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+                    &lt;span class=&quot;n&quot;&gt;driverLoaded&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+                    &lt;span class=&quot;c1&quot;&gt;//just consider first definition and create service for this. User can use different implementation only&lt;/span&gt;
+                    &lt;span class=&quot;c1&quot;&gt;// w/ explicit declaration of driver-class attribute&lt;/span&gt;
+                    &lt;span class=&quot;k&quot;&gt;break&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+                &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+            &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;...&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;From the above code, we can see the &lt;code class=&quot;highlighter-rouge&quot;&gt;module.loadService(Driver.class)&lt;/code&gt; method will try to find the class that implements the &lt;code class=&quot;highlighter-rouge&quot;&gt;Driver.class&lt;/code&gt; interface from the module. If it finds the driver classes, it will install them one by one by using the &lt;code class=&quot;highlighter-rouge&quot;&gt;startDriverServices(...)&lt;/code&gt; method.&lt;/p&gt;
+
+&lt;p&gt;To verify our analysis, we can set a breakpoint in &lt;code class=&quot;highlighter-rouge&quot;&gt;JdbcDriverAdd&lt;/code&gt; class. To understand how to debug the Wildfly startup process, you need to read these two articles firstly:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;a href=&quot;http://wildflyinternals.io/2017/05/05/wildfly-src.html&quot;&gt;Fetching and compiling the Wildfly upstream source&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;http://wildflyinternals.io/2017/05/07/troubleshooting-wildfly.html&quot;&gt;Troubleshooting the Wildfly startup process&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;I have introduced the techniques to debug the Wildfly server. I used the methods introduced in above articles to catch the startup process by setting the breakpoint in &lt;code class=&quot;highlighter-rouge&quot;&gt;JdbcDriverAdd&lt;/code&gt; class, and then start the Wildfly server in debug mode. Here is what I get in my IntelliJ IDEA environment:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/jdbc/JdbcDriverAdd-debug.png&quot; alt=&quot;/assets/jdbc/JdbcDriverAdd-debug.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;The above screenshot shows that during the Wildfly server startup process, it will use the &lt;code class=&quot;highlighter-rouge&quot;&gt;JdbcDriverAdd&lt;/code&gt; to load the drivers defined in configuration file. Because we didn’t define the &lt;code class=&quot;highlighter-rouge&quot;&gt;driver-class&lt;/code&gt; in &lt;code class=&quot;highlighter-rouge&quot;&gt;standalone.xml&lt;/code&gt;, so it goes into the logic to find the driver class automatically.&lt;/p&gt;
+
+&lt;p&gt;Now I step the code to the &lt;code class=&quot;highlighter-rouge&quot;&gt;startDriverServices(...)&lt;/code&gt; method, and here is the screenshot:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/jdbc/JdbcDriverAdd-debug2.png&quot; alt=&quot;/assets/jdbc/JdbcDriverAdd-debug2.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;From the above screenshot, we can see Wildfly has found the PostgreSQL JDBC driver, which is &lt;code class=&quot;highlighter-rouge&quot;&gt;org.postgresql.Driver&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;Now let’s go a little big deeper into the &lt;code class=&quot;highlighter-rouge&quot;&gt;startDriverServices(...)&lt;/code&gt; method. I stepped into the method and here is the screenshot:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/jdbc/JdbcDriverAdd-debug3.png&quot; alt=&quot;/assets/jdbc/JdbcDriverAdd-debug3.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;From the above screenshot, we can see that Wildfly will create a &lt;code class=&quot;highlighter-rouge&quot;&gt;DriverService&lt;/code&gt; for the driver and install it into its micro container. I won’t dive into deeper details in this article, but you may want to learn about the micro container design of Wildfly. If so, you can read these articles:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;a href=&quot;http://wildflyinternals.io/2017/05/10/jboss-msc.html&quot;&gt;An introduction to the JBoss Modular Service Container: Part 1 - Basic architecture of the container&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;http://wildflyinternals.io/2017/05/21/jboss-msc2.html&quot;&gt;DRAFT - An introduction to the JBoss Modular Service Container: Part 2 - Transaction layer&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;The above articles will give you an introduction to the Wildfly micro container design.&lt;/p&gt;
+
+&lt;p&gt;I haven’t determined the topic to write in next article. You will see when it comes out &lt;code class=&quot;highlighter-rouge&quot;&gt;:-)&lt;/code&gt;&lt;/p&gt;
+
+</description>
+          <pubDate>2017-05-25T12:29:22+00:00</pubDate>
+          <link>/2017/05/25/2017-05-25-jdbc-part7.html</link>
+          <guid isPermaLink="true">/2017/05/25/2017-05-25-jdbc-part7.html</guid>
+        </item>
+      
+    
+      
+        <item>
           <title>Adventures in JDBC and the PostgreSQL JDBC driver: Part 6 - Deploying the PostgreSQL JDBC driver into Wildfly</title>
           <description>&lt;p&gt;articles introduce the design of JDBC specification, and it demonstrates the implementation of PostgreSQL JDBC driver.&lt;/p&gt;
 
