@@ -7,7 +7,7 @@
     
       
         <item>
-          <title></title>
+          <title>Adventures in JDBC and the PostgreSQL JDBC driver: Part 7 - The JDBC driver loading process in Wildfly</title>
           <description>&lt;p&gt;In the previous article, we have learned how to add a JDBC database driver module into Wildfly, and how to configure a datasource to use hte driver. In this article, let’s see the JDBC driver loading process in Wildfly.&lt;/p&gt;
 
 &lt;p&gt;In Wildfly source code (See &lt;a href=&quot;https://github.com/wildfly/wildfly&quot;&gt;https://github.com/wildfly/wildfly&lt;/a&gt;), the &lt;code class=&quot;highlighter-rouge&quot;&gt;connector&lt;/code&gt; module contains the &lt;code class=&quot;highlighter-rouge&quot;&gt;datasources&lt;/code&gt; subsystem. Here is the screenshot of the source code structure of &lt;code class=&quot;highlighter-rouge&quot;&gt;wildfly&lt;/code&gt;:&lt;/p&gt;
@@ -93,20 +93,16 @@
 &lt;p&gt;I haven’t determined the topic to write in next article. You will see when it comes out &lt;code class=&quot;highlighter-rouge&quot;&gt;:-)&lt;/code&gt;&lt;/p&gt;
 
 </description>
-          <pubDate>2017-05-25T12:29:22+00:00</pubDate>
-          <link>/2017/05/25/2017-05-25-jdbc-part7.html</link>
-          <guid isPermaLink="true">/2017/05/25/2017-05-25-jdbc-part7.html</guid>
+          <pubDate>2017-05-25T00:00:00+00:00</pubDate>
+          <link>/2017/05/25/jdbc-part7.html</link>
+          <guid isPermaLink="true">/2017/05/25/jdbc-part7.html</guid>
         </item>
       
     
       
         <item>
           <title>Adventures in JDBC and the PostgreSQL JDBC driver: Part 6 - Deploying the PostgreSQL JDBC driver into Wildfly</title>
-          <description>&lt;p&gt;articles introduce the design of JDBC specification, and it demonstrates the implementation of PostgreSQL JDBC driver.&lt;/p&gt;
-
-&lt;p&gt;In this series of articles, I’d like to introduce the design of Wildfly to see how does it support the underlying database system, and how does it use the JDBC driver.&lt;/p&gt;
-
-&lt;p&gt;This article is the first part of the series, and in the article I will show you how to add PostgresSQL into Wildfly as the data source provider.&lt;/p&gt;
+          <description>&lt;p&gt;In this article I will show you how to add PostgresSQL into Wildfly as the data source provider.&lt;/p&gt;
 
 &lt;p&gt;Wildfly contains a &lt;code class=&quot;highlighter-rouge&quot;&gt;datasources&lt;/code&gt; subsystem, and here is the configuration in &lt;code class=&quot;highlighter-rouge&quot;&gt;standalone/configuration/standalone.xml&lt;/code&gt;:&lt;/p&gt;
 
