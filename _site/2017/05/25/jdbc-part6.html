@@ -1,0 +1,149 @@
+<p>articles introduce the design of JDBC specification, and it demonstrates the implementation of PostgreSQL JDBC driver.</p>
+
+<p>In this series of articles, I’d like to introduce the design of Wildfly to see how does it support the underlying database system, and how does it use the JDBC driver.</p>
+
+<p>This article is the first part of the series, and in the article I will show you how to add PostgresSQL into Wildfly as the data source provider.</p>
+
+<p>Wildfly contains a <code class="highlighter-rouge">datasources</code> subsystem, and here is the configuration in <code class="highlighter-rouge">standalone/configuration/standalone.xml</code>:</p>
+
+<div class="language-xml highlighter-rouge"><pre class="highlight"><code><span class="nt">&lt;subsystem</span> <span class="na">xmlns=</span><span class="s">"urn:jboss:domain:datasources:4.0"</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;datasources&gt;</span>
+        <span class="nt">&lt;datasource</span> <span class="na">jndi-name=</span><span class="s">"java:jboss/datasources/ExampleDS"</span> <span class="na">pool-name=</span><span class="s">"ExampleDS"</span> <span class="na">enabled=</span><span class="s">"true"</span> <span class="na">use-java-context=</span><span class="s">"true"</span><span class="nt">&gt;</span>
+            <span class="nt">&lt;connection-url&gt;</span>jdbc:h2:mem:test;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE<span class="nt">&lt;/connection-url&gt;</span>
+            <span class="nt">&lt;driver&gt;</span>h2<span class="nt">&lt;/driver&gt;</span>
+            <span class="nt">&lt;security&gt;</span>
+	<span class="nt">&lt;user-name&gt;</span>sa<span class="nt">&lt;/user-name&gt;</span>
+	<span class="nt">&lt;password&gt;</span>sa<span class="nt">&lt;/password&gt;</span>
+            <span class="nt">&lt;/security&gt;</span>
+        <span class="nt">&lt;/datasource&gt;</span>
+        <span class="nt">&lt;drivers&gt;</span>
+            <span class="nt">&lt;driver</span> <span class="na">name=</span><span class="s">"h2"</span> <span class="na">module=</span><span class="s">"com.h2database.h2"</span><span class="nt">&gt;</span>
+                <span class="nt">&lt;xa-datasource-class&gt;</span>org.h2.jdbcx.JdbcDataSource<span class="nt">&lt;/xa-datasource-class&gt;</span>
+            <span class="nt">&lt;/driver&gt;</span>
+        <span class="nt">&lt;/drivers&gt;</span>
+    <span class="nt">&lt;/datasources&gt;</span>
+<span class="nt">&lt;/subsystem&gt;</span>
+</code></pre>
+</div>
+
+<p>The above XML data is the configuration of the <code class="highlighter-rouge">urn:jboss:domain:datasources</code> subsystem. The <code class="highlighter-rouge">datasource</code> is bound to its <code class="highlighter-rouge">jndi-name</code>. Wildfly provides an example datasource, and its <code class="highlighter-rouge">jndi-name</code> is <code class="highlighter-rouge">java:jboss/datasources/ExampleDS</code>.</p>
+
+<p>In addition, we can see the <code class="highlighter-rouge">driver</code> used by the example datasource is <code class="highlighter-rouge">h2</code>, and this driver is defined in <code class="highlighter-rouge">drviers</code> section.</p>
+
+<p>In the <code class="highlighter-rouge">h2</code> driver definition, we can see its <code class="highlighter-rouge">module</code> is <code class="highlighter-rouge">com.h2database.h2</code>. The Wildfly application server is designed to be modular (See <a href="http://wildflyinternals.io/2017/05/10/jboss-msc.html">An introduction to the JBoss Modular Service Container: Part 1 - Basic architecture of the container
+</a>), so the users can add or remove modules into the server, and the <code class="highlighter-rouge">com.h2database.h2</code> module is provided by Wildfly by default. The <code class="highlighter-rouge">com.h2database.h2</code> module contains the H2 database JDBC driver jar file. We can see the module in Wildfly <code class="highlighter-rouge">modules</code> directory:</p>
+
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code><span class="gp">$ </span><span class="nb">pwd</span>
+/Users/weli/projs/jboss/wildfly10/wildfly-10.1.0.Final
+<span class="gp">$ </span>ls modules/system/layers/base/com/h2database/h2/main/
+h2-1.3.173.jar module.xml
+</code></pre>
+</div>
+
+<p>From the above command output, we can see contents of <code class="highlighter-rouge">com.h2database.h2</code> module. It has a <code class="highlighter-rouge">module.xml</code>, which is the module descriptor; and it has the <code class="highlighter-rouge">h2-1.3.173.jar</code>, which is the JDBC driver of the H2 database.</p>
+
+<p>Now we go back to the <code class="highlighter-rouge">driver</code> definition of the module, and we can see the <code class="highlighter-rouge">xa-datasource-class</code> definition. In this article, I won’t explain the meaning of the <code class="highlighter-rouge">xa-datasource-class</code> in this article. For now you can just ignore this configuration, and actually it can be removed and Wildfly can still load the JDBC driver correctly. It will scan the driver module and load the JDBC driver automatically(I will write another article on this topic).</p>
+
+<p>After checking the datasource configuration, we can start the Wildfly in standalone mode. Here is the command to start the server:</p>
+
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code><span class="gp">$ </span>./standalone.sh
+</code></pre>
+</div>
+
+<p>After executing the above command, the server will startup and print log to the screen. From the server output, we can see the related part with the H2 JDBC driver. Here is the relative part of the log:</p>
+
+<pre><code class="language-log">23:47:34,019 INFO  [org.jboss.as.connector.subsystems.datasources] (ServerService Thread Pool -- 33) WFLYJCA0004: Deploying JDBC-compliant driver class org.h2.Driver (version 1.3)
+23:47:34,030 INFO  [org.jboss.as.connector.deployers.jdbc] (MSC service thread 1-3) WFLYJCA0018: Started Driver service with driver-name = h2
+</code></pre>
+
+<p>From the above log output, we can see Wildfly has found the driver class of H2 database, which is <code class="highlighter-rouge">org.h2.Driver</code>, and Wildfly will use it to communicate with the underlying H2 database system.</p>
+
+<p>After understanding the Wildfly datasource configuration, now we can add our own PostgreSQL JDBC driver into Wildfly as our datasource provider. The plan is to add a <code class="highlighter-rouge">postgresql</code> module into Wildfly, and put the compiled PostgreSQL JDBC driver file into the module.</p>
+
+<p>Firstly, we need to create a directory for the <code class="highlighter-rouge">postgresql</code> module. We need to go to the home directory of our Wildfly. Here is the home path of the <code class="highlighter-rouge">wildfly</code> server on my local machine:</p>
+
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code><span class="gp">$ </span><span class="nb">pwd</span>
+/Users/weli/projs/jboss/wildfly10/wildfly-10.1.0.Final
+</code></pre>
+</div>
+
+<p>To create the <code class="highlighter-rouge">postgresql</code> module, I need to create a directory like this:</p>
+
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code><span class="gp">$ </span>mkdir -p  modules/system/layers/base/org/postgresql/main
+</code></pre>
+</div>
+
+<p>The above command will create the full path of the directories that will be used to store the files of our <code class="highlighter-rouge">postgresql</code> module.</p>
+
+<p>The next step is to copy the jar file into the module directory. Here is the command:</p>
+
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code><span class="gp">$ </span>cp ~/.m2/repository/org/postgresql/postgresql/42.0.1-SNAPSHOT/postgresql-42.0.1-SNAPSHOT.jar <span class="se">\</span>
+ modules/system/layers/base/org/postgresql/main/
+</code></pre>
+</div>
+
+<p>The above command will copy our compiled PostgreSQL JDBC driver into the module directory.</p>
+
+<p>Then we need to create a module descriptor file into the <code class="highlighter-rouge">postgresql</code> module, and the file name should be <code class="highlighter-rouge">module.xml</code>. Here is the content of the <code class="highlighter-rouge">module.xml</code>:</p>
+
+<div class="language-xml highlighter-rouge"><pre class="highlight"><code><span class="nt">&lt;module</span> <span class="na">xmlns=</span><span class="s">"urn:jboss:module:1.3"</span> <span class="na">name=</span><span class="s">"org.postgresql"</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;resources&gt;</span>
+        <span class="nt">&lt;resource-root</span> <span class="na">path=</span><span class="s">"postgresql-42.0.1-SNAPSHOT.jar"</span><span class="nt">/&gt;</span>
+    <span class="nt">&lt;/resources&gt;</span>
+	
+    <span class="nt">&lt;dependencies&gt;</span>
+        <span class="nt">&lt;module</span> <span class="na">name=</span><span class="s">"javax.api"</span><span class="nt">/&gt;</span>
+        <span class="nt">&lt;module</span> <span class="na">name=</span><span class="s">"javax.transaction.api"</span><span class="nt">/&gt;</span>
+    <span class="nt">&lt;/dependencies&gt;</span>
+<span class="nt">&lt;/module&gt;</span>
+</code></pre>
+</div>
+
+<p>The above XML data contains the definition of our <code class="highlighter-rouge">org.postgresql</code> module. It defines the name of the module, the resources of the module, and the dependencies of the module. We can see the name of the module is <code class="highlighter-rouge">org.postgresql</code>, the resource is <code class="highlighter-rouge">postgresql-42.0.1-SNAPSHOT.jar</code>, and the dependencies are <code class="highlighter-rouge">javax.api</code> and <code class="highlighter-rouge">javax.transaction.api</code>(The dependencies are provided by relative Wildfly modules).</p>
+
+<p>After creating the <code class="highlighter-rouge">module.xml</code> and copying the jar file, we have prepared the module for Wildfly to load it. Here are the file contents in Wildfly module directory:</p>
+
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code><span class="gp">$ </span><span class="nb">pwd</span>
+/Users/weli/projs/jboss/wildfly10/wildfly-10.1.0.Final/modules/system/layers/base/org/postgresql/main
+<span class="gp">$ </span>ls
+module.xml                     postgresql-42.0.1-SNAPSHOT.jar
+</code></pre>
+</div>
+
+<p>After the module is prepared, we need to put the <code class="highlighter-rouge">postgresql</code> module as a data source into the <code class="highlighter-rouge">datasources</code> subsystem section of the <code class="highlighter-rouge">standalone/configuration/standalone.xml</code>. The configuration is similar to the existing <code class="highlighter-rouge">h2</code> datasource.</p>
+
+<p>First we need to put a new <code class="highlighter-rouge">driver</code> entry into the <code class="highlighter-rouge">drivers</code> section. Here are the contents of the entry:</p>
+
+<div class="language-xml highlighter-rouge"><pre class="highlight"><code><span class="nt">&lt;driver</span> <span class="na">name=</span><span class="s">"postgresql"</span> <span class="na">module=</span><span class="s">"org.postgresql"</span><span class="nt">&gt;</span>
+<span class="nt">&lt;/driver&gt;</span>				
+</code></pre>
+</div>
+
+<p>The above configuration adds our <code class="highlighter-rouge">org.postgresql</code> module as a database driver. We don’t have to define the driver class to use in the module, and Wildfly will find it intelligently(As I said, I’ll write another article for this topic).</p>
+
+<p>After adding the <code class="highlighter-rouge">driver</code>, we need to add a <code class="highlighter-rouge">datasource</code> to use the driver. Here is the definition of the datasource:</p>
+
+<div class="language-xml highlighter-rouge"><pre class="highlight"><code><span class="nt">&lt;datasource</span> <span class="na">jndi-name=</span><span class="s">"java:jboss/datasources/weli"</span> <span class="na">pool-name=</span><span class="s">"weli"</span> <span class="na">enabled=</span><span class="s">"true"</span> <span class="na">use-java-context=</span><span class="s">"true"</span><span class="nt">&gt;</span>
+	<span class="nt">&lt;connection-url&gt;</span>jdbc:postgresql://localhost/weli<span class="nt">&lt;/connection-url&gt;</span>
+	<span class="nt">&lt;driver&gt;</span>postgersql<span class="nt">&lt;/driver&gt;</span>
+	<span class="nt">&lt;security&gt;</span>
+		<span class="nt">&lt;user-name&gt;</span>weli<span class="nt">&lt;/user-name&gt;</span>
+		<span class="nt">&lt;password&gt;&lt;/password&gt;</span>
+	<span class="nt">&lt;/security&gt;</span>					
+<span class="nt">&lt;/datasource&gt;</span>
+</code></pre>
+</div>
+
+<p>From the above configuration, we can see the name of our datasource is <code class="highlighter-rouge">java:jboss/datasources/weli</code>, and the driver we use is <code class="highlighter-rouge">postgresql</code>. The <code class="highlighter-rouge">connection-url</code> is used to connect to our created database, and we will use our <code class="highlighter-rouge">weli</code> database created in previous articles as the datasource. In <code class="highlighter-rouge">security</code> section we need to provide the <code class="highlighter-rouge">user-name</code> and the <code class="highlighter-rouge">password</code> to connect to our database.</p>
+
+<p>Until now we have finished all the configuration, and we can restart the Wildfly server to test its correctness. We even don’t need to start our postgresql database server, because Wildfly will just lazily connect to the underlying database system until there are applications explicitly using the datasource. So for now we can stop the Wildfly server and then restart it in standalone mode. We should see the <code class="highlighter-rouge">postgresql</code> datasource is loaded. Here is the relative log output:</p>
+
+<pre><code class="language-log">00:33:01,593 INFO  [org.jboss.as.connector.subsystems.datasources] (ServerService Thread Pool -- 33) WFLYJCA0005: Deploying non-JDBC-compliant driver class org.postgresql.Driver (version 42.0)
+00:33:01,594 INFO  [org.jboss.as.connector.deployers.jdbc] (MSC service thread 1-3) WFLYJCA0018: Started Driver service with driver-name = postgresql
+00:33:01,885 INFO  [org.jboss.as.connector.subsystems.datasources] (MSC service thread 1-3) WFLYJCA0001: Bound data source [java:jboss/datasources/weli]
+</code></pre>
+
+<p>From the above log output, we can see Wildfly automatically found the <code class="highlighter-rouge">org.postgresql.Driver</code> from our driver module, and it bounds the <code class="highlighter-rouge">java:jboss/datasources/weli</code> datasource correctly. Please note I haven’t started my PostgreSQL database server at this point, and Wildfly won’t really use the JDBC driver to connect to database server until there are deployed applications starting to use the datasource.</p>
+
+<p>In this article, I have taught you to add database source into Wildfly. In next article, I’d like to guide you to see the datasource loading process of Wildfly.</p>
+
