@@ -1,0 +1,263 @@
+<p>In previous article, I have introduced the JDBC driver loading process in Wildfly. In this article, I’d like to show you the datasource loading process.</p>
+
+<p>Firstly, let’s review the datasource and driver configuration in <code class="highlighter-rouge">standalone.xml</code>:</p>
+
+<div class="language-xml highlighter-rouge"><pre class="highlight"><code><span class="nt">&lt;subsystem</span> <span class="na">xmlns=</span><span class="s">"urn:jboss:domain:datasources:4.0"</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;datasources&gt;</span>
+        <span class="nt">&lt;datasource</span> <span class="na">jndi-name=</span><span class="s">"java:jboss/datasources/weli"</span> <span class="na">pool-name=</span><span class="s">"weli"</span> <span class="na">enabled=</span><span class="s">"true"</span> <span class="na">use-java-context=</span><span class="s">"true"</span><span class="nt">&gt;</span>
+            <span class="nt">&lt;connection-url&gt;</span>jdbc:postgresql://localhost/weli<span class="nt">&lt;/connection-url&gt;</span>
+            <span class="nt">&lt;driver&gt;</span>postgresql<span class="nt">&lt;/driver&gt;</span>
+            <span class="nt">&lt;security&gt;</span>
+                <span class="nt">&lt;user-name&gt;</span>weli<span class="nt">&lt;/user-name&gt;</span>
+            <span class="nt">&lt;/security&gt;</span>
+        <span class="nt">&lt;/datasource&gt;</span>
+        <span class="nt">&lt;drivers&gt;</span>
+            <span class="nt">&lt;driver</span> <span class="na">name=</span><span class="s">"postgresql"</span> <span class="na">module=</span><span class="s">"org.postgresql"</span><span class="nt">/&gt;</span>
+        <span class="nt">&lt;/drivers&gt;</span>
+    <span class="nt">&lt;/datasources&gt;</span>
+<span class="nt">&lt;/subsystem&gt;</span>
+</code></pre>
+</div>
+
+<p>The above XML data defines our PostgreSQL datasource and the driver. I have removed the sample H2 database configuration to focus on our PostgreSQL topic. In previous article, we have seen how does the <code class="highlighter-rouge">postgresql</code> driver is loaded into Wildfly. The Wildfly server uses <code class="highlighter-rouge">JdbcDriverAdd</code> class to do the driver loading work, and it will find the <code class="highlighter-rouge">Driver</code> interface implementation for us automatically.</p>
+
+<p>Now we should check how does Wildfly load the <code class="highlighter-rouge">datasource</code>. From the above configuration, we can see the <code class="highlighter-rouge">datasource</code> and <code class="highlighter-rouge">driver</code> are actually two independent elements. In the <code class="highlighter-rouge">datasource</code> configuration, it refers to the driver with the <code class="highlighter-rouge">driver</code> item. Here is the snippet:</p>
+
+<div class="language-xml highlighter-rouge"><pre class="highlight"><code><span class="nt">&lt;driver&gt;</span>postgresql<span class="nt">&lt;/driver&gt;</span>
+</code></pre>
+</div>
+
+<p>So we can guess in the Wildfly code, the datasource will refer to the driver in such a loose way. Now let’s the Wildfly code side. The core class that deals with the datasource loading is <code class="highlighter-rouge">AbstractDataSourceAdd</code>. It is an abstract class that contains most of the code, and <code class="highlighter-rouge">DataSourceAdd</code> class extends it to add several addition methods. Here is the class diagram of these two classes:</p>
+
+<p><img src="/assets/jdbc/DataSourceAdd.png" alt="/assets/jdbc/DataSourceAdd.png" /></p>
+
+<p>From the above diagram, we can see the <code class="highlighter-rouge">AbstractDataSourceAdd</code> class contains a <code class="highlighter-rouge">performRuntime(...)</code> method. This is the entry point of the datasource handler, and we will check it in detail later. (Besides <code class="highlighter-rouge">DataSourceAdd</code> class, there is another class called <code class="highlighter-rouge">XaDataSourceAdd</code> that implements the <code class="highlighter-rouge">AbstractDataSourcceAdd</code> class. We won’t discuss the two phase commit in this article, so we won’t check the <code class="highlighter-rouge">XaDataSourceAdd</code> class.)</p>
+
+<p>I set several breakpoints in the <code class="highlighter-rouge">performRuntime(...)</code> method of the <code class="highlighter-rouge">AbstractDataSourceAdd</code> class and start the Wildfly server in standalone mode. Here is the screenshot that the code stopped at breakpoint:</p>
+
+<p><img src="/assets/jdbc/firstRuntimeStep.png" alt="/assets/jdbc/firstRuntimeStep.png" /></p>
+
+<p>The above screenshot shows that the <code class="highlighter-rouge">performRuntime(...)</code> method will call the <code class="highlighter-rouge">firstRuntimeStep(...)</code> method.</p>
+
+<p>I have set a breakpoint in <code class="highlighter-rouge">firstRuntimeStep(...)</code> method, and here is the screenshot:</p>
+
+<p><img src="/assets/jdbc/firstRuntimeStep2.png" alt="/assets/jdbc/firstRuntimeStep.png" /></p>
+
+<p>From the above screenshot, we can see in <code class="highlighter-rouge">firstRuntimeStep(...)</code> method it will create an instance of <code class="highlighter-rouge">AbstractDataSourceService</code> class by <code class="highlighter-rouge">createDataSourceService(dsName, jndiName)</code> method. This is an abstract method that will be implemented by <code class="highlighter-rouge">DataSourceAdd</code> class or the <code class="highlighter-rouge">XaDataSourceAdd</code> class.</p>
+
+<p>In our example, because we are using <code class="highlighter-rouge">datasource</code> setting in configuration, and not the <code class="highlighter-rouge">xa-datasource</code>, so we are actually using the <code class="highlighter-rouge">DataSourceAdd.createDataSourceService(...)</code> method to create the an instance of <code class="highlighter-rouge">LocalDataSourceService</code>. Here is the screenshot of the code in the method:</p>
+
+<p><img src="/assets/jdbc/DataSourceAdd.createDataSourceService.png" alt="/assets/jdbc/DataSourceAdd.createDataSourceService.png" /></p>
+
+<p>From the above screenshot, we can see an instance of <code class="highlighter-rouge">LocalDataSourceService</code> is created.</p>
+
+<p>Here is the screenshot of the code running process:</p>
+
+<p><img src="/assets/jdbc/DataSourceService.png" alt="/assets/jdbc/DataSourceService.png" /></p>
+
+<p>From the above diagram, we can see the instance of <code class="highlighter-rouge">AbstractDataSourceService</code> is actually <code class="highlighter-rouge">LocalDataSourceService</code>. Now let’s check the class diagram of these data source services:</p>
+
+<p><img src="/assets/jdbc/DataSourceServices.png" alt="/assets/jdbc/DataSourceServices.png" /></p>
+
+<p>The above diagram shows the <code class="highlighter-rouge">AbstractDataSourceService</code> and its two implementation classes: <code class="highlighter-rouge">LocalDataSourceService</code> and <code class="highlighter-rouge">XaDataSourceService</code>. There is an important field in the  <code class="highlighter-rouge">AbstractDataSourceService</code> class, which is <code class="highlighter-rouge">sqlDataSource : WildFlyDataSource</code>. The <code class="highlighter-rouge">WildFlyDataSource</code> is the datasource type finally returned to the user. We will verify this later. Here is the class diagram of <code class="highlighter-rouge">WildFlyDataSource</code>:</p>
+
+<p><img src="/assets/jdbc/WildFlyDataSource.png" alt="/assets/jdbc/WildFlyDataSource.png" /></p>
+
+<p>In this datasource class, the important methods are these <code class="highlighter-rouge">getConnection(...)</code> methods. Users will get the database connections from the datasource, and don’t care whether these connections are pooled or not. Let’s see the code in <code class="highlighter-rouge">WildFlyDataSource</code>:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">class</span> <span class="nc">WildFlyDataSource</span> <span class="kd">implements</span> <span class="n">DataSource</span><span class="o">,</span> <span class="n">Serializable</span> <span class="o">{</span>
+    <span class="cm">/** DataSource */</span>
+    <span class="kd">private</span> <span class="kd">transient</span> <span class="n">DataSource</span> <span class="n">delegate</span><span class="o">;</span>
+    
+    <span class="kd">public</span> <span class="n">Connection</span> <span class="nf">getConnection</span><span class="o">()</span> <span class="kd">throws</span> <span class="n">SQLException</span> <span class="o">{</span>
+        <span class="k">return</span> <span class="n">delegate</span><span class="o">.</span><span class="na">getConnection</span><span class="o">();</span>
+    <span class="o">}</span>
+<span class="o">...</span>
+</code></pre>
+</div>
+
+<p>From the above code, we can see <code class="highlighter-rouge">WildFlyDataSource</code> will just use a <code class="highlighter-rouge">delegate</code> datasource to do the real work. To see how does <code class="highlighter-rouge">WildFlyDataSource</code> being created, we need to go back to <code class="highlighter-rouge">DataSourceAdd.createDataSourceService(...)</code> method to see how does <code class="highlighter-rouge">LocalDataSourceService</code> get created. Here is the code:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="kd">protected</span> <span class="n">AbstractDataSourceService</span> <span class="nf">createDataSourceService</span><span class="o">(</span><span class="kd">final</span> <span class="n">String</span> <span class="n">dsName</span><span class="o">,</span><span class="kd">final</span> <span class="n">String</span> <span class="n">jndiName</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">OperationFailedException</span> <span class="o">{</span>
+   <span class="k">return</span> <span class="k">new</span> <span class="nf">LocalDataSourceService</span><span class="o">(</span><span class="n">dsName</span><span class="o">,</span> <span class="n">ContextNames</span><span class="o">.</span><span class="na">bindInfoFor</span><span class="o">(</span><span class="n">jndiName</span><span class="o">));</span>
+<span class="o">}</span>
+</code></pre>
+</div>
+
+<p>The above code shows that an instance of <code class="highlighter-rouge">LocalDataSourceService</code> will be created, and its <code class="highlighter-rouge">WildFlyDataSource</code> will be initialized during creation process. Let’s check the code of <code class="highlighter-rouge">LocalDataSourceService</code>:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="kn">package</span> <span class="n">org</span><span class="o">.</span><span class="na">jboss</span><span class="o">.</span><span class="na">as</span><span class="o">.</span><span class="na">connector</span><span class="o">.</span><span class="na">subsystems</span><span class="o">.</span><span class="na">datasources</span><span class="o">;</span>
+
+<span class="kn">import</span> <span class="nn">org.jboss.as.naming.deployment.ContextNames</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.jboss.jca.common.api.validator.ValidateException</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.jboss.msc.inject.Injector</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.jboss.msc.value.InjectedValue</span><span class="o">;</span>
+
+<span class="cm">/**
+ * Local data-source service implementation.
+ * @author John Bailey
+ * @author Stefano Maestri
+ */</span>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">LocalDataSourceService</span> <span class="kd">extends</span> <span class="n">AbstractDataSourceService</span> <span class="o">{</span>
+
+    <span class="kd">private</span> <span class="kd">final</span> <span class="n">InjectedValue</span><span class="o">&lt;</span><span class="n">ModifiableDataSource</span><span class="o">&gt;</span> <span class="n">dataSourceConfig</span> <span class="o">=</span> <span class="k">new</span> <span class="n">InjectedValue</span><span class="o">&lt;</span><span class="n">ModifiableDataSource</span><span class="o">&gt;();</span>
+
+    <span class="kd">public</span> <span class="nf">LocalDataSourceService</span><span class="o">(</span><span class="kd">final</span> <span class="n">String</span> <span class="n">dsName</span><span class="o">,</span> <span class="kd">final</span> <span class="n">ContextNames</span><span class="o">.</span><span class="na">BindInfo</span> <span class="n">jndiName</span><span class="o">,</span> <span class="kd">final</span> <span class="n">ClassLoader</span> <span class="n">classLoader</span><span class="o">)</span> <span class="o">{</span>
+        <span class="kd">super</span><span class="o">(</span><span class="n">dsName</span><span class="o">,</span> <span class="n">jndiName</span><span class="o">,</span> <span class="n">classLoader</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="kd">public</span> <span class="nf">LocalDataSourceService</span><span class="o">(</span><span class="kd">final</span> <span class="n">String</span> <span class="n">dsName</span><span class="o">,</span> <span class="kd">final</span> <span class="n">ContextNames</span><span class="o">.</span><span class="na">BindInfo</span> <span class="n">jndiName</span><span class="o">)</span> <span class="o">{</span>
+        <span class="kd">super</span><span class="o">(</span><span class="n">dsName</span><span class="o">,</span> <span class="n">jndiName</span><span class="o">,</span> <span class="kc">null</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="nd">@Override</span>
+    <span class="kd">public</span> <span class="n">AS7DataSourceDeployer</span> <span class="nf">getDeployer</span><span class="o">()</span> <span class="kd">throws</span> <span class="n">ValidateException</span> <span class="o">{</span>
+        <span class="k">return</span> <span class="k">new</span> <span class="nf">AS7DataSourceDeployer</span><span class="o">(</span><span class="n">dataSourceConfig</span><span class="o">.</span><span class="na">getValue</span><span class="o">().</span><span class="na">getUnModifiableInstance</span><span class="o">());</span>
+    <span class="o">}</span>
+
+    <span class="kd">public</span> <span class="n">Injector</span><span class="o">&lt;</span><span class="n">ModifiableDataSource</span><span class="o">&gt;</span> <span class="nf">getDataSourceConfigInjector</span><span class="o">()</span> <span class="o">{</span>
+        <span class="k">return</span> <span class="n">dataSourceConfig</span><span class="o">;</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre>
+</div>
+
+<p>From the class definition, we can see the <code class="highlighter-rouge">LocalDataSourceService</code> class extends the <code class="highlighter-rouge">AbstractDataSourceService</code> class, and the constructor of the <code class="highlighter-rouge">LocalDataSourceService</code> class will just call the constructor <code class="highlighter-rouge">AbstractDataSourceService</code> class.</p>
+
+<p>We have seen the class diagram of <code class="highlighter-rouge">AbstractDataSourceService</code> class in above, and we see the class stores the necessary attributes of a data source. The constructor of <code class="highlighter-rouge">AbstractDataSourceService</code> code is listed in below:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="kd">protected</span> <span class="nf">AbstractDataSourceService</span><span class="o">(</span><span class="kd">final</span> <span class="n">String</span> <span class="n">dsName</span><span class="o">,</span> <span class="kd">final</span> <span class="n">ContextNames</span><span class="o">.</span><span class="na">BindInfo</span> <span class="n">jndiName</span><span class="o">,</span> <span class="kd">final</span> <span class="n">ClassLoader</span> <span class="n">classLoader</span> <span class="o">)</span> <span class="o">{</span>
+    <span class="k">this</span><span class="o">.</span><span class="na">dsName</span> <span class="o">=</span> <span class="n">dsName</span><span class="o">;</span>
+    <span class="k">this</span><span class="o">.</span><span class="na">classLoader</span> <span class="o">=</span> <span class="n">classLoader</span><span class="o">;</span>
+    <span class="k">this</span><span class="o">.</span><span class="na">jndiName</span> <span class="o">=</span> <span class="n">jndiName</span><span class="o">;</span>
+<span class="o">}</span>
+</code></pre>
+</div>
+
+<p>From the above code, we can see the <code class="highlighter-rouge">AbstractDataSourceService</code> class will store the name and JNDI name of a datasource. This info is extracted from the configuration file (<code class="highlighter-rouge">standalone.xml</code> in standalone mode) set by the users.</p>
+
+<p>Now we can check the <code class="highlighter-rouge">start(...)</code> method of the <code class="highlighter-rouge">AbstractDataSourceService</code>. Here is the sequence diagram the <code class="highlighter-rouge">start(...)</code> method:</p>
+
+<p><img src="/assets/jdbc/org.jboss.as.connector.subsystems.datasources.AbstractDataSourceService.start(StartContext).png" alt="/assets/jdbc/org.jboss.as.connector.subsystems.datasources.AbstractDataSourceService.start(StartContext).png" /></p>
+
+<p>From the above diagram, we can see that the instance of <code class="highlighter-rouge">WildFlyDataSource</code> is created in <code class="highlighter-rouge">start(...)</code> method. To create the <code class="highlighter-rouge">WildFlyDataSource</code> class instance, it uses the <code class="highlighter-rouge">AS7DataSourceDeployer</code> to deploy a <code class="highlighter-rouge">CommonDeployment</code> (the instance name is <code class="highlighter-rouge">deploymentMD</code>) into the Wildfly container.</p>
+
+<p>The <code class="highlighter-rouge">AS7DataSourceDeploy</code> class is an inner class of <code class="highlighter-rouge">AbstractDataSourceService</code> class, and its core part is the <code class="highlighter-rouge">deploy(...)</code> method. Basicially speaking, the <code class="highlighter-rouge">deploy(...)</code> method will register the datasource information and its driver reference into the container, and prepare the <code class="highlighter-rouge">CommonDeployment</code> to fetch the <code class="highlighter-rouge">WildFlyDataSource</code> from it. Here is the sequence diagram of the <code class="highlighter-rouge">AbstractDataSourceService.deploy(...)</code> method:</p>
+
+<p><img src="/assets/jdbc/AS7DataSourceDeployer.deploy(ServiceContainer).png" alt="/assets/jdbc/AS7DataSourceDeployer.deploy(ServiceContainer).png" /></p>
+
+<p>From the above diagram, we can see that the datasource and its referred driver infomation will be wrapped into <code class="highlighter-rouge">dataSourceConfig : org.jboss.jca.common.api.metadata.ds.DataSource</code>. This is the important thing we should know: Wildfly is using the JCA architecture(<a href="https://en.wikipedia.org/wiki/Java_EE_Connector_Architecture">Java EE Connector Architecture</a>) to wrap the datasource. In Wildfly, the JCA implementation is provided by the IronJacamar project(<a href="http://www.ironjacamar.org/">http://www.ironjacamar.org/</a>). We can’t dive into too many details of this part in this article, and I’ll articles on the topic in future.</p>
+
+<p>Now let’s go back to the <code class="highlighter-rouge">AbstractDataSourceService.start(...)</code> method:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">synchronized</span> <span class="kt">void</span> <span class="nf">start</span><span class="o">(</span><span class="n">StartContext</span> <span class="n">startContext</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">StartException</span> <span class="o">{</span>
+    <span class="k">try</span> <span class="o">{</span>
+        <span class="kd">final</span> <span class="n">ServiceContainer</span> <span class="n">container</span> <span class="o">=</span> <span class="n">startContext</span><span class="o">.</span><span class="na">getController</span><span class="o">().</span><span class="na">getServiceContainer</span><span class="o">();</span>
+
+        <span class="n">deploymentMD</span> <span class="o">=</span> <span class="n">getDeployer</span><span class="o">().</span><span class="na">deploy</span><span class="o">(</span><span class="n">container</span><span class="o">);</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">deploymentMD</span><span class="o">.</span><span class="na">getCfs</span><span class="o">().</span><span class="na">length</span> <span class="o">!=</span> <span class="mi">1</span><span class="o">)</span> <span class="o">{</span>
+            <span class="k">throw</span> <span class="n">ConnectorLogger</span><span class="o">.</span><span class="na">ROOT_LOGGER</span><span class="o">.</span><span class="na">cannotStartDs</span><span class="o">();</span>
+        <span class="o">}</span>
+        <span class="n">sqlDataSource</span> <span class="o">=</span> <span class="k">new</span> <span class="n">WildFlyDataSource</span><span class="o">((</span><span class="n">javax</span><span class="o">.</span><span class="na">sql</span><span class="o">.</span><span class="na">DataSource</span><span class="o">)</span> <span class="n">deploymentMD</span><span class="o">.</span><span class="na">getCfs</span><span class="o">()[</span><span class="mi">0</span><span class="o">],</span> <span class="n">jndiName</span><span class="o">.</span><span class="na">getAbsoluteJndiName</span><span class="o">());</span>
+<span class="o">...</span>
+</code></pre>
+</div>
+
+<p>From the above code, we can see that the <code class="highlighter-rouge">WildFlyDataSource</code> is created from the <code class="highlighter-rouge">org.jboss.jca.deployers.common.CommonDeployment</code>. In conclusion, our datasource and its relying driver information is registered into the connector system, and the datasource is managed by the connector system.</p>
+
+<p>In addition, we can see the driver loading process and the datasource loading process are independent from each other. The driver loading is handled by <code class="highlighter-rouge">JdbcDriverAdd</code> as we saw in last chapter, and the datasource loading is handled by <code class="highlighter-rouge">DataSourceAdd</code> as we learned in this article.</p>
+
+<p>During the <code class="highlighter-rouge">DataSourceAdd</code> loading process, it will just record the JDBC driver needed by the Datasource, but it will not perform the action to connect the driver with datasource. We can verify this by setting multiple breakpoints in the code, and check when does the server will add the driver to the datasource. I have set some breakpoints in <code class="highlighter-rouge">AbstractDataSourceAdd</code> and <code class="highlighter-rouge">AbstractDataSourceService</code> and we will use them. In addition, let’s modify the datasource config in <code class="highlighter-rouge">standalone.xml</code> a little bit:</p>
+
+<div class="language-xml highlighter-rouge"><pre class="highlight"><code><span class="nt">&lt;subsystem</span> <span class="na">xmlns=</span><span class="s">"urn:jboss:domain:datasources:4.0"</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;datasources&gt;</span>
+        <span class="nt">&lt;datasource</span> <span class="na">jndi-name=</span><span class="s">"java:jboss/datasources/weli"</span> <span class="na">pool-name=</span><span class="s">"weli"</span> <span class="na">enabled=</span><span class="s">"true"</span> <span class="na">use-java-context=</span><span class="s">"true"</span><span class="nt">&gt;</span>
+            <span class="nt">&lt;connection-url&gt;</span>jdbc:postgresql://localhost/weli<span class="nt">&lt;/connection-url&gt;</span>
+            <span class="nt">&lt;driver&gt;</span>void<span class="nt">&lt;/driver&gt;</span>
+            <span class="nt">&lt;security&gt;</span>
+                <span class="nt">&lt;user-name&gt;</span>weli<span class="nt">&lt;/user-name&gt;</span>
+            <span class="nt">&lt;/security&gt;</span>
+        <span class="nt">&lt;/datasource&gt;</span>
+        <span class="nt">&lt;drivers&gt;</span>
+            <span class="nt">&lt;driver</span> <span class="na">name=</span><span class="s">"postgresql"</span> <span class="na">module=</span><span class="s">"org.postgresql"</span><span class="nt">/&gt;</span>
+        <span class="nt">&lt;/drivers&gt;</span>
+    <span class="nt">&lt;/datasources&gt;</span>
+<span class="nt">&lt;/subsystem&gt;</span>
+</code></pre>
+</div>
+
+<p>From the above code, we can see our datasource refers to a driver named <code class="highlighter-rouge">void</code>, and this driver is not configured anywhere. We can deduce that the Wildfly server will throw error for this config, because it can’t find the <code class="highlighter-rouge">void</code> driver for the datasource. Now let’s run the Wildfly server in standalone mode to see what happened:</p>
+
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code><span class="gp">$ </span>./standalone.sh
+...
+20:40:27,768 INFO  <span class="o">[</span>org.jboss.as.connector.subsystems.datasources] <span class="o">(</span>ServerService Thread Pool -- 33<span class="o">)</span> WFLYJCA0005: Deploying non-JDBC-compliant driver class org.postgresql.Driver <span class="o">(</span>version 42.0<span class="o">)</span>
+20:40:27,774 INFO  <span class="o">[</span>org.jboss.as.connector.deployers.jdbc] <span class="o">(</span>MSC service thread 1-7<span class="o">)</span> WFLYJCA0018: Started Driver service with driver-name <span class="o">=</span> postgresql
+...
+20:40:30,919 ERROR <span class="o">[</span>org.jboss.as.controller.management-operation] <span class="o">(</span>Controller Boot Thread<span class="o">)</span> WFLYCTL0013: Operation <span class="o">(</span><span class="s2">"add"</span><span class="o">)</span> failed - address: <span class="o">([</span>
+    <span class="o">(</span><span class="s2">"subsystem"</span> <span class="o">=</span>&gt; <span class="s2">"datasources"</span><span class="o">)</span>,
+    <span class="o">(</span><span class="s2">"data-source"</span> <span class="o">=</span>&gt; <span class="s2">"weli"</span><span class="o">)</span>
+<span class="o">])</span> - failure description: <span class="o">{</span>
+    <span class="s2">"WFLYCTL0412: Required services that are not installed:"</span> <span class="o">=</span>&gt; <span class="o">[</span><span class="s2">"jboss.jdbc-driver.void"</span><span class="o">]</span>,
+    <span class="s2">"WFLYCTL0180: Services with missing/unavailable dependencies"</span> <span class="o">=</span>&gt; <span class="o">[</span>
+        <span class="s2">"org.wildfly.data-source.weli is missing [jboss.jdbc-driver.void]"</span>,
+        <span class="s2">"jboss.driver-demander.java:jboss/datasources/weli is missing [jboss.jdbc-driver.void]"</span>
+    <span class="o">]</span>
+<span class="o">}</span>
+20:40:30,921 ERROR <span class="o">[</span>org.jboss.as.controller.management-operation] <span class="o">(</span>Controller Boot Thread<span class="o">)</span> WFLYCTL0013: Operation <span class="o">(</span><span class="s2">"add"</span><span class="o">)</span> failed - address: <span class="o">([</span>
+    <span class="o">(</span><span class="s2">"subsystem"</span> <span class="o">=</span>&gt; <span class="s2">"datasources"</span><span class="o">)</span>,
+    <span class="o">(</span><span class="s2">"data-source"</span> <span class="o">=</span>&gt; <span class="s2">"weli"</span><span class="o">)</span>
+<span class="o">])</span> - failure description: <span class="o">{</span>
+    <span class="s2">"WFLYCTL0412: Required services that are not installed:"</span> <span class="o">=</span>&gt; <span class="o">[</span>
+        <span class="s2">"jboss.jdbc-driver.void"</span>,
+        <span class="s2">"jboss.jdbc-driver.void"</span>
+    <span class="o">]</span>,
+    <span class="s2">"WFLYCTL0180: Services with missing/unavailable dependencies"</span> <span class="o">=</span>&gt; <span class="o">[</span>
+        <span class="s2">"org.wildfly.data-source.weli is missing [jboss.jdbc-driver.void]"</span>,
+        <span class="s2">"jboss.driver-demander.java:jboss/datasources/weli is missing [jboss.jdbc-driver.void]"</span>,
+        <span class="s2">"org.wildfly.data-source.weli is missing [jboss.jdbc-driver.void]"</span>
+    <span class="o">]</span>
+<span class="o">}</span>
+20:40:31,155 INFO  <span class="o">[</span>org.jboss.as.controller] <span class="o">(</span>Controller Boot Thread<span class="o">)</span> WFLYCTL0183: Service status report
+WFLYCTL0184:    New missing/unsatisfied dependencies:
+      service jboss.jdbc-driver.void <span class="o">(</span>missing<span class="o">)</span> dependents: <span class="o">[</span>service jboss.driver-demander.java:jboss/datasources/weli, service org.wildfly.data-source.weli]
+</code></pre>
+</div>
+
+<p>I have extracted the relative log from server output. From the above output, we can see the <code class="highlighter-rouge">datasources</code> subsystem is started, and the <code class="highlighter-rouge">postgresql</code> driver is installed successfuly. During the datasource loading process, it reports error that it can not find the <code class="highlighter-rouge">void</code> driver. This is what we expected.</p>
+
+<p>Now let’s stop the server and restart it in debug mode to do the more fine-grained analysis. The first breakpoint that the startup process met is shown in below screenshot:</p>
+
+<p><img src="/assets/jdbc/breakpoint-ds1.png" alt="/assets/jdbc/breakpoint-ds1.png" /></p>
+
+<p>The above screenshot will start to register the datasource. Now let’s continue the server startup process, until it met the second breakpoint:</p>
+
+<p><img src="/assets/jdbc/breakpoint-ds2.png" alt="/assets/jdbc/breakpoint-ds2.png" /></p>
+
+<p>From the above screenshot, we can see the code stops at the last line of <code class="highlighter-rouge">AbstractDataSourceAdd.firstRuntimeStep(...)</code>, and the last step is to add driver demander of the datasource. Until this point, the server still haven’t load the driver, and it just add the datasource with the connector. Then I continued the server startup process, and this time the code stopped at the breakpoint I set in <code class="highlighter-rouge">JdbcDriverAdd</code>:</p>
+
+<p><img src="/assets/jdbc/breakpoint-ds3.png" alt="/assets/jdbc/breakpoint-ds3.png" /></p>
+
+<p>This is reasonable because in <code class="highlighter-rouge">standalone.xml</code> we can see the <code class="highlighter-rouge">driver</code> setting is in below of the <code class="highlighter-rouge">datasource</code> setting.</p>
+
+<div class="language-xml highlighter-rouge"><pre class="highlight"><code><span class="nt">&lt;subsystem</span> <span class="na">xmlns=</span><span class="s">"urn:jboss:domain:datasources:4.0"</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;datasources&gt;</span>
+        <span class="nt">&lt;datasource</span> <span class="na">jndi-name=</span><span class="s">"java:jboss/datasources/weli"</span> <span class="na">pool-name=</span><span class="s">"weli"</span> <span class="na">enabled=</span><span class="s">"true"</span> <span class="na">use-java-context=</span><span class="s">"true"</span><span class="nt">&gt;</span>
+            <span class="nt">&lt;connection-url&gt;</span>jdbc:postgresql://localhost/weli<span class="nt">&lt;/connection-url&gt;</span>
+            <span class="nt">&lt;driver&gt;</span>void<span class="nt">&lt;/driver&gt;</span>
+            <span class="nt">&lt;security&gt;</span>
+                <span class="nt">&lt;user-name&gt;</span>weli<span class="nt">&lt;/user-name&gt;</span>
+            <span class="nt">&lt;/security&gt;</span>
+        <span class="nt">&lt;/datasource&gt;</span>
+        <span class="nt">&lt;drivers&gt;</span>
+            <span class="nt">&lt;driver</span> <span class="na">name=</span><span class="s">"postgresql"</span> <span class="na">module=</span><span class="s">"org.postgresql"</span><span class="nt">/&gt;</span>
+        <span class="nt">&lt;/drivers&gt;</span>
+    <span class="nt">&lt;/datasources&gt;</span>
+<span class="nt">&lt;/subsystem&gt;</span>
+</code></pre>
+</div>
+
+<p>From the above configuration, we can see that the the <code class="highlighter-rouge">driver</code> section is belowing the <code class="highlighter-rouge">datasource</code> section, but in <code class="highlighter-rouge">datasource</code> section it refers to the driver with <code class="highlighter-rouge">driver</code> item. By setting the breakpoints in <code class="highlighter-rouge">AbstractDataSourceAdd</code> and <code class="highlighter-rouge">JdbcDriverAdd</code>, we can also confirm the <code class="highlighter-rouge">AbstractDataSourceAdd</code> executed before the <code class="highlighter-rouge">JdbcDriverAdd</code>. In conclusion, the Wildfly datasource subsystem will connect the datasource with its driver after loading them independently.</p>
+
+<p>Finally I continued the startup process, and the <code class="highlighter-rouge">JdbcDriverAdd</code> successfully installed the jdbc driver. At last, the <code class="highlighter-rouge">org.jboss.as.controller.management-operation</code> module threw the error as we see in above. We won’t dive into details of the <code class="highlighter-rouge">management-operation</code> in this article.</p>
+
+<p>In this article, I have introduced the datasource loading process. In next article, I’ll introduce the usage of datasource in Wildfly.</p>
