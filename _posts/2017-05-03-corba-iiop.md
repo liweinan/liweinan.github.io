@@ -1,5 +1,6 @@
 ---
 title: An Introduction To The CORBA And Java RMI-IIOP
+abstract: In this article, I'd like to introduce to you the Common Object Request Broker Architecture and its implementation in Java.
 ---
 
 In this article, I'd like to introduce to you the Common Object Request Broker Architecture, which is abbreviated as CORBA[^corba], and its implementation in Java, which is named Java RMI-IIOP. You may think the CORBA is an outdated technology, actually it is still acting as the the basic architecture of distributed object invocation field. Many of state-of-the-art projects are built on top of CORBA. For example, Narayana, the transaction processing project provided by JBoss community, use many idl files to describe its OTS implementation interfaces. Narayana is acting as the transaction processing subsystem in Wildfly[^wildfly].

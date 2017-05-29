@@ -1,6 +1,6 @@
 ---
 title: "Troubleshooting the Wildfly startup process"
-author: Weinan
+abstract: "In this article, I'd like to introduce to you how to using the standard `Java Debug Wire Protocol` to connect to troubleshoot the Wildfly server in standalone mode."
 ---
 
 In this article, I'd like to introduce to you how to using the standard `Java Debug Wire Protocol`(See [JavaTM Debug Wire Protocol](http://docs.oracle.com/javase/1.5.0/docs/guide/jpda/jdwp-spec.html)) to connect to troubleshoot the Wildfly server in standalone mode. The first step is to look into the `standalone.sh` script provided by the server.
