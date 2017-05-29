@@ -1,0 +1,190 @@
+<p>Here is the diagram that shows both the transaction layer and the container layer:</p>
+
+<p><img src="/assets/msc/transaction_container.jpg" alt="assets/transaction_container.jpg" /></p>
+
+<p>From the diagram, we can see whole system can be roughly divided into two parts. The bottom left corner is the container layer, and the up right corner is the transaction layer. The connection point is <code class="highlighter-rouge">ServiceContainerImpl &lt;-&gt; TransactionController</code>.</p>
+
+<p>Here is the diagram that shows the transaction layer only:</p>
+
+<p><img src="/assets/msc/transaction_layer.jpg" alt="assets/msc/transaction_layer.jpg" /></p>
+
+<p>There are two kinds of transactions by design. One is <code class="highlighter-rouge">ReadTransaction</code> and the other is <code class="highlighter-rouge">UpdateTransaction</code>. Here is the relationship of them:</p>
+
+<p><img src="/assets/msc/transaction.png" alt="assets/msc/transaction.png" /></p>
+
+<p>The above diagram shows that the <code class="highlighter-rouge">ReadTransaction</code> interface extends the <code class="highlighter-rouge">Transaction</code> interface, and <code class="highlighter-rouge">UpdateTransaction</code> extends from the <code class="highlighter-rouge">ReadTransaction</code>. When we want to use the transaction controller to create the service container, or adding services into the container, or removing services from the container, then we need the <code class="highlighter-rouge">UpdateTransaction</code> as a handle to request the controller to take these actions. We will see the detail usage of the update transaction later.</p>
+
+<h2 id="a-sample-container">A sample container</h2>
+
+<p>Here is the demo code and my comment:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>package io.weli.jboss.msc2;
+
+import org.jboss.msc.service.*;
+import org.jboss.msc.txn.Transaction;
+import org.jboss.msc.txn.TransactionController;
+import org.jboss.msc.txn.UpdateTransaction;
+import org.jboss.msc.util.CompletionListener;
+
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
+
+/**
+ * Created by weli on 16/05/2017.
+ */
+public class Play {
+    public static void main(String[] args) {
+
+        TransactionController controller = TransactionController.newInstance();
+</code></pre>
+</div>
+
+<p>The above line will create a new instance of the <code class="highlighter-rouge">TransactionController</code>.</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>final CompletionListener&lt;UpdateTransaction&gt; updateListener = new CompletionListener&lt;&gt;();
+
+controller.newUpdateTransaction(Executors.newSingleThreadExecutor(), updateListener);
+
+final UpdateTransaction transaction = updateListener.awaitCompletionUninterruptibly();
+</code></pre>
+</div>
+
+<p>Nearly all the actions in the container are asynchronous. The above code creates a transaction. You can think a transaction as a handler provided by <code class="highlighter-rouge">TransactionController</code> to control the whole lifecycle of the service container. The transaction will be used to create service container, register services into container, and it is associated with an executor. We will see the usage of the <code class="highlighter-rouge">UpdateTransaction</code> later.</p>
+
+<p>The above transaction creation action is executed asynchronously, so we need to create a <code class="highlighter-rouge">CompletionListener</code> in above code to wait for the transaction creation to be done by the controller, and finally we get the <code class="highlighter-rouge">UpdateTransaction</code> from the listener.</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>        try {
+            ServiceContainer container = controller.newServiceContainer(transaction);
+</code></pre>
+</div>
+
+<p>We get the service container from the service controller as shown above. Please see the usage of transaction. The update transaction is associated with every action issued by the controller, and the transaction will be prepared and committed at last to modify the service container statuses. We will see this in following code.</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>            ServiceRegistry registry = container.newRegistry(transaction);
+</code></pre>
+</div>
+
+<p>The service registry is created from the container, and it will be used to include services.</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>            ServiceBuilder&lt;Void&gt; serviceBuilder = controller.newServiceContext(transaction).addService(registry, ServiceName.of("foo"));
+</code></pre>
+</div>
+
+<p>The above code will add a service named <code class="highlighter-rouge">foo</code> into the service registry, and it will return a service builder for the service name to be connected with a real service. The following code defines a service:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>            class FooService implements Service&lt;Void&gt; {
+
+                @Override
+                public void start(StartContext&lt;Void&gt; startContext) {
+                    System.out.println("Foo service started.");
+                }
+
+                @Override
+                public void stop(StopContext stopContext) {
+                    System.out.println("Foo service stopped.");
+                }
+            }
+</code></pre>
+</div>
+
+<p>The above code defines a <code class="highlighter-rouge">FooService</code> that implements the <code class="highlighter-rouge">Service</code> interface. It’s a service just does nothing but just output some log.</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>            serviceBuilder.setService(new FooService());
+</code></pre>
+</div>
+
+<p>The above code used the service builder to connect the service to its service name.</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>            serviceBuilder.install();
+</code></pre>
+</div>
+
+<p>The above code used the service builder to install the service into registry. Until now we have finished the work to create a service container and put a service registry into the container, and we have created our service and associated it with the registry. Now we should commit the transaction and all the above actions will be persisted in container. Here is the final code:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>        } finally {
+            final CompletionListener&lt;Transaction&gt; prepareListener = new CompletionListener&lt;&gt;();
+            controller.prepare(transaction, prepareListener);
+            prepareListener.awaitCompletionUninterruptibly();
+
+            final CompletionListener&lt;Transaction&gt; commitListener = new CompletionListener&lt;&gt;();
+            controller.commit(transaction, commitListener);
+            commitListener.awaitCompletionUninterruptibly();
+        }
+    }
+}
+</code></pre>
+</div>
+
+<p>We can see the <code class="highlighter-rouge">prepare(...)</code> and <code class="highlighter-rouge">commit(...)</code> actions are all related with the update transaction, and these actions are all executed asynchronously. We can see the container relies on the transaction handle to manage its consistency of the internal state. All the actions are associated with the update transaction, and after the update transaction is committed, the actions will alter the container state.</p>
+
+<p>In addition, there is only one update transaction can be in action at one time. It does not allow multiple threads to get many update transactions to alter container internal services and their statuses at one time. If there are many threads requesting the update transactions, only one thread will succeed and others need to wait.</p>
+
+<p>Here is the relative code in <code class="highlighter-rouge">org.jboss.msc.txn.AbstractTransaction.registerUpdateTransaction(...)</code> method:</p>
+
+<p><img src="/assets/msc/registerUpdateTransaction.png" alt="assets/msc/registerUpdateTransaction.png" /></p>
+
+<p>From the above diagram, we can see if there are more than one update transaction creation requests, the requested update transactions will be put into <code class="highlighter-rouge">pendingTxns</code> queue, and there is only one running update transaction allowed and the listener will be called to return the transaction to the caller. The other callers will be blocked if they call their completion listeners.</p>
+
+<p>Here is the complete code:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">org.jboss.msc.service.*</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.jboss.msc.txn.Transaction</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.jboss.msc.txn.TransactionController</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.jboss.msc.txn.UpdateTransaction</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.jboss.msc.util.CompletionListener</span><span class="o">;</span>
+
+<span class="kn">import</span> <span class="nn">java.util.concurrent.Executor</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.util.concurrent.Executors</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.util.concurrent.ThreadPoolExecutor</span><span class="o">;</span>
+
+<span class="cm">/**
+ * Created by weli on 16/05/2017.
+ */</span>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">Play</span> <span class="o">{</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+
+        <span class="n">TransactionController</span> <span class="n">controller</span> <span class="o">=</span> <span class="n">TransactionController</span><span class="o">.</span><span class="na">newInstance</span><span class="o">();</span>
+
+        <span class="kd">final</span> <span class="n">CompletionListener</span><span class="o">&lt;</span><span class="n">UpdateTransaction</span><span class="o">&gt;</span> <span class="n">updateListener</span> <span class="o">=</span> <span class="k">new</span> <span class="n">CompletionListener</span><span class="o">&lt;&gt;();</span>
+
+        <span class="n">controller</span><span class="o">.</span><span class="na">newUpdateTransaction</span><span class="o">(</span><span class="n">Executors</span><span class="o">.</span><span class="na">newSingleThreadExecutor</span><span class="o">(),</span> <span class="n">updateListener</span><span class="o">);</span>
+
+        <span class="kd">final</span> <span class="n">UpdateTransaction</span> <span class="n">transaction</span> <span class="o">=</span> <span class="n">updateListener</span><span class="o">.</span><span class="na">awaitCompletionUninterruptibly</span><span class="o">();</span>
+        
+        <span class="kd">class</span> <span class="nc">FooService</span> <span class="kd">implements</span> <span class="n">Service</span><span class="o">&lt;</span><span class="n">Void</span><span class="o">&gt;</span> <span class="o">{</span>
+
+            <span class="nd">@Override</span>
+            <span class="kd">public</span> <span class="kt">void</span> <span class="nf">start</span><span class="o">(</span><span class="n">StartContext</span><span class="o">&lt;</span><span class="n">Void</span><span class="o">&gt;</span> <span class="n">startContext</span><span class="o">)</span> <span class="o">{</span>
+                <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"Foo service started."</span><span class="o">);</span>
+            <span class="o">}</span>
+
+            <span class="nd">@Override</span>
+            <span class="kd">public</span> <span class="kt">void</span> <span class="nf">stop</span><span class="o">(</span><span class="n">StopContext</span> <span class="n">stopContext</span><span class="o">)</span> <span class="o">{</span>
+                <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"Foo service stopped."</span><span class="o">);</span>
+            <span class="o">}</span>
+        <span class="o">}</span>
+
+
+        <span class="k">try</span> <span class="o">{</span>
+            <span class="n">ServiceContainer</span> <span class="n">container</span> <span class="o">=</span> <span class="n">controller</span><span class="o">.</span><span class="na">newServiceContainer</span><span class="o">(</span><span class="n">transaction</span><span class="o">);</span>
+            <span class="n">ServiceRegistry</span> <span class="n">registry</span> <span class="o">=</span> <span class="n">container</span><span class="o">.</span><span class="na">newRegistry</span><span class="o">(</span><span class="n">transaction</span><span class="o">);</span>
+            <span class="n">ServiceBuilder</span><span class="o">&lt;</span><span class="n">Void</span><span class="o">&gt;</span> <span class="n">serviceBuilder</span> <span class="o">=</span> <span class="n">controller</span><span class="o">.</span><span class="na">newServiceContext</span><span class="o">(</span><span class="n">transaction</span><span class="o">).</span><span class="na">addService</span><span class="o">(</span><span class="n">registry</span><span class="o">,</span> <span class="n">ServiceName</span><span class="o">.</span><span class="na">of</span><span class="o">(</span><span class="s">"foo"</span><span class="o">));</span>
+            <span class="n">serviceBuilder</span><span class="o">.</span><span class="na">setService</span><span class="o">(</span><span class="k">new</span> <span class="n">FooService</span><span class="o">());</span>
+            <span class="n">serviceBuilder</span><span class="o">.</span><span class="na">install</span><span class="o">();</span>
+            <span class="n">controller</span><span class="o">.</span><span class="na">downgrade</span><span class="o">(</span><span class="n">transaction</span><span class="o">,</span> <span class="kc">null</span><span class="o">);</span>
+
+        <span class="o">}</span> <span class="k">finally</span> <span class="o">{</span>
+            <span class="kd">final</span> <span class="n">CompletionListener</span><span class="o">&lt;</span><span class="n">Transaction</span><span class="o">&gt;</span> <span class="n">prepareListener</span> <span class="o">=</span> <span class="k">new</span> <span class="n">CompletionListener</span><span class="o">&lt;&gt;();</span>
+            <span class="n">controller</span><span class="o">.</span><span class="na">prepare</span><span class="o">(</span><span class="n">transaction</span><span class="o">,</span> <span class="n">prepareListener</span><span class="o">);</span>
+            <span class="n">prepareListener</span><span class="o">.</span><span class="na">awaitCompletionUninterruptibly</span><span class="o">();</span>
+
+            <span class="kd">final</span> <span class="n">CompletionListener</span><span class="o">&lt;</span><span class="n">Transaction</span><span class="o">&gt;</span> <span class="n">commitListener</span> <span class="o">=</span> <span class="k">new</span> <span class="n">CompletionListener</span><span class="o">&lt;&gt;();</span>
+            <span class="n">controller</span><span class="o">.</span><span class="na">commit</span><span class="o">(</span><span class="n">transaction</span><span class="o">,</span> <span class="n">commitListener</span><span class="o">);</span>
+            <span class="n">commitListener</span><span class="o">.</span><span class="na">awaitCompletionUninterruptibly</span><span class="o">();</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre>
+</div>
+

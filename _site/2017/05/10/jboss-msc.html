@@ -1,0 +1,549 @@
+<p>The <code class="highlighter-rouge">JBoss Modular Service Container</code> project is the core part of the Wildfly application server, and it provides the Wildfly server the ability to install or remove components (called services) at runtime. In this series of articles, I’d like to make an introduction to the project.</p>
+
+<p>This project is hosted on Github (most of the JBoss projects are hosted on Github), and the project name is <code class="highlighter-rouge">jboss-msc2</code> (<a href="https://github.com/jboss-msc/jboss-msc2">https://github.com/jboss-msc/jboss-msc2</a>). There is also a <code class="highlighter-rouge">jboss-msc</code> project, but the <code class="highlighter-rouge">jboss-msc2</code> is for the future, so I will focus on the newer one in this series of articles.</p>
+
+<p>I won’t introduce the method to clone the project into you local machine in this article. You can read <a href="http://wildflyinternals.io/2017/05/05/wildfly-src.html">Fetching and compiling the Wildfly upstream source</a> to get a basic idea on how to fetch and build the opensource projects from Github.</p>
+
+<p>Basically, the service container can be divided into two parts. One part is the transaction layer, which is used to control the lifecycle of the service. The other part is the service layer, which defines the concepts like service container and service registries (Please note the project does not divide itself into two sub-modules or two layers explicitly, and we can just roughly divide it like this in our mind to help us to better understanding the whole project). We will check these concepts in more details in this series of articles.</p>
+
+<p>Now let’s see the class diagram that contains classes related with the service layer:</p>
+
+<p><img src="/assets/msc/services.png" alt="/assets/msc/services.png" /></p>
+
+<p>The above diagram contains some classes that compose the design of the service container. There are fives interfaces we need to check in detail. They are <code class="highlighter-rouge">ServiceController</code>, <code class="highlighter-rouge">ServiceBuilder</code>, <code class="highlighter-rouge">ServiceRegistry</code>, <code class="highlighter-rouge">ServiceContainer</code> and <code class="highlighter-rouge">Service</code>. Let check them one by one.</p>
+
+<p>The first interface to check is <code class="highlighter-rouge">ServiceContainer</code>. This is the container class, and it is created from the <code class="highlighter-rouge">newServiceContainer(...)</code> method of <code class="highlighter-rouge">TransactionController</code> class. We won’t touch much about the transaction layer here, but you need to know the concept of transaction in <code class="highlighter-rouge">jboss-msc2</code> is not the same thing in database or transaction processing area. The concept of transaction in service container is more like a lifecycle controller and task executor of the services. We will check the details of transaction later.</p>
+
+<p>Here is the diagram that shows our above analyzed result:</p>
+
+<p><img src="/assets/msc/container.png" alt="/assets/msc/container.png" /></p>
+
+<p>Now let’s come back to the <code class="highlighter-rouge">ServiceContainer</code> interface. Here is the code of the interface:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="kn">package</span> <span class="n">org</span><span class="o">.</span><span class="na">jboss</span><span class="o">.</span><span class="na">msc</span><span class="o">.</span><span class="na">service</span><span class="o">;</span>
+
+<span class="kn">import</span> <span class="nn">org.jboss.msc.txn.InvalidTransactionStateException</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.jboss.msc.txn.UpdateTransaction</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.jboss.msc.util.Listener</span><span class="o">;</span>
+
+<span class="cm">/**
+ * A service container. Implementations of this interface are thread safe.
+ *
+ * @author &lt;a href="mailto:david.lloyd@redhat.com"&gt;David M. Lloyd&lt;/a&gt;
+ * @author &lt;a href="mailto:frainone@redhat.com"&gt;Flavia Rainone&lt;/a&gt;
+ * @author &lt;a href="mailto:ropalka@redhat.com"&gt;Richard Opalka&lt;/a&gt;
+ */</span>
+<span class="kd">public</span> <span class="kd">interface</span> <span class="nc">ServiceContainer</span> <span class="o">{</span>
+
+    <span class="cm">/**
+     * Creates new registry associated with this container.
+     *
+     * @param transaction the transaction
+     * @return container registry
+     * @throws IllegalStateException if container have been shutdown
+     */</span>
+    <span class="n">ServiceRegistry</span> <span class="nf">newRegistry</span><span class="o">(</span><span class="n">UpdateTransaction</span> <span class="n">transaction</span><span class="o">);</span>
+
+    <span class="cm">/**
+     * Shuts down the container, removing all registries and their services.
+     *
+     * @param transaction the transaction
+     * @throws java.lang.IllegalArgumentException if &lt;code&gt;transaction&lt;/code&gt; is null
+     * or if transaction controller associated with &lt;code&gt;transaction&lt;/code&gt;
+     * is not the same as the one associated with this service container.
+     * @throws org.jboss.msc.txn.InvalidTransactionStateException if transaction is not active.
+     * @throws IllegalArgumentException if transaction was created by different transaction controller than this container
+     */</span>
+    <span class="kt">void</span> <span class="nf">shutdown</span><span class="o">(</span><span class="n">UpdateTransaction</span> <span class="n">transaction</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">IllegalArgumentException</span><span class="o">,</span> <span class="n">InvalidTransactionStateException</span><span class="o">;</span>
+
+    <span class="cm">/**
+     * Shuts down the container, removing all registries and their services.
+     *
+     * @param transaction the transaction
+     * @param completionListener called when operation is finished
+     * @throws java.lang.IllegalArgumentException if &lt;code&gt;transaction&lt;/code&gt; is null
+     * or if transaction controller associated with &lt;code&gt;transaction&lt;/code&gt;
+     * is not the same as the one associated with this service container.
+     * @throws org.jboss.msc.txn.InvalidTransactionStateException if transaction is not active.
+     * @throws IllegalArgumentException if transaction was created by different transaction controller than this container
+     */</span>
+    <span class="kt">void</span> <span class="nf">shutdown</span><span class="o">(</span><span class="n">UpdateTransaction</span> <span class="n">transaction</span><span class="o">,</span> <span class="n">Listener</span><span class="o">&lt;</span><span class="n">ServiceContainer</span><span class="o">&gt;</span> <span class="n">completionListener</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">IllegalArgumentException</span><span class="o">,</span> <span class="n">InvalidTransactionStateException</span><span class="o">;</span>
+
+<span class="o">}</span>
+</code></pre>
+</div>
+
+<p>The above code contains the methods that the container provides and it has document to describe the purpose of these methods. We can see a container can contain multiple service registries represented by <code class="highlighter-rouge">ServiceRegistry</code> interface. The container can also be shutdown with <code class="highlighter-rouge">shutdown(...)</code> methods, and all the services in the container will be closed and their registries will be removed. There are transactions and listeners associated with these actions (<code class="highlighter-rouge">UpdateTransaction</code> class and <code class="highlighter-rouge">Listener</code> interface are passed into the methods).</p>
+
+<p>The container relies on the associated transaction to manage its   state transitions, and these transitions are asynchronous actions, so it needs a callback listener after the action is done. We will check the detail of this part of the design later in this series of articles.</p>
+
+<p>Now let’s check the <code class="highlighter-rouge">ServiceRegistry</code> interface. Here is the code of the interface:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="kn">package</span> <span class="n">org</span><span class="o">.</span><span class="na">jboss</span><span class="o">.</span><span class="na">msc</span><span class="o">.</span><span class="na">service</span><span class="o">;</span>
+
+<span class="kn">import</span> <span class="nn">org.jboss.msc.txn.InvalidTransactionStateException</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.jboss.msc.txn.UpdateTransaction</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.jboss.msc.util.Listener</span><span class="o">;</span>
+
+<span class="cm">/**
+ * A service registry. Implementations of this interface are thread safe.
+ *
+ * @author &lt;a href="mailto:david.lloyd@redhat.com"&gt;David M. Lloyd&lt;/a&gt;
+ * @author &lt;a href="mailto:frainone@redhat.com"&gt;Flavia Rainone&lt;/a&gt;
+ * @author &lt;a href="mailto:ropalka@redhat.com"&gt;Richard Opalka&lt;/a&gt;
+ */</span>
+<span class="kd">public</span> <span class="kd">interface</span> <span class="nc">ServiceRegistry</span> <span class="o">{</span>
+
+    <span class="cm">/**
+     * Gets a service controller, throwing an exception if it is not found.
+     *
+     * @param serviceName the service name
+     * @param &lt;T&gt; service controller value type
+     * @return the service controller corresponding to {@code serviceName}
+     * @throws ServiceNotFoundException if the service is not present in the registry
+     */</span>
+    <span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">ServiceController</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="nf">getRequiredService</span><span class="o">(</span><span class="n">ServiceName</span> <span class="n">serviceName</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">ServiceNotFoundException</span><span class="o">;</span>
+
+    <span class="cm">/**
+     * Gets a service controller, returning {@code null} if it is not found.
+     *
+     * @param serviceName the service name
+     * @param &lt;T&gt; service controller value type
+     * @return the service controller corresponding to {@code serviceName}, or {@code null} if it is not found
+     */</span>
+    <span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">ServiceController</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="nf">getService</span><span class="o">(</span><span class="n">ServiceName</span> <span class="n">serviceName</span><span class="o">);</span>
+
+    <span class="cm">/**
+     * Disables this registry and all its services, causing {@code UP} services to stop.
+     *
+     * @param transaction the transaction
+     * @throws java.lang.IllegalArgumentException if &lt;code&gt;transaction&lt;/code&gt; is null
+     * or if transaction controller associated with &lt;code&gt;transaction&lt;/code&gt;
+     * is not the same as the one associated with this service registry.
+     * @throws org.jboss.msc.txn.InvalidTransactionStateException if transaction is not active.
+     * @throws IllegalArgumentException if transaction was created by different transaction controller than this registry
+     */</span>
+    <span class="kt">void</span> <span class="nf">disable</span><span class="o">(</span><span class="n">UpdateTransaction</span> <span class="n">transaction</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">IllegalArgumentException</span><span class="o">,</span> <span class="n">InvalidTransactionStateException</span><span class="o">;</span>
+
+    <span class="cm">/**
+     * Enables this registry. As a result, its services may start, depending on their
+     * {@link org.jboss.msc.service.ServiceMode mode} rules.
+     * &lt;p&gt; Registries are enabled by default.
+     *
+     * @param transaction the transaction
+     * @throws java.lang.IllegalArgumentException if &lt;code&gt;transaction&lt;/code&gt; is null
+     * or if transaction controller associated with &lt;code&gt;transaction&lt;/code&gt;
+     * is not the same as the one associated with this service registry.
+     * @throws org.jboss.msc.txn.InvalidTransactionStateException if transaction is not active.
+     * @throws IllegalArgumentException if transaction was created by different transaction controller than this registry
+     */</span>
+    <span class="kt">void</span> <span class="nf">enable</span><span class="o">(</span><span class="n">UpdateTransaction</span> <span class="n">transaction</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">IllegalArgumentException</span><span class="o">,</span> <span class="n">InvalidTransactionStateException</span><span class="o">;</span>
+
+    <span class="cm">/**
+     * Removes this registry from the container.
+     *
+     * @param transaction the transaction
+     * @throws java.lang.IllegalArgumentException if &lt;code&gt;transaction&lt;/code&gt; is null
+     * or if transaction controller associated with &lt;code&gt;transaction&lt;/code&gt;
+     * is not the same as the one associated with this service registry.
+     * @throws org.jboss.msc.txn.InvalidTransactionStateException if transaction is not active.
+     * @throws IllegalArgumentException if transaction was created by different transaction controller than this registry
+     */</span>
+    <span class="kt">void</span> <span class="nf">remove</span><span class="o">(</span><span class="n">UpdateTransaction</span> <span class="n">transaction</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">IllegalArgumentException</span><span class="o">,</span> <span class="n">InvalidTransactionStateException</span><span class="o">;</span>
+
+    <span class="cm">/**
+     * Removes this registry from the container.
+     *
+     * @param transaction the transaction
+     * @param completionListener called when operation is finished
+     * @throws java.lang.IllegalArgumentException if &lt;code&gt;transaction&lt;/code&gt; is null
+     * or if transaction controller associated with &lt;code&gt;transaction&lt;/code&gt;
+     * is not the same as the one associated with this service registry.
+     * @throws org.jboss.msc.txn.InvalidTransactionStateException if transaction is not active.
+     * @throws IllegalArgumentException if transaction was created by different transaction controller than this registry
+     */</span>
+    <span class="kt">void</span> <span class="nf">remove</span><span class="o">(</span><span class="n">UpdateTransaction</span> <span class="n">transaction</span><span class="o">,</span> <span class="n">Listener</span><span class="o">&lt;</span><span class="n">ServiceRegistry</span><span class="o">&gt;</span> <span class="n">completionListener</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">IllegalArgumentException</span><span class="o">,</span> <span class="n">InvalidTransactionStateException</span><span class="o">;</span>
+
+<span class="o">}</span>
+</code></pre>
+</div>
+
+<p>From the above code, we can see the <code class="highlighter-rouge">ServiceRegistry</code> includes many services, and it have <code class="highlighter-rouge">getService(...)</code> method to fetch the include services. In addition, it has <code class="highlighter-rouge">remove(...)</code> and <code class="highlighter-rouge">enable(...)</code> methods to manage its lifecycle in container.’</p>
+
+<p>We need to take caution that the <code class="highlighter-rouge">getService(...)</code> method will get an instance of <code class="highlighter-rouge">ServiceController</code> as its returned data, instead of the services itself. The <code class="highlighter-rouge">ServiceController</code> interface defines a model to control the lifecycle of its service. The real service is represented by <code class="highlighter-rouge">Service</code> interface, and there is a <code class="highlighter-rouge">Registration</code> class stores a <code class="highlighter-rouge">ServiceRegistry</code> with its <code class="highlighter-rouge">ServiceName</code>. The following diagram shows the relationship of these classes:</p>
+
+<p><img src="/assets/msc/servicecontroller.png" alt="/assets/msc/servicecontroller.png" /></p>
+
+<p>The above diagram shows that the <code class="highlighter-rouge">ServiceController</code> is the interface that manages the lifecycle of the underlying service. Here is part of the code in <code class="highlighter-rouge">ServiceController</code> interface:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="kn">package</span> <span class="n">org</span><span class="o">.</span><span class="na">jboss</span><span class="o">.</span><span class="na">msc</span><span class="o">.</span><span class="na">service</span><span class="o">;</span>
+
+<span class="kn">import</span> <span class="nn">org.jboss.msc.txn.InvalidTransactionStateException</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.jboss.msc.txn.UpdateTransaction</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.jboss.msc.util.Listener</span><span class="o">;</span>
+
+
+<span class="cm">/**
+ * A controller for a single service instance.
+ *
+ * @author &lt;a href="mailto:frainone@redhat.com"&gt;Flavia Rainone&lt;/a&gt;
+ * @author &lt;a href="mailto:ropalka@redhat.com"&gt;Richard Opalka&lt;/a&gt;
+ * @param &lt;T&gt; service type
+ */</span>
+<span class="kd">public</span> <span class="kd">interface</span> <span class="nc">ServiceController</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="o">{</span>
+
+    <span class="cm">/**
+     * Disables a service, causing this service to stop if it is {@code UP}.
+     *
+     * @param transaction the transaction
+     * @throws java.lang.IllegalArgumentException if &lt;code&gt;transaction&lt;/code&gt; is null
+     * or if transaction controller associated with &lt;code&gt;transaction&lt;/code&gt;
+     * is not the same as the one associated with this service controller.
+     * @throws IllegalStateException if controller was removed
+     * @throws org.jboss.msc.txn.InvalidTransactionStateException if transaction is not active.
+     */</span>
+    <span class="kt">void</span> <span class="nf">disable</span><span class="o">(</span><span class="n">UpdateTransaction</span> <span class="n">transaction</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">IllegalArgumentException</span><span class="o">,</span> <span class="n">IllegalStateException</span><span class="o">,</span> <span class="n">InvalidTransactionStateException</span><span class="o">;</span>
+
+    <span class="cm">/**
+     * Enables the service, which may start as a result, according to its {@link org.jboss.msc.service.ServiceMode mode} rules.
+     * &lt;p&gt; Services are enabled by default.
+     *
+     * @param transaction the transaction
+     * @throws java.lang.IllegalArgumentException if &lt;code&gt;transaction&lt;/code&gt; is null
+     * or if transaction controller associated with &lt;code&gt;transaction&lt;/code&gt;
+     * is not the same as the one associated with this service controller.
+     * @throws IllegalStateException if controller was removed
+     * @throws org.jboss.msc.txn.InvalidTransactionStateException if transaction is not active.
+     */</span>
+    <span class="kt">void</span> <span class="nf">enable</span><span class="o">(</span><span class="n">UpdateTransaction</span> <span class="n">transaction</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">IllegalArgumentException</span><span class="o">,</span> <span class="n">IllegalStateException</span><span class="o">,</span> <span class="n">InvalidTransactionStateException</span><span class="o">;</span>
+
+    <span class="cm">/**
+     * Removes this service.&lt;p&gt;
+     * All dependent services will be automatically stopped as the result of this operation.
+     *
+     * @param transaction the transaction
+     * @throws java.lang.IllegalArgumentException if &lt;code&gt;transaction&lt;/code&gt; is null
+     * or if transaction controller associated with &lt;code&gt;transaction&lt;/code&gt;
+     * is not the same as the one associated with this service controller.
+     * @throws org.jboss.msc.txn.InvalidTransactionStateException if transaction is not active.
+     */</span>
+    <span class="kt">void</span> <span class="nf">remove</span><span class="o">(</span><span class="n">UpdateTransaction</span> <span class="n">transaction</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">IllegalArgumentException</span><span class="o">,</span> <span class="n">InvalidTransactionStateException</span><span class="o">;</span>
+    <span class="cm">/**
+     * Restarts this service.
+     * 
+     * @param transaction the transaction
+     * @throws java.lang.IllegalArgumentException if &lt;code&gt;transaction&lt;/code&gt; is null
+     * or if transaction controller associated with &lt;code&gt;transaction&lt;/code&gt;
+     * is not the same as the one associated with this service controller.
+     * @throws IllegalStateException if controller was removed
+     * @throws org.jboss.msc.txn.InvalidTransactionStateException if transaction is not active.
+     */</span>
+    <span class="kt">void</span> <span class="nf">restart</span><span class="o">(</span><span class="n">UpdateTransaction</span> <span class="n">transaction</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">IllegalArgumentException</span><span class="o">,</span> <span class="n">IllegalStateException</span><span class="o">,</span> <span class="n">InvalidTransactionStateException</span><span class="o">;</span>
+
+    <span class="cm">/**
+     * Retries a failed service. Does nothing if the state has not failed.
+     *
+     * @param transaction the transaction
+     * @throws java.lang.IllegalArgumentException if &lt;code&gt;transaction&lt;/code&gt; is null
+     * or if transaction controller associated with &lt;code&gt;transaction&lt;/code&gt;
+     * is not the same as the one associated with this service controller.
+     * @throws IllegalStateException if controller was removed
+     * @throws org.jboss.msc.txn.InvalidTransactionStateException if transaction is not active.
+     */</span>
+    <span class="kt">void</span> <span class="nf">retry</span><span class="o">(</span><span class="n">UpdateTransaction</span> <span class="n">transaction</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">IllegalArgumentException</span><span class="o">,</span> <span class="n">IllegalStateException</span><span class="o">,</span> <span class="n">InvalidTransactionStateException</span><span class="o">;</span>
+
+    <span class="cm">/**
+     * Replaces {@code service} by a new service.
+     *
+     * @param transaction the transaction
+     * @param newService the new service to be published
+     * @throws java.lang.IllegalArgumentException if any method parameter is &lt;code&gt;null&lt;/code&gt;
+     * @throws IllegalStateException if controller was removed
+     * @throws org.jboss.msc.txn.InvalidTransactionStateException if transaction is not active.
+     */</span>
+    <span class="kt">void</span> <span class="nf">replace</span><span class="o">(</span><span class="n">UpdateTransaction</span> <span class="n">transaction</span><span class="o">,</span> <span class="n">Service</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">newService</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">IllegalArgumentException</span><span class="o">,</span> <span class="n">IllegalStateException</span><span class="o">,</span> <span class="n">InvalidTransactionStateException</span><span class="o">;</span>
+
+    <span class="cm">/**
+     * Gets associated service.
+     * @return service
+     */</span>
+    <span class="n">Service</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="nf">getService</span><span class="o">();</span>
+
+<span class="o">}</span>
+</code></pre>
+</div>
+
+<p>From the above code, we can see that the <code class="highlighter-rouge">ServiceController</code> interface is the physical layer to control the <code class="highlighter-rouge">Service</code> lifecycle in container. The <code class="highlighter-rouge">Service</code> interface should be implemented by each service vendor. Here is the code of the <code class="highlighter-rouge">Service</code> interface:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="kn">package</span> <span class="n">org</span><span class="o">.</span><span class="na">jboss</span><span class="o">.</span><span class="na">msc</span><span class="o">.</span><span class="na">service</span><span class="o">;</span>
+
+<span class="cm">/**
+ * Service interface providing both start and stop methods to implementors.
+ * &lt;p&gt;
+ * Service implementors will have start invoked both on execution phase (when the service is being started) and during
+ * rollback (when a stop is being reverted). The same is valid for stop: it could be invoked during both execution
+ * and rollback stages of active transaction.
+ * 
+ * @param &lt;T&gt; the service value type
+ * 
+ * @author &lt;a href="mailto:frainone@redhat.com"&gt;Flavia Rainone&lt;/a&gt;
+ */</span>
+<span class="kd">public</span> <span class="kd">interface</span> <span class="nc">Service</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="o">{</span>
+
+    <span class="cm">/**
+     * Service start  method, invoked on execution and rollback (when needed to revert a previous stop).
+     * &lt;p&gt;
+     * Implementors must invoke {@link StartContext#complete(Object) startContext.complete(T)} upon completion.
+     * &lt;p&gt;
+     * Also, this method cannot be implemented asynchronously.
+     * 
+     * @param startContext the start context
+     */</span>
+    <span class="kt">void</span> <span class="nf">start</span><span class="o">(</span><span class="n">StartContext</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">startContext</span><span class="o">);</span>
+
+    <span class="cm">/**
+     * Service stop method, invoked on execution and rollback (when needed to revert a previous start).
+     * &lt;p&gt;
+     * Implementors must invoke {@link StopContext#complete() stopContext.complete()} upon completion.
+     * &lt;p&gt;
+     * Also, this method cannot be implemented asynchronously.
+     * 
+     * @param stopContext the stop context
+     */</span>
+    <span class="kt">void</span> <span class="nf">stop</span><span class="o">(</span><span class="n">StopContext</span> <span class="n">stopContext</span><span class="o">);</span>
+
+<span class="o">}</span>
+</code></pre>
+</div>
+
+<p>From the above code, we can see the <code class="highlighter-rouge">Service</code> interface defines <code class="highlighter-rouge">start(...)</code> and <code class="highlighter-rouge">stop(...)</code> methods for the users to implement. Wildfly contains many subsystems, and these systems will need to implement the <code class="highlighter-rouge">Service</code> interface to run in container. We can see the <code class="highlighter-rouge">org.jboss.as.connector.subsystems.datasources.XADataSourceConfigService</code> class (<a href="https://github.com/wildfly/wildfly/blob/master/connector/src/main/java/org/jboss/as/connector/subsystems/datasources/XADataSourceConfigService.java">XADataSourceConfigService.java</a>) in Wildfly as an implementation example.</p>
+
+<p>Seeing from the above diagram and code, we can understand the relationship between <code class="highlighter-rouge">ServiceContainer</code>, <code class="highlighter-rouge">ServiceRegistry</code>, <code class="highlighter-rouge">Registration</code>, <code class="highlighter-rouge">ServiceController</code> and <code class="highlighter-rouge">Service</code>. Firstly, <code class="highlighter-rouge">ServiceContainer</code> contains many <code class="highlighter-rouge">ServiceRegistry</code> instances. Here is the relative code in <code class="highlighter-rouge">ServiceContainerImpl</code> class:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="kd">private</span> <span class="kd">final</span> <span class="n">Set</span><span class="o">&lt;</span><span class="n">ServiceRegistryImpl</span><span class="o">&gt;</span> <span class="n">registries</span> <span class="o">=</span> <span class="k">new</span> <span class="n">HashSet</span><span class="o">&lt;&gt;();</span>
+</code></pre>
+</div>
+
+<p>Secondly, the <code class="highlighter-rouge">ServiceRegistry</code> contains many <code class="highlighter-rouge">Registration</code> instances and belonging container. Here is the code in <code class="highlighter-rouge">ServiceRegistryImpl</code>:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="kd">final</span> <span class="n">ServiceContainerImpl</span> <span class="n">container</span><span class="o">;</span>
+
+<span class="c1">// map of service registrations</span>
+<span class="kd">private</span> <span class="kd">final</span> <span class="n">ConcurrentMap</span><span class="o">&lt;</span><span class="n">ServiceName</span><span class="o">,</span> <span class="n">Registration</span><span class="o">&gt;</span> <span class="n">registry</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ConcurrentHashMap</span><span class="o">&lt;&gt;();</span>
+</code></pre>
+</div>
+
+<p>From above code, we can see the registrations are stored in a concurrent map data structure, and the key is service name. Actually the <code class="highlighter-rouge">Registration</code> class contains the <code class="highlighter-rouge">ServiceName</code> by itself. The purpose that <code class="highlighter-rouge">ServiceRegistry</code> stores a <code class="highlighter-rouge">ServiceName</code> with <code class="highlighter-rouge">Registration</code> is for implementation requirement. We don’t have to dig deeper here right now.</p>
+
+<p>Now let’s see the <code class="highlighter-rouge">Registration</code> class. It contains <code class="highlighter-rouge">ServiceName</code>, <code class="highlighter-rouge">ServiceController</code> and belonging <code class="highlighter-rouge">ServiceRegistry</code>. Here is the relative code in <code class="highlighter-rouge">Registration</code> class:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="cm">/** Registration name */</span>
+<span class="kd">private</span> <span class="kd">final</span> <span class="n">ServiceName</span> <span class="n">serviceName</span><span class="o">;</span>
+<span class="cm">/** Associated registry */</span>
+<span class="kd">final</span> <span class="n">ServiceRegistryImpl</span> <span class="n">registry</span><span class="o">;</span>
+<span class="cm">/** Associated controller */</span>
+<span class="kd">final</span> <span class="n">AtomicReference</span><span class="o">&lt;</span><span class="n">ServiceControllerImpl</span><span class="o">&lt;?&gt;&gt;</span> <span class="n">holderRef</span> <span class="o">=</span> <span class="k">new</span> <span class="n">AtomicReference</span><span class="o">&lt;&gt;();</span>
+</code></pre>
+</div>
+
+<p>From the above data, we can see <code class="highlighter-rouge">Registration</code> is like a bridge between <code class="highlighter-rouge">ServiceRegistry</code> and <code class="highlighter-rouge">ServiceController</code>.</p>
+
+<p>Finally we come to <code class="highlighter-rouge">ServiceController</code>. It contains the instance of <code class="highlighter-rouge">Service</code> implementation and physically manage the service lifecycle with the help the transaction layer. We will check the transaction layer later, and that’s all for our analyze in container layer.</p>
+
+<p>Finally, let’s check the shutdown process of <code class="highlighter-rouge">ServiceContainer</code> to see how the call chains go through the above classes. Firstly let’s see the sequence diagram of the <code class="highlighter-rouge">shutdown(...)</code> method in <code class="highlighter-rouge">ServiceContainerImpl</code>:</p>
+
+<p><img src="/assets/msc/org.jboss.msc.txn.ServiceContainerImpl.shutdown(UpdateTransaction, Listener_ServiceContainer_).png" alt="/assets/msc/org.jboss.msc.txn.ServiceContainerImpl.shutdown(UpdateTransaction, Listener_ServiceContainer_).png" /></p>
+
+<p>In above sequence diagram, we can see there is a loop to fetch the <code class="highlighter-rouge">ServiceRegistryImpl</code> instances from <code class="highlighter-rouge">registries</code>, and then the <code class="highlighter-rouge">remove(...)</code> method of <code class="highlighter-rouge">ServiceRegistryImpl</code> class instance will be called. Here is the relative code in <code class="highlighter-rouge">shutdown(...)</code> methjod:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="k">for</span> <span class="o">(</span><span class="kd">final</span> <span class="n">ServiceRegistryImpl</span> <span class="n">registry</span> <span class="o">:</span> <span class="n">registries</span><span class="o">)</span> <span class="o">{</span>
+    <span class="n">registry</span><span class="o">.</span><span class="na">remove</span><span class="o">(</span><span class="n">txn</span><span class="o">);</span>
+<span class="o">}</span>
+</code></pre>
+</div>
+
+<p>From the above code, we can see how the call chain goes to <code class="highlighter-rouge">ServiceRegistryImpl.remove(...)</code> method. Now let’s check the sequence diagram of the <code class="highlighter-rouge">ServiceRegistryImpl.remove(...)</code> method:</p>
+
+<p><img src="/assets/msc/org.jboss.msc.txn.ServiceRegistryImpl.remove(UpdateTransaction, Listener_ServiceRegistry_).png" alt="/assets/msc/org.jboss.msc.txn.ServiceRegistryImpl.remove(UpdateTransaction, Listener_ServiceRegistry_).png" /></p>
+
+<p>From the above diagram, we can see the main logic is to create a <code class="highlighter-rouge">RemoveTask</code> to remove the installed services. <code class="highlighter-rouge">RemoveTask</code> is an inner class of the <code class="highlighter-rouge">ServiceRegistryImpl</code> class. We can see the remove action is implemented asynchronously. <code class="highlighter-rouge">removeObservers</code> are used to observe the remove task execution, and <code class="highlighter-rouge">completionListener</code> is called after the execution is finished. Here is the relative code of the above process:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="kd">synchronized</span> <span class="o">(</span><span class="n">lock</span><span class="o">)</span> <span class="o">{</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">Bits</span><span class="o">.</span><span class="na">allAreClear</span><span class="o">(</span><span class="n">state</span><span class="o">,</span> <span class="n">REMOVED</span><span class="o">))</span> <span class="o">{</span>
+        <span class="n">state</span> <span class="o">=</span> <span class="o">(</span><span class="kt">byte</span><span class="o">)</span> <span class="o">(</span><span class="n">state</span> <span class="o">|</span> <span class="n">REMOVED</span><span class="o">);</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">installedServices</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+            <span class="kd">final</span> <span class="n">RemoveTask</span> <span class="n">removeTask</span> <span class="o">=</span> <span class="k">new</span> <span class="n">RemoveTask</span><span class="o">(</span><span class="n">txn</span><span class="o">);</span>
+            <span class="n">getAbstractTransaction</span><span class="o">(</span><span class="n">txn</span><span class="o">).</span><span class="na">getTaskFactory</span><span class="o">().</span><span class="na">newTask</span><span class="o">(</span><span class="n">removeTask</span><span class="o">).</span><span class="na">release</span><span class="o">();</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">completionListener</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+                <span class="n">removeObservers</span> <span class="o">=</span> <span class="k">new</span> <span class="n">NotificationEntry</span><span class="o">(</span><span class="n">removeObservers</span><span class="o">,</span> <span class="n">completionListener</span><span class="o">);</span>
+            <span class="o">}</span>
+            <span class="k">return</span><span class="o">;</span> <span class="c1">// don't call completion listener</span>
+        <span class="o">}</span>
+        <span class="n">container</span><span class="o">.</span><span class="na">registryRemoved</span><span class="o">();</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+<span class="k">if</span> <span class="o">(</span><span class="n">completionListener</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="n">safeCallListener</span><span class="o">(</span><span class="n">completionListener</span><span class="o">);</span> <span class="c1">// open call</span>
+</code></pre>
+</div>
+
+<p>The above code shows how the <code class="highlighter-rouge">RemoveTask</code> is created and called asynchronously. Now let’s see the class diagram of <code class="highlighter-rouge">RemoveTask</code>:</p>
+
+<p><img src="/assets/msc/RemoveTask.png" alt="/assets/msc/RemoveTask.png" /></p>
+
+<p>Because <code class="highlighter-rouge">RemoveTask</code> is a inner class of the <code class="highlighter-rouge">ServiceRegistryImpl</code> class, so I keep the relationship in above diagram. Now let’s check how does RemoveTask performs the remove action. Here is the code of the <code class="highlighter-rouge">RemoveTask</code>:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="kd">private</span> <span class="kd">final</span> <span class="kd">class</span> <span class="nc">RemoveTask</span> <span class="kd">implements</span> <span class="n">Executable</span><span class="o">&lt;</span><span class="n">Void</span><span class="o">&gt;</span> <span class="o">{</span>
+
+    <span class="kd">private</span> <span class="kd">final</span> <span class="n">Transaction</span> <span class="n">txn</span><span class="o">;</span>
+
+    <span class="kd">public</span> <span class="nf">RemoveTask</span><span class="o">(</span><span class="kd">final</span> <span class="n">Transaction</span> <span class="n">txn</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">this</span><span class="o">.</span><span class="na">txn</span> <span class="o">=</span> <span class="n">txn</span><span class="o">;</span>
+    <span class="o">}</span>
+
+    <span class="nd">@Override</span>
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">execute</span><span class="o">(</span><span class="kd">final</span> <span class="n">ExecuteContext</span><span class="o">&lt;</span><span class="n">Void</span><span class="o">&gt;</span> <span class="n">context</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">try</span> <span class="o">{</span>
+            <span class="kd">synchronized</span> <span class="o">(</span><span class="n">ServiceRegistryImpl</span><span class="o">.</span><span class="na">this</span><span class="o">.</span><span class="na">lock</span><span class="o">)</span> <span class="o">{</span>
+                <span class="k">for</span> <span class="o">(</span><span class="kd">final</span> <span class="n">Registration</span> <span class="n">registration</span> <span class="o">:</span> <span class="n">registry</span><span class="o">.</span><span class="na">values</span><span class="o">())</span> <span class="o">{</span>
+                    <span class="n">registration</span><span class="o">.</span><span class="na">remove</span><span class="o">(</span><span class="n">txn</span><span class="o">);</span>
+                <span class="o">}</span>
+                <span class="n">registry</span><span class="o">.</span><span class="na">clear</span><span class="o">();</span>
+            <span class="o">}</span>
+        <span class="o">}</span> <span class="k">finally</span> <span class="o">{</span>
+            <span class="n">context</span><span class="o">.</span><span class="na">complete</span><span class="o">();</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre>
+</div>
+
+<p>From the above code, we can see <code class="highlighter-rouge">RemoveTask</code> implements the <code class="highlighter-rouge">org.jboss.msc.txn.Executable</code> interface. Here is the code of <code class="highlighter-rouge">org.jboss.msc.txn.Executable</code> interface:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="kn">package</span> <span class="n">org</span><span class="o">.</span><span class="na">jboss</span><span class="o">.</span><span class="na">msc</span><span class="o">.</span><span class="na">txn</span><span class="o">;</span>
+
+<span class="cm">/**
+ * A task that may succeed or fail which may also produce a consumable result.  If no result
+ * is generated by this task, then its type should be {@code Void}.
+ *
+ * @param &lt;T&gt; the result type of this task
+ * @author &lt;a href="mailto:david.lloyd@redhat.com"&gt;David M. Lloyd&lt;/a&gt;
+ */</span>
+<span class="kd">interface</span> <span class="nc">Executable</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="o">{</span>
+
+    <span class="cm">/**
+     * Perform the task.
+     *
+     * @param context execution context
+     */</span>
+    <span class="kt">void</span> <span class="nf">execute</span><span class="o">(</span><span class="n">ExecuteContext</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">context</span><span class="o">);</span>
+<span class="o">}</span>
+</code></pre>
+</div>
+
+<p>From the above code, we can see the <code class="highlighter-rouge">Executable</code> defines a <code class="highlighter-rouge">execute(...)</code> method for its represented task to be executed. Now we can go back to the <code class="highlighter-rouge">execute(...)</code> method implementation in <code class="highlighter-rouge">RemoveTask</code>. Here is the main logic in the code:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="k">for</span> <span class="o">(</span><span class="kd">final</span> <span class="n">Registration</span> <span class="n">registration</span> <span class="o">:</span> <span class="n">registry</span><span class="o">.</span><span class="na">values</span><span class="o">())</span> <span class="o">{</span>
+    <span class="n">registration</span><span class="o">.</span><span class="na">remove</span><span class="o">(</span><span class="n">txn</span><span class="o">);</span>
+<span class="o">}</span>
+<span class="n">registry</span><span class="o">.</span><span class="na">clear</span><span class="o">();</span>
+</code></pre>
+</div>
+
+<p>From the above code, we can see the registrations in registry will be traversed and their <code class="highlighter-rouge">remove(...)</code> method will be called. Finally the registry itself will be cleared by calling its <code class="highlighter-rouge">clear()</code> method.</p>
+
+<p>Now we can go into the <code class="highlighter-rouge">Registration.remove(...)</code> method to see its logic. Here is the sequence diagram of the <code class="highlighter-rouge">Registration.remove(...)</code> method:</p>
+
+<p><img src="/assets/msc/org.jboss.msc.txn.Registration.remove(Transaction).png" alt="/assets/msc/org.jboss.msc.txn.Registration.remove(Transaction).png" /></p>
+
+<p>From the above diagram, we can see the <code class="highlighter-rouge">Registration.remove(...)</code> method will call the <code class="highlighter-rouge">_remove(...)</code> method of the included <code class="highlighter-rouge">ServiceController</code> instance.</p>
+
+<p>The above study shows us how does the service container shutdown itself. It will shutdown the containing service registries, and service registry will remove its registrations and then clear registry itself. The registration will use service controller to shutdown the containing service.</p>
+
+<p>We haven’t checked the implementation of the <code class="highlighter-rouge">_remove(...)</code> method in <code class="highlighter-rouge">ServiceControllerImpl</code>, now let’s see the code of the <code class="highlighter-rouge">_remove(...)</code> method in <code class="highlighter-rouge">ServiceControllerImpl</code>:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="kt">void</span> <span class="nf">_remove</span><span class="o">(</span><span class="kd">final</span> <span class="n">Transaction</span> <span class="n">txn</span><span class="o">,</span> <span class="kd">final</span> <span class="n">Listener</span><span class="o">&lt;</span><span class="n">ServiceController</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&gt;</span> <span class="n">completionListener</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">IllegalArgumentException</span><span class="o">,</span> <span class="n">InvalidTransactionStateException</span> <span class="o">{</span>
+    <span class="kd">synchronized</span> <span class="o">(</span><span class="n">lock</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">while</span> <span class="o">(</span><span class="kc">true</span><span class="o">)</span> <span class="o">{</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">isServiceRemoved</span><span class="o">())</span> <span class="k">break</span><span class="o">;</span>
+            <span class="n">state</span> <span class="o">|=</span> <span class="n">SERVICE_REMOVED</span><span class="o">;</span>
+            <span class="n">transition</span><span class="o">(</span><span class="n">txn</span><span class="o">);</span>
+            <span class="k">break</span><span class="o">;</span>
+        <span class="o">}</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">completionListener</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="k">return</span><span class="o">;</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">getState</span><span class="o">()</span> <span class="o">!=</span> <span class="n">STATE_REMOVED</span><span class="o">)</span> <span class="o">{</span>
+            <span class="k">this</span><span class="o">.</span><span class="na">removeObservers</span> <span class="o">=</span> <span class="k">new</span> <span class="n">NotificationEntry</span><span class="o">&lt;&gt;(</span><span class="k">this</span><span class="o">.</span><span class="na">removeObservers</span><span class="o">,</span> <span class="n">completionListener</span><span class="o">);</span>
+            <span class="k">return</span><span class="o">;</span> <span class="c1">// don't call completion listener</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+    <span class="n">safeCallListener</span><span class="o">(</span><span class="n">completionListener</span><span class="o">);</span>
+<span class="o">}</span>
+</code></pre>
+</div>
+
+<p>The main logic of above code is this part:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="k">while</span> <span class="o">(</span><span class="kc">true</span><span class="o">)</span> <span class="o">{</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">isServiceRemoved</span><span class="o">())</span> <span class="k">break</span><span class="o">;</span>
+    <span class="n">state</span> <span class="o">|=</span> <span class="n">SERVICE_REMOVED</span><span class="o">;</span>
+    <span class="n">transition</span><span class="o">(</span><span class="n">txn</span><span class="o">);</span>
+    <span class="k">break</span><span class="o">;</span>
+<span class="o">}</span>
+</code></pre>
+</div>
+
+<p>In above code, we can see the lifecycle of the service is controlled by <code class="highlighter-rouge">state</code>, and the state change is controlled by <code class="highlighter-rouge">transition(...)</code> method. Here is the sequence diagram of the <code class="highlighter-rouge">transition(...)</code> method:</p>
+
+<p><img src="/assets/msc/org.jboss.msc.txn.ServiceControllerImpl.transition(Transaction).png" alt="/assets/msc/org.jboss.msc.txn.ServiceControllerImpl.transition(Transaction).png" /></p>
+
+<p>From the above diagram, we can see the service has an implicit state machine defined inside the <code class="highlighter-rouge">transition(...)</code> method. And the state machine is powered by the transaction layer. We won’t check much detail of this level in this article and we can stop our investigation at this level for now. Here is the code of the above diagram:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="kd">private</span> <span class="kt">void</span> <span class="nf">transition</span><span class="o">(</span><span class="kd">final</span> <span class="n">Transaction</span> <span class="n">txn</span><span class="o">)</span> <span class="o">{</span>
+    <span class="k">assert</span> <span class="nf">holdsLock</span><span class="o">(</span><span class="n">lock</span><span class="o">);</span>
+    <span class="kd">final</span> <span class="kt">boolean</span> <span class="n">removed</span> <span class="o">=</span> <span class="n">isServiceRemoved</span><span class="o">();</span>
+    <span class="k">switch</span> <span class="o">(</span><span class="n">getState</span><span class="o">())</span> <span class="o">{</span>
+        <span class="k">case</span> <span class="nl">STATE_DOWN:</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">unsatisfiedDependencies</span> <span class="o">==</span> <span class="mi">0</span> <span class="o">&amp;&amp;</span> <span class="n">shouldStart</span><span class="o">())</span> <span class="o">{</span>
+                <span class="n">setState</span><span class="o">(</span><span class="n">STATE_STARTING</span><span class="o">);</span>
+                <span class="n">StartServiceTask</span><span class="o">.</span><span class="na">create</span><span class="o">(</span><span class="k">this</span><span class="o">,</span> <span class="n">txn</span><span class="o">);</span>
+            <span class="o">}</span> <span class="k">else</span> <span class="k">if</span> <span class="o">(</span><span class="n">removed</span><span class="o">)</span> <span class="o">{</span>
+                <span class="n">setState</span><span class="o">(</span><span class="n">STATE_REMOVING</span><span class="o">);</span>
+                <span class="n">RemoveServiceTask</span><span class="o">.</span><span class="na">create</span><span class="o">(</span><span class="k">this</span><span class="o">,</span> <span class="n">txn</span><span class="o">);</span>
+            <span class="o">}</span>
+            <span class="k">break</span><span class="o">;</span>
+        <span class="k">case</span> <span class="nl">STATE_UP:</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">unsatisfiedDependencies</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="o">||</span> <span class="n">shouldStop</span><span class="o">())</span> <span class="o">{</span>
+                <span class="n">lifecycleTime</span> <span class="o">=</span> <span class="n">System</span><span class="o">.</span><span class="na">nanoTime</span><span class="o">();</span>
+                <span class="n">setState</span><span class="o">(</span><span class="n">STATE_STOPPING</span><span class="o">);</span>
+                <span class="n">StopServiceTask</span><span class="o">.</span><span class="na">create</span><span class="o">(</span><span class="k">this</span><span class="o">,</span> <span class="n">txn</span><span class="o">);</span>
+            <span class="o">}</span>
+            <span class="k">break</span><span class="o">;</span>
+        <span class="k">case</span> <span class="nl">STATE_FAILED:</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">unsatisfiedDependencies</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="o">||</span> <span class="n">shouldStop</span><span class="o">())</span> <span class="o">{</span>
+                <span class="n">lifecycleTime</span> <span class="o">=</span> <span class="n">System</span><span class="o">.</span><span class="na">nanoTime</span><span class="o">();</span>
+                <span class="n">setState</span><span class="o">(</span><span class="n">STATE_STOPPING</span><span class="o">);</span>
+                <span class="n">StopFailedServiceTask</span><span class="o">.</span><span class="na">create</span><span class="o">(</span><span class="k">this</span><span class="o">,</span> <span class="n">txn</span><span class="o">);</span>
+            <span class="o">}</span>
+            <span class="k">break</span><span class="o">;</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre>
+</div>
+
+<p>From the above code, we can see <code class="highlighter-rouge">Transaction txn</code> is passed into multiple tasks related with the service lifecycle. These tasks will physically control the lifecycle of the <code class="highlighter-rouge">Service</code> instance in service controller. For example, here is part of the <code class="highlighter-rouge">execute(...)</code> method in <code class="highlighter-rouge">StopServiceTask</code>:</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="kd">public</span> <span class="kt">void</span> <span class="nf">execute</span><span class="o">(</span><span class="kd">final</span> <span class="n">ExecuteContext</span><span class="o">&lt;</span><span class="n">Void</span><span class="o">&gt;</span> <span class="n">context</span><span class="o">)</span> <span class="o">{</span>
+    <span class="kd">final</span> <span class="n">Service</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">service</span> <span class="o">=</span> <span class="n">serviceController</span><span class="o">.</span><span class="na">getService</span><span class="o">();</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">service</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">serviceController</span><span class="o">.</span><span class="na">setServiceDown</span><span class="o">(</span><span class="n">transaction</span><span class="o">);</span>
+        <span class="n">serviceController</span><span class="o">.</span><span class="na">notifyServiceDown</span><span class="o">(</span><span class="n">transaction</span><span class="o">);</span>
+        <span class="n">context</span><span class="o">.</span><span class="na">complete</span><span class="o">();</span>
+        <span class="k">return</span><span class="o">;</span>
+    <span class="o">}</span>
+<span class="o">...</span>
+</code></pre>
+</div>
+
+<p>From the above code, we can see the <code class="highlighter-rouge">StopServiceTask</code> will in return call the <code class="highlighter-rouge">setServiceDown(...)</code> method in its belonging service controller. The lower level of the state change needs to interact with the transaction layer, and we won’t check into deeper call chain now.</p>
+
+<p>In this article, we have made a brief study on the service container design of the <code class="highlighter-rouge">jboss-msc2</code> project. This project is the core part of the Wildfly application server, and it provides the application server the ability to install and uninstall modules at runtime. In the next article, I’ll introduce the transaction layer of the project.</p>
+

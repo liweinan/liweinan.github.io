@@ -280,6 +280,17 @@ WFLYCTL0184:    New missing/unsatisfied dependencies:
     
       
         <item>
+          <title>All the future articles will be put into weinan.io</title>
+          <description>&lt;p&gt;I’m tired of maintaining two blogs at same time. All the future articles on Wildfly will be put into &lt;a href=&quot;weinan.io&quot;&gt;weinan.io&lt;/a&gt;.&lt;/p&gt;
+</description>
+          <pubDate>2017-05-28T00:00:00+00:00</pubDate>
+          <link>/2017/05/28/future-work.html</link>
+          <guid isPermaLink="true">/2017/05/28/future-work.html</guid>
+        </item>
+      
+    
+      
+        <item>
           <title>Adventures in JDBC and the PostgreSQL JDBC driver: Part 7 - The JDBC driver loading process in Wildfly</title>
           <description>&lt;p&gt;In the previous article, we have learned how to add a JDBC database driver module into Wildfly, and how to configure a datasource to use hte driver. In this article, let’s see the JDBC driver loading process in Wildfly.&lt;/p&gt;
 
@@ -524,6 +535,123 @@ module.xml                     postgresql-42.0.1-SNAPSHOT.jar
           <pubDate>2017-05-25T00:00:00+00:00</pubDate>
           <link>/2017/05/25/jdbc-part6.html</link>
           <guid isPermaLink="true">/2017/05/25/jdbc-part6.html</guid>
+        </item>
+      
+    
+      
+        <item>
+          <title>Analyzing the JBoss Remoting Protocol</title>
+          <description>&lt;p&gt;In this article, I’d like to introduce the &lt;code class=&quot;highlighter-rouge&quot;&gt;remoting-wireshark&lt;/code&gt; (see &lt;a href=&quot;https://github.com/jboss-remoting/remoting-wireshark&quot;&gt;remoting-wireshark&lt;/a&gt;) project. This project is a Wireshark (&lt;a href=&quot;https://www.wireshark.org/&quot;&gt;Wireshark · Go Deep.&lt;/a&gt;) dissector plugin that can decode the JBoss Remoting (see &lt;a href=&quot;http://jbossremoting.jboss.org/&quot;&gt;JBoss Remoting&lt;/a&gt;) protocol.&lt;/p&gt;
+
+&lt;p&gt;Here is the screenshot that shows the running Wireshark that is decoding the JBoss Remoting protocol:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/remoting/wireshark.png&quot; alt=&quot;/assets/remoting/wireshark.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;From the above screenshot, we can see the &lt;code class=&quot;highlighter-rouge&quot;&gt;Remoting&lt;/code&gt; protocol is decoded by the Wireshark.&lt;/p&gt;
+
+&lt;p&gt;Now let’s see how to enable the plugin. Firstly, you need to clone the &lt;code class=&quot;highlighter-rouge&quot;&gt;remoting-wireshark&lt;/code&gt; from Github into your local machine. Here is the URL of the project:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-url&quot;&gt;https://github.com/jboss-remoting/remoting-wireshark
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;After cloning the above repository, we can see the code of the project:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;tree
+.
+├── Makefile
+├── src
+│   └── main.c
+└── target
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;From the above output, we can see the project just contain a &lt;code class=&quot;highlighter-rouge&quot;&gt;main.c&lt;/code&gt; and a &lt;code class=&quot;highlighter-rouge&quot;&gt;Makefile&lt;/code&gt;. The &lt;code class=&quot;highlighter-rouge&quot;&gt;Makefile&lt;/code&gt; does not work on all the platforms at the time of writing. I have tested the &lt;code class=&quot;highlighter-rouge&quot;&gt;Makefile&lt;/code&gt; on my 64-bit Linux box, and the Linux distribution I am using is &lt;code class=&quot;highlighter-rouge&quot;&gt;Fedora 25&lt;/code&gt;:&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;$ cat /etc/*release
+Fedora release 25 (Twenty Five)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;At time of writing, there is a bug in the project which causes the plugin broken in &lt;code class=&quot;highlighter-rouge&quot;&gt;Wireshark 2.x&lt;/code&gt;. I have submitted a PR to fix it (&lt;a href=&quot;https://github.com/jboss-remoting/remoting-wireshark/pull/3&quot;&gt;PR3&lt;/a&gt;) and you can apply the patch if you are running Wireshark 2.x.&lt;/p&gt;
+
+&lt;p&gt;Here are the Wireshark packages provided by Fedora Linux:&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;$ dnf search wireshark*
+Last metadata expiration check: 23 days, 20:55:45 ago on Sat Apr 29 13:43:24 2017.
+wireshark-qt.x86_64 : Wireshark's Qt-based GUI
+wireshark-gtk.x86_64 : Wireshark's GTK+-based GUI
+wireshark.x86_64 : Network traffic analyzer
+wireshark-cli.x86_64 : Network traffic analyzer
+wireshark-devel.x86_64 : Development headers and libraries for wireshark
+openambit-wireshark.x86_64 : Wireshark dissector for openambit
+libvirt-wireshark.x86_64 : Wireshark dissector plugin for libvirt RPC transactions
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;The above packages will provide Wireshark runtime and necessary header files and libraries for us to build the remoting project. To compile the project, we can run the &lt;code class=&quot;highlighter-rouge&quot;&gt;make&lt;/code&gt; command in the project directory, and here is the output:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/remoting/make.png&quot; alt=&quot;/assets/remoting/make.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;The above screenshot displays the compile process of the package, and the final output is &lt;code class=&quot;highlighter-rouge&quot;&gt;remoting.so&lt;/code&gt;. Here is the relative output:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;cc -shared -lwiretap -o remoting.so target/main.o
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;After the compilation is done, we need to put &lt;code class=&quot;highlighter-rouge&quot;&gt;remoting.so&lt;/code&gt; into the plugin directory of the Wireshark. Here is the command to do so:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;sudo cp remoting.so /usr/lib64/wireshark/plugins/
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;The above command will put the &lt;code class=&quot;highlighter-rouge&quot;&gt;remoting.so&lt;/code&gt; into the wireshark plugin diretory defined by Fedora Linux. After the plugin is installed, we can start the Wireshark, and if everything goes fine, the plugin will be loaded. We can check the &lt;code class=&quot;highlighter-rouge&quot;&gt;Analyze&lt;/code&gt; tab in the menu and select the &lt;code class=&quot;highlighter-rouge&quot;&gt;Enabled Protocols...&lt;/code&gt; item. Here is the screenshot:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/remoting/option.png&quot; alt=&quot;/assets/remoting/option.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;After clicking the above item, we can see the &lt;code class=&quot;highlighter-rouge&quot;&gt;Enabled Protocols&lt;/code&gt; window. Here is the screenshot:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/remoting/remoting.png&quot; alt=&quot;/assets/remoting/remoting.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;The above screenshot shows the enabled protocols. Wireshark will enable many protocols by default, so I have to put the string &lt;code class=&quot;highlighter-rouge&quot;&gt;remoting&lt;/code&gt; into the &lt;code class=&quot;highlighter-rouge&quot;&gt;Search&lt;/code&gt; field, and it will only show the &lt;code class=&quot;highlighter-rouge&quot;&gt;Remoting&lt;/code&gt; protocol. This process verifies the installation of our &lt;code class=&quot;highlighter-rouge&quot;&gt;remoting.so&lt;/code&gt; plugin.&lt;/p&gt;
+
+&lt;p&gt;To test the plugin, we can use the &lt;code class=&quot;highlighter-rouge&quot;&gt;jboss-remoting&lt;/code&gt; project itself generate some network traffic and let Wireshark capture it. Here is the URL of the project:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-url&quot;&gt;https://github.com/jboss-remoting/jboss-remoting
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;You can clone the project and use the &lt;code class=&quot;highlighter-rouge&quot;&gt;mvn install&lt;/code&gt; command to compile and install it into your local machine. I won’t dive into many details of these steps because they are quite straightforward. After the compilation is done, we can run the &lt;code class=&quot;highlighter-rouge&quot;&gt;ConnectionTestCase&lt;/code&gt; provided by the project to generate the network traffic. Here is the screenshot of the class:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/remoting/port.png&quot; alt=&quot;/assets/remoting/port.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;The above screenshot shows the tcp port used by &lt;code class=&quot;highlighter-rouge&quot;&gt;ConnectionTestCase&lt;/code&gt; class is &lt;code class=&quot;highlighter-rouge&quot;&gt;30123&lt;/code&gt;, so we can set Wireshark to listen to &lt;code class=&quot;highlighter-rouge&quot;&gt;lo&lt;/code&gt; loop interface and filter the data packet to show the data transferred via tcp port &lt;code class=&quot;highlighter-rouge&quot;&gt;30123&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;To select the interface to capture, we can select the &lt;code class=&quot;highlighter-rouge&quot;&gt;Capture -&amp;gt; Options...&lt;/code&gt; item as shown in following screenshot:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/remoting/capture.png&quot; alt=&quot;/assets/remoting/capture.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;After clicking the above item, we can enter the following window:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/remoting/lo.png&quot; alt=&quot;/assets/remoting/lo.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;In above window, we can select the &lt;code class=&quot;highlighter-rouge&quot;&gt;lo&lt;/code&gt; interface for data capturing. After selecting the interface, we can click the &lt;code class=&quot;highlighter-rouge&quot;&gt;start&lt;/code&gt; button in above window to start the data capture. Then we will enter the main window of the Wireshark and see data are captured for &lt;code class=&quot;highlighter-rouge&quot;&gt;lo&lt;/code&gt; interface. Now we need to write a filter to show the data on port &lt;code class=&quot;highlighter-rouge&quot;&gt;30123&lt;/code&gt; only. Here is the filter setting:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/remoting/filter.png&quot; alt=&quot;/assets/remoting/filter.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Now the Wireshark is prepared to capture the network data. We can run the &lt;code class=&quot;highlighter-rouge&quot;&gt;ConnectionTestCase&lt;/code&gt; in &lt;code class=&quot;highlighter-rouge&quot;&gt;jboss-remoting&lt;/code&gt; project, and it will transfer the network data with &lt;code class=&quot;highlighter-rouge&quot;&gt;Remoting&lt;/code&gt; protocol. In Wireshark you can see a lot of data packets captured, but they are just decoded as plain TCP packets. Now we can right click one of packet to display the popup window, and select the &lt;code class=&quot;highlighter-rouge&quot;&gt;Decode As...&lt;/code&gt; item. Here is the screenshot:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/remoting/decode.png&quot; alt=&quot;/assets/remoting/decode.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;After the clicking the above item, you can see a drop menu that can be used to choose the protocol for decoding. Here is the screenshot:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/remoting/select.png&quot; alt=&quot;/assets/remoting/select.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;And then you can click the &lt;code class=&quot;highlighter-rouge&quot;&gt;TCP port&lt;/code&gt; and a very long droplist will appear. You can select &lt;code class=&quot;highlighter-rouge&quot;&gt;JBoss Remoting&lt;/code&gt; as the protocol, and then the packet will be decoded correctly.&lt;/p&gt;
+
+&lt;p&gt;After the above steps are done, you will see the JBoss Remoting packets displayed in Wireshark window as shown at the beginning of this article.&lt;/p&gt;
+</description>
+          <pubDate>2017-05-23T00:00:00+00:00</pubDate>
+          <link>/2017/05/23/remoting.html</link>
+          <guid isPermaLink="true">/2017/05/23/remoting.html</guid>
         </item>
       
     
@@ -1192,6 +1320,206 @@ Exception &lt;span class=&quot;k&quot;&gt;in &lt;/span&gt;thread &lt;span class=
     
       
         <item>
+          <title>DRAFT - An introduction to the JBoss Modular Service Container: Part 2 - Transaction layer</title>
+          <description>&lt;p&gt;Here is the diagram that shows both the transaction layer and the container layer:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/msc/transaction_container.jpg&quot; alt=&quot;assets/transaction_container.jpg&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;From the diagram, we can see whole system can be roughly divided into two parts. The bottom left corner is the container layer, and the up right corner is the transaction layer. The connection point is &lt;code class=&quot;highlighter-rouge&quot;&gt;ServiceContainerImpl &amp;lt;-&amp;gt; TransactionController&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;Here is the diagram that shows the transaction layer only:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/msc/transaction_layer.jpg&quot; alt=&quot;assets/msc/transaction_layer.jpg&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;There are two kinds of transactions by design. One is &lt;code class=&quot;highlighter-rouge&quot;&gt;ReadTransaction&lt;/code&gt; and the other is &lt;code class=&quot;highlighter-rouge&quot;&gt;UpdateTransaction&lt;/code&gt;. Here is the relationship of them:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/msc/transaction.png&quot; alt=&quot;assets/msc/transaction.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;The above diagram shows that the &lt;code class=&quot;highlighter-rouge&quot;&gt;ReadTransaction&lt;/code&gt; interface extends the &lt;code class=&quot;highlighter-rouge&quot;&gt;Transaction&lt;/code&gt; interface, and &lt;code class=&quot;highlighter-rouge&quot;&gt;UpdateTransaction&lt;/code&gt; extends from the &lt;code class=&quot;highlighter-rouge&quot;&gt;ReadTransaction&lt;/code&gt;. When we want to use the transaction controller to create the service container, or adding services into the container, or removing services from the container, then we need the &lt;code class=&quot;highlighter-rouge&quot;&gt;UpdateTransaction&lt;/code&gt; as a handle to request the controller to take these actions. We will see the detail usage of the update transaction later.&lt;/p&gt;
+
+&lt;h2 id=&quot;a-sample-container&quot;&gt;A sample container&lt;/h2&gt;
+
+&lt;p&gt;Here is the demo code and my comment:&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;package io.weli.jboss.msc2;
+
+import org.jboss.msc.service.*;
+import org.jboss.msc.txn.Transaction;
+import org.jboss.msc.txn.TransactionController;
+import org.jboss.msc.txn.UpdateTransaction;
+import org.jboss.msc.util.CompletionListener;
+
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
+
+/**
+ * Created by weli on 16/05/2017.
+ */
+public class Play {
+    public static void main(String[] args) {
+
+        TransactionController controller = TransactionController.newInstance();
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;The above line will create a new instance of the &lt;code class=&quot;highlighter-rouge&quot;&gt;TransactionController&lt;/code&gt;.&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;final CompletionListener&amp;lt;UpdateTransaction&amp;gt; updateListener = new CompletionListener&amp;lt;&amp;gt;();
+
+controller.newUpdateTransaction(Executors.newSingleThreadExecutor(), updateListener);
+
+final UpdateTransaction transaction = updateListener.awaitCompletionUninterruptibly();
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Nearly all the actions in the container are asynchronous. The above code creates a transaction. You can think a transaction as a handler provided by &lt;code class=&quot;highlighter-rouge&quot;&gt;TransactionController&lt;/code&gt; to control the whole lifecycle of the service container. The transaction will be used to create service container, register services into container, and it is associated with an executor. We will see the usage of the &lt;code class=&quot;highlighter-rouge&quot;&gt;UpdateTransaction&lt;/code&gt; later.&lt;/p&gt;
+
+&lt;p&gt;The above transaction creation action is executed asynchronously, so we need to create a &lt;code class=&quot;highlighter-rouge&quot;&gt;CompletionListener&lt;/code&gt; in above code to wait for the transaction creation to be done by the controller, and finally we get the &lt;code class=&quot;highlighter-rouge&quot;&gt;UpdateTransaction&lt;/code&gt; from the listener.&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;        try {
+            ServiceContainer container = controller.newServiceContainer(transaction);
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;We get the service container from the service controller as shown above. Please see the usage of transaction. The update transaction is associated with every action issued by the controller, and the transaction will be prepared and committed at last to modify the service container statuses. We will see this in following code.&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;            ServiceRegistry registry = container.newRegistry(transaction);
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;The service registry is created from the container, and it will be used to include services.&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;            ServiceBuilder&amp;lt;Void&amp;gt; serviceBuilder = controller.newServiceContext(transaction).addService(registry, ServiceName.of(&quot;foo&quot;));
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;The above code will add a service named &lt;code class=&quot;highlighter-rouge&quot;&gt;foo&lt;/code&gt; into the service registry, and it will return a service builder for the service name to be connected with a real service. The following code defines a service:&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;            class FooService implements Service&amp;lt;Void&amp;gt; {
+
+                @Override
+                public void start(StartContext&amp;lt;Void&amp;gt; startContext) {
+                    System.out.println(&quot;Foo service started.&quot;);
+                }
+
+                @Override
+                public void stop(StopContext stopContext) {
+                    System.out.println(&quot;Foo service stopped.&quot;);
+                }
+            }
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;The above code defines a &lt;code class=&quot;highlighter-rouge&quot;&gt;FooService&lt;/code&gt; that implements the &lt;code class=&quot;highlighter-rouge&quot;&gt;Service&lt;/code&gt; interface. It’s a service just does nothing but just output some log.&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;            serviceBuilder.setService(new FooService());
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;The above code used the service builder to connect the service to its service name.&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;            serviceBuilder.install();
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;The above code used the service builder to install the service into registry. Until now we have finished the work to create a service container and put a service registry into the container, and we have created our service and associated it with the registry. Now we should commit the transaction and all the above actions will be persisted in container. Here is the final code:&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;        } finally {
+            final CompletionListener&amp;lt;Transaction&amp;gt; prepareListener = new CompletionListener&amp;lt;&amp;gt;();
+            controller.prepare(transaction, prepareListener);
+            prepareListener.awaitCompletionUninterruptibly();
+
+            final CompletionListener&amp;lt;Transaction&amp;gt; commitListener = new CompletionListener&amp;lt;&amp;gt;();
+            controller.commit(transaction, commitListener);
+            commitListener.awaitCompletionUninterruptibly();
+        }
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;We can see the &lt;code class=&quot;highlighter-rouge&quot;&gt;prepare(...)&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;commit(...)&lt;/code&gt; actions are all related with the update transaction, and these actions are all executed asynchronously. We can see the container relies on the transaction handle to manage its consistency of the internal state. All the actions are associated with the update transaction, and after the update transaction is committed, the actions will alter the container state.&lt;/p&gt;
+
+&lt;p&gt;In addition, there is only one update transaction can be in action at one time. It does not allow multiple threads to get many update transactions to alter container internal services and their statuses at one time. If there are many threads requesting the update transactions, only one thread will succeed and others need to wait.&lt;/p&gt;
+
+&lt;p&gt;Here is the relative code in &lt;code class=&quot;highlighter-rouge&quot;&gt;org.jboss.msc.txn.AbstractTransaction.registerUpdateTransaction(...)&lt;/code&gt; method:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/msc/registerUpdateTransaction.png&quot; alt=&quot;assets/msc/registerUpdateTransaction.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;From the above diagram, we can see if there are more than one update transaction creation requests, the requested update transactions will be put into &lt;code class=&quot;highlighter-rouge&quot;&gt;pendingTxns&lt;/code&gt; queue, and there is only one running update transaction allowed and the listener will be called to return the transaction to the caller. The other callers will be blocked if they call their completion listeners.&lt;/p&gt;
+
+&lt;p&gt;Here is the complete code:&lt;/p&gt;
+
+&lt;div class=&quot;language-java highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;org.jboss.msc.service.*&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;org.jboss.msc.txn.Transaction&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;org.jboss.msc.txn.TransactionController&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;org.jboss.msc.txn.UpdateTransaction&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;org.jboss.msc.util.CompletionListener&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+
+&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;java.util.concurrent.Executor&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;java.util.concurrent.Executors&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;java.util.concurrent.ThreadPoolExecutor&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+
+&lt;span class=&quot;cm&quot;&gt;/**
+ * Created by weli on 16/05/2017.
+ */&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;Play&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;static&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;main&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;[]&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;args&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+
+        &lt;span class=&quot;n&quot;&gt;TransactionController&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;controller&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;TransactionController&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;newInstance&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;();&lt;/span&gt;
+
+        &lt;span class=&quot;kd&quot;&gt;final&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;CompletionListener&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;UpdateTransaction&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;updateListener&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;CompletionListener&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&amp;gt;();&lt;/span&gt;
+
+        &lt;span class=&quot;n&quot;&gt;controller&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;newUpdateTransaction&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Executors&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;newSingleThreadExecutor&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(),&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;updateListener&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+
+        &lt;span class=&quot;kd&quot;&gt;final&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;UpdateTransaction&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;transaction&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;updateListener&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;awaitCompletionUninterruptibly&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;();&lt;/span&gt;
+        
+        &lt;span class=&quot;kd&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;FooService&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;implements&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Service&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Void&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+
+            &lt;span class=&quot;nd&quot;&gt;@Override&lt;/span&gt;
+            &lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;start&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;StartContext&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Void&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;startContext&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+                &lt;span class=&quot;n&quot;&gt;System&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;out&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;println&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;Foo service started.&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+            &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+
+            &lt;span class=&quot;nd&quot;&gt;@Override&lt;/span&gt;
+            &lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;stop&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;StopContext&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;stopContext&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+                &lt;span class=&quot;n&quot;&gt;System&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;out&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;println&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;Foo service stopped.&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+            &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+
+
+        &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;ServiceContainer&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;container&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;controller&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;newServiceContainer&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;transaction&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;ServiceRegistry&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;registry&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;container&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;newRegistry&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;transaction&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;ServiceBuilder&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Void&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;serviceBuilder&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;controller&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;newServiceContext&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;transaction&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;).&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;addService&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;registry&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ServiceName&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;of&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;foo&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;));&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;serviceBuilder&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;setService&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;FooService&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;());&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;serviceBuilder&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;install&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;();&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;controller&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;downgrade&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;transaction&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;null&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+
+        &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;finally&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;kd&quot;&gt;final&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;CompletionListener&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Transaction&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;prepareListener&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;CompletionListener&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&amp;gt;();&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;controller&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;prepare&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;transaction&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;prepareListener&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;prepareListener&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;awaitCompletionUninterruptibly&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;();&lt;/span&gt;
+
+            &lt;span class=&quot;kd&quot;&gt;final&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;CompletionListener&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Transaction&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;commitListener&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;CompletionListener&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&amp;gt;();&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;controller&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;commit&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;transaction&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;commitListener&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;commitListener&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;awaitCompletionUninterruptibly&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;();&lt;/span&gt;
+        &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+</description>
+          <pubDate>2017-05-21T00:00:00+00:00</pubDate>
+          <link>/2017/05/21/jboss-msc2.html</link>
+          <guid isPermaLink="true">/2017/05/21/jboss-msc2.html</guid>
+        </item>
+      
+    
+      
+        <item>
           <title>The articles &amp; books I read and the videos I watched last week</title>
           <description>&lt;p&gt;Articles:&lt;/p&gt;
 
@@ -1755,6 +2083,565 @@ void fireConnectionFatalError(SQLException e) {
     
       
         <item>
+          <title>An introduction to the JBoss Modular Service Container: Part 1 - Basic architecture of the container</title>
+          <description>&lt;p&gt;The &lt;code class=&quot;highlighter-rouge&quot;&gt;JBoss Modular Service Container&lt;/code&gt; project is the core part of the Wildfly application server, and it provides the Wildfly server the ability to install or remove components (called services) at runtime. In this series of articles, I’d like to make an introduction to the project.&lt;/p&gt;
+
+&lt;p&gt;This project is hosted on Github (most of the JBoss projects are hosted on Github), and the project name is &lt;code class=&quot;highlighter-rouge&quot;&gt;jboss-msc2&lt;/code&gt; (&lt;a href=&quot;https://github.com/jboss-msc/jboss-msc2&quot;&gt;https://github.com/jboss-msc/jboss-msc2&lt;/a&gt;). There is also a &lt;code class=&quot;highlighter-rouge&quot;&gt;jboss-msc&lt;/code&gt; project, but the &lt;code class=&quot;highlighter-rouge&quot;&gt;jboss-msc2&lt;/code&gt; is for the future, so I will focus on the newer one in this series of articles.&lt;/p&gt;
+
+&lt;p&gt;I won’t introduce the method to clone the project into you local machine in this article. You can read &lt;a href=&quot;http://wildflyinternals.io/2017/05/05/wildfly-src.html&quot;&gt;Fetching and compiling the Wildfly upstream source&lt;/a&gt; to get a basic idea on how to fetch and build the opensource projects from Github.&lt;/p&gt;
+
+&lt;p&gt;Basically, the service container can be divided into two parts. One part is the transaction layer, which is used to control the lifecycle of the service. The other part is the service layer, which defines the concepts like service container and service registries (Please note the project does not divide itself into two sub-modules or two layers explicitly, and we can just roughly divide it like this in our mind to help us to better understanding the whole project). We will check these concepts in more details in this series of articles.&lt;/p&gt;
+
+&lt;p&gt;Now let’s see the class diagram that contains classes related with the service layer:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/msc/services.png&quot; alt=&quot;/assets/msc/services.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;The above diagram contains some classes that compose the design of the service container. There are fives interfaces we need to check in detail. They are &lt;code class=&quot;highlighter-rouge&quot;&gt;ServiceController&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;ServiceBuilder&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;ServiceRegistry&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;ServiceContainer&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;Service&lt;/code&gt;. Let check them one by one.&lt;/p&gt;
+
+&lt;p&gt;The first interface to check is &lt;code class=&quot;highlighter-rouge&quot;&gt;ServiceContainer&lt;/code&gt;. This is the container class, and it is created from the &lt;code class=&quot;highlighter-rouge&quot;&gt;newServiceContainer(...)&lt;/code&gt; method of &lt;code class=&quot;highlighter-rouge&quot;&gt;TransactionController&lt;/code&gt; class. We won’t touch much about the transaction layer here, but you need to know the concept of transaction in &lt;code class=&quot;highlighter-rouge&quot;&gt;jboss-msc2&lt;/code&gt; is not the same thing in database or transaction processing area. The concept of transaction in service container is more like a lifecycle controller and task executor of the services. We will check the details of transaction later.&lt;/p&gt;
+
+&lt;p&gt;Here is the diagram that shows our above analyzed result:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/msc/container.png&quot; alt=&quot;/assets/msc/container.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Now let’s come back to the &lt;code class=&quot;highlighter-rouge&quot;&gt;ServiceContainer&lt;/code&gt; interface. Here is the code of the interface:&lt;/p&gt;
+
+&lt;div class=&quot;language-java highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kn&quot;&gt;package&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;org&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;jboss&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;msc&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;service&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+
+&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;org.jboss.msc.txn.InvalidTransactionStateException&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;org.jboss.msc.txn.UpdateTransaction&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;org.jboss.msc.util.Listener&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+
+&lt;span class=&quot;cm&quot;&gt;/**
+ * A service container. Implementations of this interface are thread safe.
+ *
+ * @author &amp;lt;a href=&quot;mailto:david.lloyd@redhat.com&quot;&amp;gt;David M. Lloyd&amp;lt;/a&amp;gt;
+ * @author &amp;lt;a href=&quot;mailto:frainone@redhat.com&quot;&amp;gt;Flavia Rainone&amp;lt;/a&amp;gt;
+ * @author &amp;lt;a href=&quot;mailto:ropalka@redhat.com&quot;&amp;gt;Richard Opalka&amp;lt;/a&amp;gt;
+ */&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;interface&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;ServiceContainer&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+
+    &lt;span class=&quot;cm&quot;&gt;/**
+     * Creates new registry associated with this container.
+     *
+     * @param transaction the transaction
+     * @return container registry
+     * @throws IllegalStateException if container have been shutdown
+     */&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;ServiceRegistry&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;newRegistry&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;UpdateTransaction&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;transaction&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+
+    &lt;span class=&quot;cm&quot;&gt;/**
+     * Shuts down the container, removing all registries and their services.
+     *
+     * @param transaction the transaction
+     * @throws java.lang.IllegalArgumentException if &amp;lt;code&amp;gt;transaction&amp;lt;/code&amp;gt; is null
+     * or if transaction controller associated with &amp;lt;code&amp;gt;transaction&amp;lt;/code&amp;gt;
+     * is not the same as the one associated with this service container.
+     * @throws org.jboss.msc.txn.InvalidTransactionStateException if transaction is not active.
+     * @throws IllegalArgumentException if transaction was created by different transaction controller than this container
+     */&lt;/span&gt;
+    &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;shutdown&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;UpdateTransaction&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;transaction&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;throws&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;IllegalArgumentException&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;InvalidTransactionStateException&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+
+    &lt;span class=&quot;cm&quot;&gt;/**
+     * Shuts down the container, removing all registries and their services.
+     *
+     * @param transaction the transaction
+     * @param completionListener called when operation is finished
+     * @throws java.lang.IllegalArgumentException if &amp;lt;code&amp;gt;transaction&amp;lt;/code&amp;gt; is null
+     * or if transaction controller associated with &amp;lt;code&amp;gt;transaction&amp;lt;/code&amp;gt;
+     * is not the same as the one associated with this service container.
+     * @throws org.jboss.msc.txn.InvalidTransactionStateException if transaction is not active.
+     * @throws IllegalArgumentException if transaction was created by different transaction controller than this container
+     */&lt;/span&gt;
+    &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;shutdown&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;UpdateTransaction&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;transaction&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Listener&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ServiceContainer&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;completionListener&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;throws&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;IllegalArgumentException&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;InvalidTransactionStateException&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+
+&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;The above code contains the methods that the container provides and it has document to describe the purpose of these methods. We can see a container can contain multiple service registries represented by &lt;code class=&quot;highlighter-rouge&quot;&gt;ServiceRegistry&lt;/code&gt; interface. The container can also be shutdown with &lt;code class=&quot;highlighter-rouge&quot;&gt;shutdown(...)&lt;/code&gt; methods, and all the services in the container will be closed and their registries will be removed. There are transactions and listeners associated with these actions (&lt;code class=&quot;highlighter-rouge&quot;&gt;UpdateTransaction&lt;/code&gt; class and &lt;code class=&quot;highlighter-rouge&quot;&gt;Listener&lt;/code&gt; interface are passed into the methods).&lt;/p&gt;
+
+&lt;p&gt;The container relies on the associated transaction to manage its   state transitions, and these transitions are asynchronous actions, so it needs a callback listener after the action is done. We will check the detail of this part of the design later in this series of articles.&lt;/p&gt;
+
+&lt;p&gt;Now let’s check the &lt;code class=&quot;highlighter-rouge&quot;&gt;ServiceRegistry&lt;/code&gt; interface. Here is the code of the interface:&lt;/p&gt;
+
+&lt;div class=&quot;language-java highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kn&quot;&gt;package&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;org&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;jboss&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;msc&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;service&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+
+&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;org.jboss.msc.txn.InvalidTransactionStateException&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;org.jboss.msc.txn.UpdateTransaction&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;org.jboss.msc.util.Listener&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+
+&lt;span class=&quot;cm&quot;&gt;/**
+ * A service registry. Implementations of this interface are thread safe.
+ *
+ * @author &amp;lt;a href=&quot;mailto:david.lloyd@redhat.com&quot;&amp;gt;David M. Lloyd&amp;lt;/a&amp;gt;
+ * @author &amp;lt;a href=&quot;mailto:frainone@redhat.com&quot;&amp;gt;Flavia Rainone&amp;lt;/a&amp;gt;
+ * @author &amp;lt;a href=&quot;mailto:ropalka@redhat.com&quot;&amp;gt;Richard Opalka&amp;lt;/a&amp;gt;
+ */&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;interface&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;ServiceRegistry&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+
+    &lt;span class=&quot;cm&quot;&gt;/**
+     * Gets a service controller, throwing an exception if it is not found.
+     *
+     * @param serviceName the service name
+     * @param &amp;lt;T&amp;gt; service controller value type
+     * @return the service controller corresponding to {@code serviceName}
+     * @throws ServiceNotFoundException if the service is not present in the registry
+     */&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;T&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ServiceController&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;T&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;getRequiredService&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ServiceName&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;serviceName&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;throws&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ServiceNotFoundException&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+
+    &lt;span class=&quot;cm&quot;&gt;/**
+     * Gets a service controller, returning {@code null} if it is not found.
+     *
+     * @param serviceName the service name
+     * @param &amp;lt;T&amp;gt; service controller value type
+     * @return the service controller corresponding to {@code serviceName}, or {@code null} if it is not found
+     */&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;T&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ServiceController&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;T&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;getService&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ServiceName&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;serviceName&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+
+    &lt;span class=&quot;cm&quot;&gt;/**
+     * Disables this registry and all its services, causing {@code UP} services to stop.
+     *
+     * @param transaction the transaction
+     * @throws java.lang.IllegalArgumentException if &amp;lt;code&amp;gt;transaction&amp;lt;/code&amp;gt; is null
+     * or if transaction controller associated with &amp;lt;code&amp;gt;transaction&amp;lt;/code&amp;gt;
+     * is not the same as the one associated with this service registry.
+     * @throws org.jboss.msc.txn.InvalidTransactionStateException if transaction is not active.
+     * @throws IllegalArgumentException if transaction was created by different transaction controller than this registry
+     */&lt;/span&gt;
+    &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;disable&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;UpdateTransaction&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;transaction&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;throws&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;IllegalArgumentException&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;InvalidTransactionStateException&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+
+    &lt;span class=&quot;cm&quot;&gt;/**
+     * Enables this registry. As a result, its services may start, depending on their
+     * {@link org.jboss.msc.service.ServiceMode mode} rules.
+     * &amp;lt;p&amp;gt; Registries are enabled by default.
+     *
+     * @param transaction the transaction
+     * @throws java.lang.IllegalArgumentException if &amp;lt;code&amp;gt;transaction&amp;lt;/code&amp;gt; is null
+     * or if transaction controller associated with &amp;lt;code&amp;gt;transaction&amp;lt;/code&amp;gt;
+     * is not the same as the one associated with this service registry.
+     * @throws org.jboss.msc.txn.InvalidTransactionStateException if transaction is not active.
+     * @throws IllegalArgumentException if transaction was created by different transaction controller than this registry
+     */&lt;/span&gt;
+    &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;enable&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;UpdateTransaction&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;transaction&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;throws&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;IllegalArgumentException&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;InvalidTransactionStateException&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+
+    &lt;span class=&quot;cm&quot;&gt;/**
+     * Removes this registry from the container.
+     *
+     * @param transaction the transaction
+     * @throws java.lang.IllegalArgumentException if &amp;lt;code&amp;gt;transaction&amp;lt;/code&amp;gt; is null
+     * or if transaction controller associated with &amp;lt;code&amp;gt;transaction&amp;lt;/code&amp;gt;
+     * is not the same as the one associated with this service registry.
+     * @throws org.jboss.msc.txn.InvalidTransactionStateException if transaction is not active.
+     * @throws IllegalArgumentException if transaction was created by different transaction controller than this registry
+     */&lt;/span&gt;
+    &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;remove&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;UpdateTransaction&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;transaction&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;throws&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;IllegalArgumentException&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;InvalidTransactionStateException&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+
+    &lt;span class=&quot;cm&quot;&gt;/**
+     * Removes this registry from the container.
+     *
+     * @param transaction the transaction
+     * @param completionListener called when operation is finished
+     * @throws java.lang.IllegalArgumentException if &amp;lt;code&amp;gt;transaction&amp;lt;/code&amp;gt; is null
+     * or if transaction controller associated with &amp;lt;code&amp;gt;transaction&amp;lt;/code&amp;gt;
+     * is not the same as the one associated with this service registry.
+     * @throws org.jboss.msc.txn.InvalidTransactionStateException if transaction is not active.
+     * @throws IllegalArgumentException if transaction was created by different transaction controller than this registry
+     */&lt;/span&gt;
+    &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;remove&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;UpdateTransaction&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;transaction&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Listener&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ServiceRegistry&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;completionListener&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;throws&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;IllegalArgumentException&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;InvalidTransactionStateException&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+
+&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;From the above code, we can see the &lt;code class=&quot;highlighter-rouge&quot;&gt;ServiceRegistry&lt;/code&gt; includes many services, and it have &lt;code class=&quot;highlighter-rouge&quot;&gt;getService(...)&lt;/code&gt; method to fetch the include services. In addition, it has &lt;code class=&quot;highlighter-rouge&quot;&gt;remove(...)&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;enable(...)&lt;/code&gt; methods to manage its lifecycle in container.’&lt;/p&gt;
+
+&lt;p&gt;We need to take caution that the &lt;code class=&quot;highlighter-rouge&quot;&gt;getService(...)&lt;/code&gt; method will get an instance of &lt;code class=&quot;highlighter-rouge&quot;&gt;ServiceController&lt;/code&gt; as its returned data, instead of the services itself. The &lt;code class=&quot;highlighter-rouge&quot;&gt;ServiceController&lt;/code&gt; interface defines a model to control the lifecycle of its service. The real service is represented by &lt;code class=&quot;highlighter-rouge&quot;&gt;Service&lt;/code&gt; interface, and there is a &lt;code class=&quot;highlighter-rouge&quot;&gt;Registration&lt;/code&gt; class stores a &lt;code class=&quot;highlighter-rouge&quot;&gt;ServiceRegistry&lt;/code&gt; with its &lt;code class=&quot;highlighter-rouge&quot;&gt;ServiceName&lt;/code&gt;. The following diagram shows the relationship of these classes:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/msc/servicecontroller.png&quot; alt=&quot;/assets/msc/servicecontroller.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;The above diagram shows that the &lt;code class=&quot;highlighter-rouge&quot;&gt;ServiceController&lt;/code&gt; is the interface that manages the lifecycle of the underlying service. Here is part of the code in &lt;code class=&quot;highlighter-rouge&quot;&gt;ServiceController&lt;/code&gt; interface:&lt;/p&gt;
+
+&lt;div class=&quot;language-java highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kn&quot;&gt;package&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;org&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;jboss&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;msc&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;service&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+
+&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;org.jboss.msc.txn.InvalidTransactionStateException&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;org.jboss.msc.txn.UpdateTransaction&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;org.jboss.msc.util.Listener&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+
+
+&lt;span class=&quot;cm&quot;&gt;/**
+ * A controller for a single service instance.
+ *
+ * @author &amp;lt;a href=&quot;mailto:frainone@redhat.com&quot;&amp;gt;Flavia Rainone&amp;lt;/a&amp;gt;
+ * @author &amp;lt;a href=&quot;mailto:ropalka@redhat.com&quot;&amp;gt;Richard Opalka&amp;lt;/a&amp;gt;
+ * @param &amp;lt;T&amp;gt; service type
+ */&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;interface&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;ServiceController&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;T&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+
+    &lt;span class=&quot;cm&quot;&gt;/**
+     * Disables a service, causing this service to stop if it is {@code UP}.
+     *
+     * @param transaction the transaction
+     * @throws java.lang.IllegalArgumentException if &amp;lt;code&amp;gt;transaction&amp;lt;/code&amp;gt; is null
+     * or if transaction controller associated with &amp;lt;code&amp;gt;transaction&amp;lt;/code&amp;gt;
+     * is not the same as the one associated with this service controller.
+     * @throws IllegalStateException if controller was removed
+     * @throws org.jboss.msc.txn.InvalidTransactionStateException if transaction is not active.
+     */&lt;/span&gt;
+    &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;disable&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;UpdateTransaction&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;transaction&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;throws&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;IllegalArgumentException&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;IllegalStateException&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;InvalidTransactionStateException&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+
+    &lt;span class=&quot;cm&quot;&gt;/**
+     * Enables the service, which may start as a result, according to its {@link org.jboss.msc.service.ServiceMode mode} rules.
+     * &amp;lt;p&amp;gt; Services are enabled by default.
+     *
+     * @param transaction the transaction
+     * @throws java.lang.IllegalArgumentException if &amp;lt;code&amp;gt;transaction&amp;lt;/code&amp;gt; is null
+     * or if transaction controller associated with &amp;lt;code&amp;gt;transaction&amp;lt;/code&amp;gt;
+     * is not the same as the one associated with this service controller.
+     * @throws IllegalStateException if controller was removed
+     * @throws org.jboss.msc.txn.InvalidTransactionStateException if transaction is not active.
+     */&lt;/span&gt;
+    &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;enable&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;UpdateTransaction&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;transaction&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;throws&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;IllegalArgumentException&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;IllegalStateException&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;InvalidTransactionStateException&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+
+    &lt;span class=&quot;cm&quot;&gt;/**
+     * Removes this service.&amp;lt;p&amp;gt;
+     * All dependent services will be automatically stopped as the result of this operation.
+     *
+     * @param transaction the transaction
+     * @throws java.lang.IllegalArgumentException if &amp;lt;code&amp;gt;transaction&amp;lt;/code&amp;gt; is null
+     * or if transaction controller associated with &amp;lt;code&amp;gt;transaction&amp;lt;/code&amp;gt;
+     * is not the same as the one associated with this service controller.
+     * @throws org.jboss.msc.txn.InvalidTransactionStateException if transaction is not active.
+     */&lt;/span&gt;
+    &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;remove&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;UpdateTransaction&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;transaction&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;throws&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;IllegalArgumentException&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;InvalidTransactionStateException&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;cm&quot;&gt;/**
+     * Restarts this service.
+     * 
+     * @param transaction the transaction
+     * @throws java.lang.IllegalArgumentException if &amp;lt;code&amp;gt;transaction&amp;lt;/code&amp;gt; is null
+     * or if transaction controller associated with &amp;lt;code&amp;gt;transaction&amp;lt;/code&amp;gt;
+     * is not the same as the one associated with this service controller.
+     * @throws IllegalStateException if controller was removed
+     * @throws org.jboss.msc.txn.InvalidTransactionStateException if transaction is not active.
+     */&lt;/span&gt;
+    &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;restart&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;UpdateTransaction&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;transaction&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;throws&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;IllegalArgumentException&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;IllegalStateException&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;InvalidTransactionStateException&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+
+    &lt;span class=&quot;cm&quot;&gt;/**
+     * Retries a failed service. Does nothing if the state has not failed.
+     *
+     * @param transaction the transaction
+     * @throws java.lang.IllegalArgumentException if &amp;lt;code&amp;gt;transaction&amp;lt;/code&amp;gt; is null
+     * or if transaction controller associated with &amp;lt;code&amp;gt;transaction&amp;lt;/code&amp;gt;
+     * is not the same as the one associated with this service controller.
+     * @throws IllegalStateException if controller was removed
+     * @throws org.jboss.msc.txn.InvalidTransactionStateException if transaction is not active.
+     */&lt;/span&gt;
+    &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;retry&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;UpdateTransaction&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;transaction&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;throws&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;IllegalArgumentException&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;IllegalStateException&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;InvalidTransactionStateException&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+
+    &lt;span class=&quot;cm&quot;&gt;/**
+     * Replaces {@code service} by a new service.
+     *
+     * @param transaction the transaction
+     * @param newService the new service to be published
+     * @throws java.lang.IllegalArgumentException if any method parameter is &amp;lt;code&amp;gt;null&amp;lt;/code&amp;gt;
+     * @throws IllegalStateException if controller was removed
+     * @throws org.jboss.msc.txn.InvalidTransactionStateException if transaction is not active.
+     */&lt;/span&gt;
+    &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;replace&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;UpdateTransaction&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;transaction&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Service&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;T&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;newService&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;throws&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;IllegalArgumentException&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;IllegalStateException&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;InvalidTransactionStateException&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+
+    &lt;span class=&quot;cm&quot;&gt;/**
+     * Gets associated service.
+     * @return service
+     */&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;Service&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;T&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;getService&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;();&lt;/span&gt;
+
+&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;From the above code, we can see that the &lt;code class=&quot;highlighter-rouge&quot;&gt;ServiceController&lt;/code&gt; interface is the physical layer to control the &lt;code class=&quot;highlighter-rouge&quot;&gt;Service&lt;/code&gt; lifecycle in container. The &lt;code class=&quot;highlighter-rouge&quot;&gt;Service&lt;/code&gt; interface should be implemented by each service vendor. Here is the code of the &lt;code class=&quot;highlighter-rouge&quot;&gt;Service&lt;/code&gt; interface:&lt;/p&gt;
+
+&lt;div class=&quot;language-java highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kn&quot;&gt;package&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;org&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;jboss&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;msc&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;service&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+
+&lt;span class=&quot;cm&quot;&gt;/**
+ * Service interface providing both start and stop methods to implementors.
+ * &amp;lt;p&amp;gt;
+ * Service implementors will have start invoked both on execution phase (when the service is being started) and during
+ * rollback (when a stop is being reverted). The same is valid for stop: it could be invoked during both execution
+ * and rollback stages of active transaction.
+ * 
+ * @param &amp;lt;T&amp;gt; the service value type
+ * 
+ * @author &amp;lt;a href=&quot;mailto:frainone@redhat.com&quot;&amp;gt;Flavia Rainone&amp;lt;/a&amp;gt;
+ */&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;interface&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;Service&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;T&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+
+    &lt;span class=&quot;cm&quot;&gt;/**
+     * Service start  method, invoked on execution and rollback (when needed to revert a previous stop).
+     * &amp;lt;p&amp;gt;
+     * Implementors must invoke {@link StartContext#complete(Object) startContext.complete(T)} upon completion.
+     * &amp;lt;p&amp;gt;
+     * Also, this method cannot be implemented asynchronously.
+     * 
+     * @param startContext the start context
+     */&lt;/span&gt;
+    &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;start&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;StartContext&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;T&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;startContext&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+
+    &lt;span class=&quot;cm&quot;&gt;/**
+     * Service stop method, invoked on execution and rollback (when needed to revert a previous start).
+     * &amp;lt;p&amp;gt;
+     * Implementors must invoke {@link StopContext#complete() stopContext.complete()} upon completion.
+     * &amp;lt;p&amp;gt;
+     * Also, this method cannot be implemented asynchronously.
+     * 
+     * @param stopContext the stop context
+     */&lt;/span&gt;
+    &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;stop&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;StopContext&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;stopContext&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+
+&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;From the above code, we can see the &lt;code class=&quot;highlighter-rouge&quot;&gt;Service&lt;/code&gt; interface defines &lt;code class=&quot;highlighter-rouge&quot;&gt;start(...)&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;stop(...)&lt;/code&gt; methods for the users to implement. Wildfly contains many subsystems, and these systems will need to implement the &lt;code class=&quot;highlighter-rouge&quot;&gt;Service&lt;/code&gt; interface to run in container. We can see the &lt;code class=&quot;highlighter-rouge&quot;&gt;org.jboss.as.connector.subsystems.datasources.XADataSourceConfigService&lt;/code&gt; class (&lt;a href=&quot;https://github.com/wildfly/wildfly/blob/master/connector/src/main/java/org/jboss/as/connector/subsystems/datasources/XADataSourceConfigService.java&quot;&gt;XADataSourceConfigService.java&lt;/a&gt;) in Wildfly as an implementation example.&lt;/p&gt;
+
+&lt;p&gt;Seeing from the above diagram and code, we can understand the relationship between &lt;code class=&quot;highlighter-rouge&quot;&gt;ServiceContainer&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;ServiceRegistry&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;Registration&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;ServiceController&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;Service&lt;/code&gt;. Firstly, &lt;code class=&quot;highlighter-rouge&quot;&gt;ServiceContainer&lt;/code&gt; contains many &lt;code class=&quot;highlighter-rouge&quot;&gt;ServiceRegistry&lt;/code&gt; instances. Here is the relative code in &lt;code class=&quot;highlighter-rouge&quot;&gt;ServiceContainerImpl&lt;/code&gt; class:&lt;/p&gt;
+
+&lt;div class=&quot;language-java highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;final&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Set&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ServiceRegistryImpl&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;registries&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;HashSet&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&amp;gt;();&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Secondly, the &lt;code class=&quot;highlighter-rouge&quot;&gt;ServiceRegistry&lt;/code&gt; contains many &lt;code class=&quot;highlighter-rouge&quot;&gt;Registration&lt;/code&gt; instances and belonging container. Here is the code in &lt;code class=&quot;highlighter-rouge&quot;&gt;ServiceRegistryImpl&lt;/code&gt;:&lt;/p&gt;
+
+&lt;div class=&quot;language-java highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;final&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ServiceContainerImpl&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;container&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+
+&lt;span class=&quot;c1&quot;&gt;// map of service registrations&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;final&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ConcurrentMap&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ServiceName&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Registration&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;registry&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ConcurrentHashMap&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&amp;gt;();&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;From above code, we can see the registrations are stored in a concurrent map data structure, and the key is service name. Actually the &lt;code class=&quot;highlighter-rouge&quot;&gt;Registration&lt;/code&gt; class contains the &lt;code class=&quot;highlighter-rouge&quot;&gt;ServiceName&lt;/code&gt; by itself. The purpose that &lt;code class=&quot;highlighter-rouge&quot;&gt;ServiceRegistry&lt;/code&gt; stores a &lt;code class=&quot;highlighter-rouge&quot;&gt;ServiceName&lt;/code&gt; with &lt;code class=&quot;highlighter-rouge&quot;&gt;Registration&lt;/code&gt; is for implementation requirement. We don’t have to dig deeper here right now.&lt;/p&gt;
+
+&lt;p&gt;Now let’s see the &lt;code class=&quot;highlighter-rouge&quot;&gt;Registration&lt;/code&gt; class. It contains &lt;code class=&quot;highlighter-rouge&quot;&gt;ServiceName&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;ServiceController&lt;/code&gt; and belonging &lt;code class=&quot;highlighter-rouge&quot;&gt;ServiceRegistry&lt;/code&gt;. Here is the relative code in &lt;code class=&quot;highlighter-rouge&quot;&gt;Registration&lt;/code&gt; class:&lt;/p&gt;
+
+&lt;div class=&quot;language-java highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;cm&quot;&gt;/** Registration name */&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;final&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ServiceName&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;serviceName&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;cm&quot;&gt;/** Associated registry */&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;final&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ServiceRegistryImpl&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;registry&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;cm&quot;&gt;/** Associated controller */&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;final&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;AtomicReference&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ServiceControllerImpl&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;?&amp;gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;holderRef&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;AtomicReference&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&amp;gt;();&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;From the above data, we can see &lt;code class=&quot;highlighter-rouge&quot;&gt;Registration&lt;/code&gt; is like a bridge between &lt;code class=&quot;highlighter-rouge&quot;&gt;ServiceRegistry&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;ServiceController&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;Finally we come to &lt;code class=&quot;highlighter-rouge&quot;&gt;ServiceController&lt;/code&gt;. It contains the instance of &lt;code class=&quot;highlighter-rouge&quot;&gt;Service&lt;/code&gt; implementation and physically manage the service lifecycle with the help the transaction layer. We will check the transaction layer later, and that’s all for our analyze in container layer.&lt;/p&gt;
+
+&lt;p&gt;Finally, let’s check the shutdown process of &lt;code class=&quot;highlighter-rouge&quot;&gt;ServiceContainer&lt;/code&gt; to see how the call chains go through the above classes. Firstly let’s see the sequence diagram of the &lt;code class=&quot;highlighter-rouge&quot;&gt;shutdown(...)&lt;/code&gt; method in &lt;code class=&quot;highlighter-rouge&quot;&gt;ServiceContainerImpl&lt;/code&gt;:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/msc/org.jboss.msc.txn.ServiceContainerImpl.shutdown(UpdateTransaction, Listener_ServiceContainer_).png&quot; alt=&quot;/assets/msc/org.jboss.msc.txn.ServiceContainerImpl.shutdown(UpdateTransaction, Listener_ServiceContainer_).png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;In above sequence diagram, we can see there is a loop to fetch the &lt;code class=&quot;highlighter-rouge&quot;&gt;ServiceRegistryImpl&lt;/code&gt; instances from &lt;code class=&quot;highlighter-rouge&quot;&gt;registries&lt;/code&gt;, and then the &lt;code class=&quot;highlighter-rouge&quot;&gt;remove(...)&lt;/code&gt; method of &lt;code class=&quot;highlighter-rouge&quot;&gt;ServiceRegistryImpl&lt;/code&gt; class instance will be called. Here is the relative code in &lt;code class=&quot;highlighter-rouge&quot;&gt;shutdown(...)&lt;/code&gt; methjod:&lt;/p&gt;
+
+&lt;div class=&quot;language-java highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kd&quot;&gt;final&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ServiceRegistryImpl&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;registry&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;registries&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;registry&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;remove&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;txn&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;From the above code, we can see how the call chain goes to &lt;code class=&quot;highlighter-rouge&quot;&gt;ServiceRegistryImpl.remove(...)&lt;/code&gt; method. Now let’s check the sequence diagram of the &lt;code class=&quot;highlighter-rouge&quot;&gt;ServiceRegistryImpl.remove(...)&lt;/code&gt; method:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/msc/org.jboss.msc.txn.ServiceRegistryImpl.remove(UpdateTransaction, Listener_ServiceRegistry_).png&quot; alt=&quot;/assets/msc/org.jboss.msc.txn.ServiceRegistryImpl.remove(UpdateTransaction, Listener_ServiceRegistry_).png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;From the above diagram, we can see the main logic is to create a &lt;code class=&quot;highlighter-rouge&quot;&gt;RemoveTask&lt;/code&gt; to remove the installed services. &lt;code class=&quot;highlighter-rouge&quot;&gt;RemoveTask&lt;/code&gt; is an inner class of the &lt;code class=&quot;highlighter-rouge&quot;&gt;ServiceRegistryImpl&lt;/code&gt; class. We can see the remove action is implemented asynchronously. &lt;code class=&quot;highlighter-rouge&quot;&gt;removeObservers&lt;/code&gt; are used to observe the remove task execution, and &lt;code class=&quot;highlighter-rouge&quot;&gt;completionListener&lt;/code&gt; is called after the execution is finished. Here is the relative code of the above process:&lt;/p&gt;
+
+&lt;div class=&quot;language-java highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;synchronized&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;lock&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Bits&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;allAreClear&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;state&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;REMOVED&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;))&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;state&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;byte&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;state&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;|&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;REMOVED&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;installedServices&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;kd&quot;&gt;final&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;RemoveTask&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;removeTask&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;RemoveTask&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;txn&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;getAbstractTransaction&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;txn&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;).&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;getTaskFactory&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;().&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;newTask&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;removeTask&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;).&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;release&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;();&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;completionListener&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;!=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;null&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+                &lt;span class=&quot;n&quot;&gt;removeObservers&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;NotificationEntry&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;removeObservers&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;completionListener&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+            &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// don't call completion listener&lt;/span&gt;
+        &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;container&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;registryRemoved&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;();&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;completionListener&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;!=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;null&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;safeCallListener&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;completionListener&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// open call&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;The above code shows how the &lt;code class=&quot;highlighter-rouge&quot;&gt;RemoveTask&lt;/code&gt; is created and called asynchronously. Now let’s see the class diagram of &lt;code class=&quot;highlighter-rouge&quot;&gt;RemoveTask&lt;/code&gt;:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/msc/RemoveTask.png&quot; alt=&quot;/assets/msc/RemoveTask.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Because &lt;code class=&quot;highlighter-rouge&quot;&gt;RemoveTask&lt;/code&gt; is a inner class of the &lt;code class=&quot;highlighter-rouge&quot;&gt;ServiceRegistryImpl&lt;/code&gt; class, so I keep the relationship in above diagram. Now let’s check how does RemoveTask performs the remove action. Here is the code of the &lt;code class=&quot;highlighter-rouge&quot;&gt;RemoveTask&lt;/code&gt;:&lt;/p&gt;
+
+&lt;div class=&quot;language-java highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;final&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;RemoveTask&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;implements&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Executable&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Void&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+
+    &lt;span class=&quot;kd&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;final&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Transaction&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;txn&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+
+    &lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;RemoveTask&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kd&quot;&gt;final&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Transaction&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;txn&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;txn&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;txn&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+
+    &lt;span class=&quot;nd&quot;&gt;@Override&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;execute&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kd&quot;&gt;final&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ExecuteContext&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Void&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;context&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;kd&quot;&gt;synchronized&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ServiceRegistryImpl&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;lock&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+                &lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kd&quot;&gt;final&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Registration&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;registration&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;registry&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;values&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;())&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+                    &lt;span class=&quot;n&quot;&gt;registration&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;remove&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;txn&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+                &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+                &lt;span class=&quot;n&quot;&gt;registry&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;clear&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;();&lt;/span&gt;
+            &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;finally&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;context&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;complete&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;();&lt;/span&gt;
+        &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;From the above code, we can see &lt;code class=&quot;highlighter-rouge&quot;&gt;RemoveTask&lt;/code&gt; implements the &lt;code class=&quot;highlighter-rouge&quot;&gt;org.jboss.msc.txn.Executable&lt;/code&gt; interface. Here is the code of &lt;code class=&quot;highlighter-rouge&quot;&gt;org.jboss.msc.txn.Executable&lt;/code&gt; interface:&lt;/p&gt;
+
+&lt;div class=&quot;language-java highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kn&quot;&gt;package&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;org&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;jboss&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;msc&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;txn&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+
+&lt;span class=&quot;cm&quot;&gt;/**
+ * A task that may succeed or fail which may also produce a consumable result.  If no result
+ * is generated by this task, then its type should be {@code Void}.
+ *
+ * @param &amp;lt;T&amp;gt; the result type of this task
+ * @author &amp;lt;a href=&quot;mailto:david.lloyd@redhat.com&quot;&amp;gt;David M. Lloyd&amp;lt;/a&amp;gt;
+ */&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;interface&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;Executable&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;T&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+
+    &lt;span class=&quot;cm&quot;&gt;/**
+     * Perform the task.
+     *
+     * @param context execution context
+     */&lt;/span&gt;
+    &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;execute&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ExecuteContext&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;T&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;context&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;From the above code, we can see the &lt;code class=&quot;highlighter-rouge&quot;&gt;Executable&lt;/code&gt; defines a &lt;code class=&quot;highlighter-rouge&quot;&gt;execute(...)&lt;/code&gt; method for its represented task to be executed. Now we can go back to the &lt;code class=&quot;highlighter-rouge&quot;&gt;execute(...)&lt;/code&gt; method implementation in &lt;code class=&quot;highlighter-rouge&quot;&gt;RemoveTask&lt;/code&gt;. Here is the main logic in the code:&lt;/p&gt;
+
+&lt;div class=&quot;language-java highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kd&quot;&gt;final&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Registration&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;registration&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;registry&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;values&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;())&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;registration&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;remove&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;txn&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;registry&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;clear&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;();&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;From the above code, we can see the registrations in registry will be traversed and their &lt;code class=&quot;highlighter-rouge&quot;&gt;remove(...)&lt;/code&gt; method will be called. Finally the registry itself will be cleared by calling its &lt;code class=&quot;highlighter-rouge&quot;&gt;clear()&lt;/code&gt; method.&lt;/p&gt;
+
+&lt;p&gt;Now we can go into the &lt;code class=&quot;highlighter-rouge&quot;&gt;Registration.remove(...)&lt;/code&gt; method to see its logic. Here is the sequence diagram of the &lt;code class=&quot;highlighter-rouge&quot;&gt;Registration.remove(...)&lt;/code&gt; method:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/msc/org.jboss.msc.txn.Registration.remove(Transaction).png&quot; alt=&quot;/assets/msc/org.jboss.msc.txn.Registration.remove(Transaction).png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;From the above diagram, we can see the &lt;code class=&quot;highlighter-rouge&quot;&gt;Registration.remove(...)&lt;/code&gt; method will call the &lt;code class=&quot;highlighter-rouge&quot;&gt;_remove(...)&lt;/code&gt; method of the included &lt;code class=&quot;highlighter-rouge&quot;&gt;ServiceController&lt;/code&gt; instance.&lt;/p&gt;
+
+&lt;p&gt;The above study shows us how does the service container shutdown itself. It will shutdown the containing service registries, and service registry will remove its registrations and then clear registry itself. The registration will use service controller to shutdown the containing service.&lt;/p&gt;
+
+&lt;p&gt;We haven’t checked the implementation of the &lt;code class=&quot;highlighter-rouge&quot;&gt;_remove(...)&lt;/code&gt; method in &lt;code class=&quot;highlighter-rouge&quot;&gt;ServiceControllerImpl&lt;/code&gt;, now let’s see the code of the &lt;code class=&quot;highlighter-rouge&quot;&gt;_remove(...)&lt;/code&gt; method in &lt;code class=&quot;highlighter-rouge&quot;&gt;ServiceControllerImpl&lt;/code&gt;:&lt;/p&gt;
+
+&lt;div class=&quot;language-java highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;_remove&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kd&quot;&gt;final&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Transaction&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;txn&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;final&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Listener&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ServiceController&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;T&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;completionListener&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;throws&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;IllegalArgumentException&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;InvalidTransactionStateException&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;synchronized&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;lock&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;while&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kc&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;isServiceRemoved&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;())&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;break&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;state&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;|=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;SERVICE_REMOVED&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;transition&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;txn&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;break&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;completionListener&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;null&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;getState&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;!=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;STATE_REMOVED&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;removeObservers&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;NotificationEntry&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&amp;gt;(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;removeObservers&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;completionListener&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// don't call completion listener&lt;/span&gt;
+        &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;safeCallListener&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;completionListener&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;The main logic of above code is this part:&lt;/p&gt;
+
+&lt;div class=&quot;language-java highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;while&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kc&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;isServiceRemoved&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;())&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;break&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;state&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;|=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;SERVICE_REMOVED&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;transition&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;txn&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;break&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;In above code, we can see the lifecycle of the service is controlled by &lt;code class=&quot;highlighter-rouge&quot;&gt;state&lt;/code&gt;, and the state change is controlled by &lt;code class=&quot;highlighter-rouge&quot;&gt;transition(...)&lt;/code&gt; method. Here is the sequence diagram of the &lt;code class=&quot;highlighter-rouge&quot;&gt;transition(...)&lt;/code&gt; method:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/msc/org.jboss.msc.txn.ServiceControllerImpl.transition(Transaction).png&quot; alt=&quot;/assets/msc/org.jboss.msc.txn.ServiceControllerImpl.transition(Transaction).png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;From the above diagram, we can see the service has an implicit state machine defined inside the &lt;code class=&quot;highlighter-rouge&quot;&gt;transition(...)&lt;/code&gt; method. And the state machine is powered by the transaction layer. We won’t check much detail of this level in this article and we can stop our investigation at this level for now. Here is the code of the above diagram:&lt;/p&gt;
+
+&lt;div class=&quot;language-java highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;transition&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kd&quot;&gt;final&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Transaction&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;txn&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;assert&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;holdsLock&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;lock&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;final&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;boolean&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;removed&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;isServiceRemoved&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;();&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;switch&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;getState&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;())&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;nl&quot;&gt;STATE_DOWN:&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;unsatisfiedDependencies&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;amp;&amp;amp;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;shouldStart&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;())&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+                &lt;span class=&quot;n&quot;&gt;setState&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;STATE_STARTING&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+                &lt;span class=&quot;n&quot;&gt;StartServiceTask&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;create&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;txn&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+            &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;removed&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+                &lt;span class=&quot;n&quot;&gt;setState&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;STATE_REMOVING&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+                &lt;span class=&quot;n&quot;&gt;RemoveServiceTask&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;create&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;txn&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+            &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;break&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;nl&quot;&gt;STATE_UP:&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;unsatisfiedDependencies&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;||&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;shouldStop&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;())&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+                &lt;span class=&quot;n&quot;&gt;lifecycleTime&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;System&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;nanoTime&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;();&lt;/span&gt;
+                &lt;span class=&quot;n&quot;&gt;setState&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;STATE_STOPPING&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+                &lt;span class=&quot;n&quot;&gt;StopServiceTask&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;create&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;txn&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+            &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;break&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;nl&quot;&gt;STATE_FAILED:&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;unsatisfiedDependencies&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;||&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;shouldStop&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;())&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+                &lt;span class=&quot;n&quot;&gt;lifecycleTime&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;System&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;nanoTime&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;();&lt;/span&gt;
+                &lt;span class=&quot;n&quot;&gt;setState&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;STATE_STOPPING&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+                &lt;span class=&quot;n&quot;&gt;StopFailedServiceTask&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;create&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;txn&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+            &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;break&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;From the above code, we can see &lt;code class=&quot;highlighter-rouge&quot;&gt;Transaction txn&lt;/code&gt; is passed into multiple tasks related with the service lifecycle. These tasks will physically control the lifecycle of the &lt;code class=&quot;highlighter-rouge&quot;&gt;Service&lt;/code&gt; instance in service controller. For example, here is part of the &lt;code class=&quot;highlighter-rouge&quot;&gt;execute(...)&lt;/code&gt; method in &lt;code class=&quot;highlighter-rouge&quot;&gt;StopServiceTask&lt;/code&gt;:&lt;/p&gt;
+
+&lt;div class=&quot;language-java highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;execute&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kd&quot;&gt;final&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ExecuteContext&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Void&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;context&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;final&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Service&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;T&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;service&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;serviceController&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;getService&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;();&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;service&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;null&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;serviceController&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;setServiceDown&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;transaction&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;serviceController&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;notifyServiceDown&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;transaction&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;context&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;complete&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;();&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;...&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;From the above code, we can see the &lt;code class=&quot;highlighter-rouge&quot;&gt;StopServiceTask&lt;/code&gt; will in return call the &lt;code class=&quot;highlighter-rouge&quot;&gt;setServiceDown(...)&lt;/code&gt; method in its belonging service controller. The lower level of the state change needs to interact with the transaction layer, and we won’t check into deeper call chain now.&lt;/p&gt;
+
+&lt;p&gt;In this article, we have made a brief study on the service container design of the &lt;code class=&quot;highlighter-rouge&quot;&gt;jboss-msc2&lt;/code&gt; project. This project is the core part of the Wildfly application server, and it provides the application server the ability to install and uninstall modules at runtime. In the next article, I’ll introduce the transaction layer of the project.&lt;/p&gt;
+
+</description>
+          <pubDate>2017-05-10T00:00:00+00:00</pubDate>
+          <link>/2017/05/10/jboss-msc.html</link>
+          <guid isPermaLink="true">/2017/05/10/jboss-msc.html</guid>
+        </item>
+      
+    
+      
+        <item>
           <title>Adventures in JDBC and the PostgreSQL JDBC driver: Part 3 - Analyzing the JDBC driver registration process</title>
           <description>&lt;p&gt;In last part of the series of the articles, we have made a sample project to load the PostgreSQL JDBC driver into the running Java virtual machine. In this part, we will examine the JDBC driver startup process.&lt;/p&gt;
 
@@ -1892,6 +2779,452 @@ void fireConnectionFatalError(SQLException e) {
           <pubDate>2017-05-08T00:00:00+00:00</pubDate>
           <link>/2017/05/08/jdbc-part3.html</link>
           <guid isPermaLink="true">/2017/05/08/jdbc-part3.html</guid>
+        </item>
+      
+    
+      
+        <item>
+          <title>Troubleshooting the Wildfly startup process</title>
+          <description>&lt;p&gt;In this article, I’d like to introduce to you how to using the standard &lt;code class=&quot;highlighter-rouge&quot;&gt;Java Debug Wire Protocol&lt;/code&gt;(See &lt;a href=&quot;http://docs.oracle.com/javase/1.5.0/docs/guide/jpda/jdwp-spec.html&quot;&gt;JavaTM Debug Wire Protocol&lt;/a&gt;) to connect to troubleshoot the Wildfly server in standalone mode. The first step is to look into the &lt;code class=&quot;highlighter-rouge&quot;&gt;standalone.sh&lt;/code&gt; script provided by the server.&lt;/p&gt;
+
+&lt;h2 id=&quot;analyzing-the-standalone-startup-script&quot;&gt;Analyzing the standalone startup script&lt;/h2&gt;
+
+&lt;p&gt;In &lt;code class=&quot;highlighter-rouge&quot;&gt;standalone.sh&lt;/code&gt;, it provides a debug option &lt;code class=&quot;highlighter-rouge&quot;&gt;--debug&lt;/code&gt; for the users to debug their applications deployed in server. Here is the relative code:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;# Use --debug to activate debug mode with an optional argument to specify the p\&lt;/span&gt;
+ort.
+&lt;span class=&quot;c&quot;&gt;# Usage : standalone.sh --debug&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;#         standalone.sh --debug 9797&lt;/span&gt;
+
+&lt;span class=&quot;c&quot;&gt;# By default debug mode is disabled.&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;DEBUG_MODE&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;${&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;DEBUG&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;:-&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;false&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;DEBUG_PORT&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;${&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;DEBUG_PORT&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;:-&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;8787&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;The &lt;code class=&quot;highlighter-rouge&quot;&gt;debug&lt;/code&gt; option will enable the &lt;code class=&quot;highlighter-rouge&quot;&gt;DEBUG_MODE&lt;/code&gt; in the script. Here is the relative code in the script:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;# Set debug settings if not already set&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;[&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$DEBUG_MODE&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;true&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;]&lt;/span&gt;; &lt;span class=&quot;k&quot;&gt;then
+    &lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;DEBUG_OPT&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;sb&quot;&gt;`&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$JAVA_OPTS&lt;/span&gt; | &lt;span class=&quot;nv&quot;&gt;$GREP&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\-&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;agentlib:jdwp&quot;&lt;/span&gt;&lt;span class=&quot;sb&quot;&gt;`&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;[&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;x&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$DEBUG_OPT&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;x&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;]&lt;/span&gt;; &lt;span class=&quot;k&quot;&gt;then
+        &lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;JAVA_OPTS&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$JAVA_OPTS&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt; -agentlib:jdwp=transport=dt_socket,address=&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$DEBUG&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;
+_PORT,server=y,suspend=n&quot;&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;else
+        &lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;Debug already enabled in JAVA_OPTS, ignoring --debug argument&quot;&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;fi
+fi&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;As the script shown above, we can see the debug mode will add the &lt;code class=&quot;highlighter-rouge&quot;&gt;jdwp&lt;/code&gt; option into &lt;code class=&quot;highlighter-rouge&quot;&gt;JAVA_OPTS&lt;/code&gt;:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nv&quot;&gt;JAVA_OPTS&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$JAVA_OPTS&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt; -agentlib:jdwp=transport=dt_socket,address=&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$DEBUG_PORT&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;,server=y,suspend=n&quot;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;The above options will be finally passed to the startup command in the script:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;# Execute the JVM in the background&lt;/span&gt;
+   &lt;span class=&quot;nb&quot;&gt;eval&lt;/span&gt; &lt;span class=&quot;se&quot;&gt;\&quot;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$JAVA&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&quot;&lt;/span&gt; -D&lt;span class=&quot;se&quot;&gt;\&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;[&lt;/span&gt;Standalone]&lt;span class=&quot;se&quot;&gt;\&quot;&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$JAVA_OPTS&lt;/span&gt; &lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;
+      &lt;span class=&quot;se&quot;&gt;\&quot;&lt;/span&gt;-Dorg.jboss.boot.log.file&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$JBOSS_LOG_DIR&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;/server.log&lt;span class=&quot;se&quot;&gt;\&quot;&lt;/span&gt; &lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;
+      &lt;span class=&quot;se&quot;&gt;\&quot;&lt;/span&gt;-Dlogging.configuration&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;file:&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$JBOSS_CONFIG_DIR&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;/logging.properties&lt;span class=&quot;se&quot;&gt;\&quot;&lt;/span&gt; &lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;
+      -jar &lt;span class=&quot;se&quot;&gt;\&quot;&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$JBOSS_HOME&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;/jboss-modules.jar&lt;span class=&quot;se&quot;&gt;\&quot;&lt;/span&gt; &lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;
+      &lt;span class=&quot;nv&quot;&gt;$MODULE_OPTS&lt;/span&gt; &lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;
+      -mp &lt;span class=&quot;se&quot;&gt;\&quot;&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;${&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;JBOSS_MODULEPATH&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&quot;&lt;/span&gt; &lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;
+      org.jboss.as.standalone &lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;
+      -Djboss.home.dir&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&quot;&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$JBOSS_HOME&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&quot;&lt;/span&gt; &lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;
+      -Djboss.server.base.dir&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&quot;&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$JBOSS_BASE_DIR&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\&quot;&lt;/span&gt; &lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;
+      &lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$SERVER_OPTS&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;&amp;amp;&quot;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;The above command will start the Wildfly in standalone mode. We can see the &lt;code class=&quot;highlighter-rouge&quot;&gt;jboss-modules.jar&lt;/code&gt; is the entry point of the application server. We can’t find the &lt;code class=&quot;highlighter-rouge&quot;&gt;--debug&lt;/code&gt; option in &lt;code class=&quot;highlighter-rouge&quot;&gt;domain.sh&lt;/code&gt;, because if the application server is running in domain mode, there will be multiple processes run, and &lt;code class=&quot;highlighter-rouge&quot;&gt;domain.sh&lt;/code&gt; can’t know which thread you want to debug. So in this article, I will focus on the standalone mode of Wildfly. The &lt;code class=&quot;highlighter-rouge&quot;&gt;--debug&lt;/code&gt; option provided by &lt;code class=&quot;highlighter-rouge&quot;&gt;standalone.sh&lt;/code&gt; sets the &lt;code class=&quot;highlighter-rouge&quot;&gt;suspend=n&lt;/code&gt;. This setting will not block the server start process and will allow the server to start normally whiling waiting for debug request. Here is the server startup process with &lt;code class=&quot;highlighter-rouge&quot;&gt;--debug&lt;/code&gt; option enabled:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt; &lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;./standalone.sh --debug
+ &lt;span class=&quot;o&quot;&gt;=========================================================================&lt;/span&gt;
+ 
+   JBoss Bootstrap Environment
+ 
+   JBOSS_HOME: /Users/weli/projs/WFLY/wildfly10/wildfly-10.1.0.Final
+ 
+   JAVA: /Library/Java/JavaVirtualMachines/jdk1.8.0_66.jdk/Contents/Home/bin/java
+ 
+   JAVA_OPTS:  -server -Xms64m -Xmx512m -XX:MetaspaceSize&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;96M -XX:MaxMetaspaceSize&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;256m -Djava.net.preferIPv4Stack&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;true&lt;/span&gt; -Djboss.modules.system.pkgs&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;org.jboss.byteman -Djava.awt.headless&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;true&lt;/span&gt; -agentlib:jdwp&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;transport&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;dt_socket,address&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;8787,server&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;y,suspend&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;n
+ 
+ &lt;span class=&quot;o&quot;&gt;=========================================================================&lt;/span&gt;
+ 
+ &lt;span class=&quot;s2&quot;&gt;&quot;/Library/Java/JavaVirtualMachines/jdk1.8.0_66.jdk/Contents/Home/bin/java&quot;&lt;/span&gt; -D&lt;span class=&quot;s2&quot;&gt;&quot;[Standalone]&quot;&lt;/span&gt; -server -Xms64m -Xmx512m -XX:MetaspaceSize&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;96M -XX:MaxMetaspaceSize&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;256m -Djava.net.preferIPv4Stack&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;true&lt;/span&gt; -Djboss.modules.system.pkgs&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;org.jboss.byteman -Djava.awt.headless&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;true&lt;/span&gt; -agentlib:jdwp&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;transport&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;dt_socket,address&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;8787,server&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;y,suspend&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;n &lt;span class=&quot;s2&quot;&gt;&quot;-Dorg.jboss.boot.log.file=/Users/weli/projs/WFLY/wildfly10/wildfly-10.1.0.Final/standalone/log/server.log&quot;&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;-Dlogging.configuration=file:/Users/weli/projs/WFLY/wildfly10/wildfly-10.1.0.Final/standalone/configuration/logging.properties&quot;&lt;/span&gt; -jar &lt;span class=&quot;s2&quot;&gt;&quot;/Users/weli/projs/WFLY/wildfly10/wildfly-10.1.0.Final/jboss-modules.jar&quot;&lt;/span&gt; -mp &lt;span class=&quot;s2&quot;&gt;&quot;/Users/weli/projs/WFLY/wildfly10/wildfly-10.1.0.Final/modules&quot;&lt;/span&gt; org.jboss.as.standalone -Djboss.home.dir&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;/Users/weli/projs/WFLY/wildfly10/wildfly-10.1.0.Final&quot;&lt;/span&gt; -Djboss.server.base.dir&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;/Users/weli/projs/WFLY/wildfly10/wildfly-10.1.0.Final/standalone&quot;&lt;/span&gt;
+ Listening &lt;span class=&quot;k&quot;&gt;for &lt;/span&gt;transport dt_socket at address: 8787
+ 20:06:48,337 INFO  &lt;span class=&quot;o&quot;&gt;[&lt;/span&gt;org.jboss.modules] &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;main&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; JBoss Modules version 1.5.2.Final
+ 20:06:50,548 INFO  &lt;span class=&quot;o&quot;&gt;[&lt;/span&gt;org.jboss.msc] &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;main&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; JBoss MSC version 1.2.6.Final
+ 20:06:50,611 INFO  &lt;span class=&quot;o&quot;&gt;[&lt;/span&gt;org.jboss.as] &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;MSC service thread 1-6&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; WFLYSRV0049: WildFly Full 10.1.0.Final &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;WildFly Core 2.2.0.Final&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; starting
+ ...
+ 20:07:06,717 INFO  &lt;span class=&quot;o&quot;&gt;[&lt;/span&gt;org.jboss.as] &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;Controller Boot Thread&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; WFLYSRV0025: WildFly Full 10.1.0.Final &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;WildFly Core 2.2.0.Final&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; started &lt;span class=&quot;k&quot;&gt;in &lt;/span&gt;19442ms - Started 476 of 732 services &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;416 services are lazy, passive or on-demand&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;From the above server output, we can see the command to invoke the server in standalone mode is:&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&quot;/Library/Java/JavaVirtualMachines/jdk1.8.0_66.jdk/Contents/Home/bin/java&quot; -D&quot;[Standalone]&quot; -server -Xms64m -Xmx512m -XX:MetaspaceSize=96M -XX:MaxMetaspaceSize=256m -Djava.net.preferIPv4Stack=true -Djboss.modules.system.pkgs=org.jboss.byteman -Djava.awt.headless=true -agentlib:jdwp=transport=dt_socket,address=8787,server=y,suspend=n &quot;-Dorg.jboss.boot.log.file=/Users/weli/projs/WFLY/wildfly10/wildfly-10.1.0.Final/standalone/log/server.log&quot; &quot;-Dlogging.configuration=file:/Users/weli/projs/WFLY/wildfly10/wildfly-10.1.0.Final/standalone/configuration/logging.properties&quot; -jar &quot;/Users/weli/projs/WFLY/wildfly10/wildfly-10.1.0.Final/jboss-modules.jar&quot; -mp &quot;/Users/weli/projs/WFLY/wildfly10/wildfly-10.1.0.Final/modules&quot; org.jboss.as.standalone -Djboss.home.dir=&quot;/Users/weli/projs/WFLY/wildfly10/wildfly-10.1.0.Final&quot; -Djboss.server.base.dir=&quot;/Users/weli/projs/WFLY/wildfly10/wildfly-10.1.0.Final/standalone&quot;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;We can see the &lt;code class=&quot;highlighter-rouge&quot;&gt;jdwp&lt;/code&gt; port has been opened in above process. In addition, the debug port has been opened:&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Listening for transport dt_socket at address: 8787
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;However, the startup process is not blocked and the server has been started normally. This is okay because most users wants to troubleshoot their own projects deployed in the Wildfly, so the server startup process don’t need to be blocked. However, if we want to troubleshoot the Wildfly server startup process itself, then we need to put the server into blocking mode so we can start a debugger to connect to the &lt;code class=&quot;highlighter-rouge&quot;&gt;jdwp&lt;/code&gt; debug port of the server during startup process. To achieve the goal, we need to change the &lt;code class=&quot;highlighter-rouge&quot;&gt;--debug&lt;/code&gt; option in &lt;code class=&quot;highlighter-rouge&quot;&gt;standalone.sh&lt;/code&gt; slightly. We need to edit the &lt;code class=&quot;highlighter-rouge&quot;&gt;JAVA_OPTS&lt;/code&gt; in &lt;code class=&quot;highlighter-rouge&quot;&gt;DEBUG_MODE&lt;/code&gt; and change the &lt;code class=&quot;highlighter-rouge&quot;&gt;suspend&lt;/code&gt; setting from &lt;code class=&quot;highlighter-rouge&quot;&gt;suspend=n&lt;/code&gt; to &lt;code class=&quot;highlighter-rouge&quot;&gt;suspend=y&lt;/code&gt;. In this way, we can block the server startup process. After making the change, we can start the server in standalone mode with &lt;code class=&quot;highlighter-rouge&quot;&gt;--debug&lt;/code&gt; option enabled, and here is the output:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;./standalone.sh --debug
+&lt;span class=&quot;o&quot;&gt;=========================================================================&lt;/span&gt;
+
+  JBoss Bootstrap Environment
+
+  JBOSS_HOME: /Users/weli/projs/WFLY/wildfly10/wildfly-10.1.0.Final
+
+  JAVA: /Library/Java/JavaVirtualMachines/jdk1.8.0_66.jdk/Contents/Home/bin/java
+
+  JAVA_OPTS:  -server -Xms64m -Xmx512m -XX:MetaspaceSize&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;96M -XX:MaxMetaspaceSize&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;256m -Djava.net.preferIPv4Stack&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;true&lt;/span&gt; -Djboss.modules.system.pkgs&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;org.jboss.byteman -Djava.awt.headless&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;true&lt;/span&gt; -agentlib:jdwp&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;transport&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;dt_socket,address&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;8787,server&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;y,suspend&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;y
+
+&lt;span class=&quot;o&quot;&gt;=========================================================================&lt;/span&gt;
+
+&lt;span class=&quot;s2&quot;&gt;&quot;/Library/Java/JavaVirtualMachines/jdk1.8.0_66.jdk/Contents/Home/bin/java&quot;&lt;/span&gt; -D&lt;span class=&quot;s2&quot;&gt;&quot;[Standalone]&quot;&lt;/span&gt; -server -Xms64m -Xmx512m -XX:MetaspaceSize&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;96M -XX:MaxMetaspaceSize&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;256m -Djava.net.preferIPv4Stack&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;true&lt;/span&gt; -Djboss.modules.system.pkgs&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;org.jboss.byteman -Djava.awt.headless&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;true&lt;/span&gt; -agentlib:jdwp&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;transport&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;dt_socket,address&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;8787,server&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;y,suspend&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;y &lt;span class=&quot;s2&quot;&gt;&quot;-Dorg.jboss.boot.log.file=/Users/weli/projs/WFLY/wildfly10/wildfly-10.1.0.Final/standalone/log/server.log&quot;&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;-Dlogging.configuration=file:/Users/weli/projs/WFLY/wildfly10/wildfly-10.1.0.Final/standalone/configuration/logging.properties&quot;&lt;/span&gt; -jar &lt;span class=&quot;s2&quot;&gt;&quot;/Users/weli/projs/WFLY/wildfly10/wildfly-10.1.0.Final/jboss-modules.jar&quot;&lt;/span&gt; -mp &lt;span class=&quot;s2&quot;&gt;&quot;/Users/weli/projs/WFLY/wildfly10/wildfly-10.1.0.Final/modules&quot;&lt;/span&gt; org.jboss.as.standalone -Djboss.home.dir&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;/Users/weli/projs/WFLY/wildfly10/wildfly-10.1.0.Final&quot;&lt;/span&gt; -Djboss.server.base.dir&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;/Users/weli/projs/WFLY/wildfly10/wildfly-10.1.0.Final/standalone&quot;&lt;/span&gt;
+Listening &lt;span class=&quot;k&quot;&gt;for &lt;/span&gt;transport dt_socket at address: 8787
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;After changing the &lt;code class=&quot;highlighter-rouge&quot;&gt;suspend&lt;/code&gt; setting to &lt;code class=&quot;highlighter-rouge&quot;&gt;suspend=y&lt;/code&gt;, we can see the server is blocked during startup process, and now we can use a debugger to connect to the server and set breakpoints to the startup code of the Wildfly.&lt;/p&gt;
+
+&lt;h2 id=&quot;troubleshooting-the-server&quot;&gt;Troubleshooting the server&lt;/h2&gt;
+
+&lt;p&gt;To troubleshoot the server itself, we need to get the source code of the Wildfly. We need to make sure the source code we are using has the same version with the Wildfly server we are running. In the Wildfly project download page, we can always download the server and its source code in same version. Here is the the screenshot from the Wildfly download page(&lt;a href=&quot;http://wildfly.org/downloads/&quot;&gt;http://wildfly.org/downloads/&lt;/a&gt;):&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/2017-05-07/wildfly-download.png&quot; alt=&quot;/assets/2017-05-07/wildfly-download.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;From the above screenshot, we can see for each version of Wildfly, there is a &lt;code class=&quot;highlighter-rouge&quot;&gt;Full Distribution&lt;/code&gt; download link and a &lt;code class=&quot;highlighter-rouge&quot;&gt;Source Code&lt;/code&gt; download link. We can download both of them to make sure we have same version of source code and server binary. Another way is to compile the Wildfly server from source code cloned from Github(&lt;a href=&quot;http://wildflyinternals.io/2017/05/05/wildfly-src.html&quot;&gt;Fetching and compiling the Wildfly upstream source&lt;/a&gt;).&lt;/p&gt;
+
+&lt;p&gt;After getting the correct version of the source code, we can open it in an IDE and set breakpoints to the source code for debugging. In this article, I will use IntelliJ IDEA and my IDE, and I will use &lt;code class=&quot;highlighter-rouge&quot;&gt;wildfly-10.1.0.Final&lt;/code&gt; and its source for demonstration:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;ls
+wildfly-10.1.0.Final         wildfly-10.1.0.Final-src.zip
+wildfly-10.1.0.Final-src     wildfly-10.1.0.Final.zip
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;I opened the above &lt;code class=&quot;highlighter-rouge&quot;&gt;wildfly-10.1.0.Final-src&lt;/code&gt; in IntelliJ, and set some breakpoints in &lt;code class=&quot;highlighter-rouge&quot;&gt;org.jboss.as.connector.subsystems.datasources.JdbcDriverAdd&lt;/code&gt; class. Here is the screenshot:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/2017-05-07/jdbcadd.png&quot; alt=&quot;/assets/2017-05-07/jdbcadd.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;The above screenshot shows one of the breakpoints I set in the &lt;code class=&quot;highlighter-rouge&quot;&gt;org.jboss.as.connector.subsystems.datasources.JdbcDriverAdd&lt;/code&gt; class of the Wildfly. This class will load the database driver configured in &lt;code class=&quot;highlighter-rouge&quot;&gt;standalone.xml&lt;/code&gt; during server startup process. The &lt;code class=&quot;highlighter-rouge&quot;&gt;standalone.xml&lt;/code&gt; is the configuration file of the standalone mode of the server. This file is in the following location of the server:&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;wildfly-10.1.0.Final/standalone/configuration/standalone.xml
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;The above configuration file contains the &lt;code class=&quot;highlighter-rouge&quot;&gt;datasources&lt;/code&gt; section for the users to configure their database connections. Here is the configuration provided by default:&lt;/p&gt;
+
+&lt;div class=&quot;language-xml highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nt&quot;&gt;&amp;lt;datasource&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;jndi-name=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;java:jboss/datasources/ExampleDS&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;pool-name=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;ExampleDS&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;enabled=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;true&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;use-java-context=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;true&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
+    &lt;span class=&quot;nt&quot;&gt;&amp;lt;connection-url&amp;gt;&lt;/span&gt;jdbc:h2:mem:test;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE&lt;span class=&quot;nt&quot;&gt;&amp;lt;/connection-url&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;driver&amp;gt;&lt;/span&gt;h2&lt;span class=&quot;nt&quot;&gt;&amp;lt;/driver&amp;gt;&lt;/span&gt;
+    &lt;span class=&quot;nt&quot;&gt;&amp;lt;security&amp;gt;&lt;/span&gt;
+        &lt;span class=&quot;nt&quot;&gt;&amp;lt;user-name&amp;gt;&lt;/span&gt;sa&lt;span class=&quot;nt&quot;&gt;&amp;lt;/user-name&amp;gt;&lt;/span&gt;
+        &lt;span class=&quot;nt&quot;&gt;&amp;lt;password&amp;gt;&lt;/span&gt;sa&lt;span class=&quot;nt&quot;&gt;&amp;lt;/password&amp;gt;&lt;/span&gt;
+    &lt;span class=&quot;nt&quot;&gt;&amp;lt;/security&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;/datasource&amp;gt;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;The above configuration defines a &lt;code class=&quot;highlighter-rouge&quot;&gt;ExampleDS&lt;/code&gt; datasource, and it is backed by a &lt;code class=&quot;highlighter-rouge&quot;&gt;driver&lt;/code&gt; configuration listed in below:&lt;/p&gt;
+
+&lt;div class=&quot;language-xml highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nt&quot;&gt;&amp;lt;driver&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;name=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;h2&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;module=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;com.h2database.h2&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
+    &lt;span class=&quot;nt&quot;&gt;&amp;lt;xa-datasource-class&amp;gt;&lt;/span&gt;org.h2.jdbcx.JdbcDataSource&lt;span class=&quot;nt&quot;&gt;&amp;lt;/xa-datasource-class&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;/driver&amp;gt;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;The above configuration defines the database driver to be used by the datasource. We don’t have to understand the details now, and we just need to know Wildfly will load the database driver during its startup process, and the processing class is &lt;code class=&quot;highlighter-rouge&quot;&gt;org.jboss.as.connector.subsystems.datasources&lt;/code&gt;. Now we can start the server with &lt;code class=&quot;highlighter-rouge&quot;&gt;--debug&lt;/code&gt; option, and change the debug option in &lt;code class=&quot;highlighter-rouge&quot;&gt;standalone.sh&lt;/code&gt; from &lt;code class=&quot;highlighter-rouge&quot;&gt;suspend=n&lt;/code&gt; to &lt;code class=&quot;highlighter-rouge&quot;&gt;suspend=y&lt;/code&gt; as we learned. Here is the server running with &lt;code class=&quot;highlighter-rouge&quot;&gt;--debug&lt;/code&gt; option enabled and put in suspend mode during startup process:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/2017-05-07/suspend.png&quot; alt=&quot;/assets/2017-05-07/suspend.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;From the above screenshot, we can see the server is suspended and
+ waiting for the a debugger to connect to port &lt;code class=&quot;highlighter-rouge&quot;&gt;8787&lt;/code&gt;. Now we can come to the IDE side and configure the remote debugger. In IntelliJ, I can open the &lt;code class=&quot;highlighter-rouge&quot;&gt;Edit Configuration&lt;/code&gt; tab:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/2017-05-07/edit.png&quot; alt=&quot;/assets/2017-05-07/edit.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;After clicking the &lt;code class=&quot;highlighter-rouge&quot;&gt;Edit Configuration&lt;/code&gt; tab as shown in above screenshot, we will enter the &lt;code class=&quot;highlighter-rouge&quot;&gt;Run/Debug Configuration&lt;/code&gt; window. In this window, we need to add a &lt;code class=&quot;highlighter-rouge&quot;&gt;Remote Debug&lt;/code&gt; configuration to connect to the suspended Wildfly server. Here is the screenshot that shows how to configure it:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/2017-05-07/remote.png&quot; alt=&quot;/assets/2017-05-07/remote.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;After clicking the &lt;code class=&quot;highlighter-rouge&quot;&gt;Remote&lt;/code&gt; item as shown in above, we can start the remote debug configuration. Here is the screenshot to do so:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/2017-05-07/port.png&quot; alt=&quot;/assets/2017-05-07/port.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;In above configuration, we only need to change the port to &lt;code class=&quot;highlighter-rouge&quot;&gt;8787&lt;/code&gt;, because the server side is listening to this port for remote debugger to connect. After the configuration is done, we can click the &lt;code class=&quot;highlighter-rouge&quot;&gt;OK&lt;/code&gt; button, and start to use it. Here is the screenshot:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/2017-05-07/bug.png&quot; alt=&quot;/assets/2017-05-07/bug.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;As the screenshot shown above, we can click the bug icon to start the remote debugger, and this will trigger the server side to go on executing until reaching the breakpoint. Here is the screenshot to show the server startup process reached at the breakpoint:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/2017-05-07/jdbcstop.png&quot; alt=&quot;/assets/2017-05-07/jdbcstop.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;The above process shows us how to troubleshoot the Wildfly startup process. We will this method to analyze the Wildfly source code and see how it works in runtime. This article is a basis for the future topics I’d like to write.&lt;/p&gt;
+</description>
+          <pubDate>2017-05-07T00:00:00+00:00</pubDate>
+          <link>/2017/05/07/troubleshooting-wildfly.html</link>
+          <guid isPermaLink="true">/2017/05/07/troubleshooting-wildfly.html</guid>
+        </item>
+      
+    
+      
+        <item>
+          <title>Fetching and compiling the Wildfly upstream source</title>
+          <description>&lt;p&gt;In this article I want to teach you how to fetch the Wildfly code from Github and compile it for playing. First we need to clone the Wildfly source repository from Github, and here is the address of the repository:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;a href=&quot;https://github.com/wildfly/wildfly.git&quot;&gt;https://github.com/wildfly/wildfly.git&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;The command to clone the repository is here:&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;git clone https://github.com/wildfly/wildfly.git
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;The above command will clone the &lt;code class=&quot;highlighter-rouge&quot;&gt;wildfly&lt;/code&gt; project into our local machine.&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;$ ls
+appclient        clustering    integration-tests.bat  legacy              picketlink  servlet-build         tools         zanata.xml
+batch            connector     integration-tests.sh   mail                pojo        servlet-dist          transactions
+bean-validation  dist          jaxrs                  messaging-activemq  pom.xml     servlet-feature-pack  undertow
+build            ee            jdr                    mod_cluster         README.md   spec-api              web-common
+build.bat        ejb3          jpa                    mvnw                rts         system-jmx            webservices
+build.sh         feature-pack  jsf                    mvnw.cmd            sar         target                weld
+client           iiop-openjdk  jsr77                  naming              security    testsuite             xts
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;The above output shows the directory structure of the &lt;code class=&quot;highlighter-rouge&quot;&gt;wildfly&lt;/code&gt; project. We can see the project is organized in subsystems. For example, the &lt;code class=&quot;highlighter-rouge&quot;&gt;undertow&lt;/code&gt; subsystem is the WebServer module of the Wildfly, and &lt;code class=&quot;highlighter-rouge&quot;&gt;jaxrs&lt;/code&gt; is the RESTFul WebService module. We will check these subsystems in future. The whole project is Maven based, and there is a build script named &lt;code class=&quot;highlighter-rouge&quot;&gt;build.sh&lt;/code&gt; in the root directory. We can run the build script locally to build the whole project. Here is the command and part of the output:&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;$ ./build.sh
+/home/weli/projs/wildfly/mvnw -Dmaven.user.home=/home/weli/projs/wildfly/tools  install
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;From the above command and its output we can see the &lt;code class=&quot;highlighter-rouge&quot;&gt;build.sh&lt;/code&gt; will start to build the project using the &lt;code class=&quot;highlighter-rouge&quot;&gt;mvnw&lt;/code&gt; command. The &lt;code class=&quot;highlighter-rouge&quot;&gt;mvnw&lt;/code&gt; command will install Maven into local folder firstly, and then use it to build the project. The time to build the whole project depends on the speed of your network and the configuration of your hardware. During the build process, it will download many components from online Maven repositories, and it will run many tests in project. During the first time of build, it will use most time to download the dependencies, and the future builds will use less time. Here is the output of my build in my local machine:&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;[INFO] ------------------------------------------------------------------------
+[INFO] Reactor Summary:
+[INFO]
+[INFO] WildFly: Parent Aggregator ......................... SUCCESS [  1.314 s]
+[INFO] WildFly: Clustering Subsystems ..................... SUCCESS [  0.102 s]
+[INFO] WildFly: JGroups modules ........................... SUCCESS [  0.036 s]
+[INFO] WildFly: JGroups API ............................... SUCCESS [  1.827 s]
+[INFO] WildFly: Clustering services ....................... SUCCESS [  1.092 s]
+[INFO] WildFly: Naming Subsystem .......................... SUCCESS [  3.691 s]
+[INFO] WildFly: Common code for clustering subsystems ..... SUCCESS [  0.934 s]
+[INFO] WildFly: JGroups SPI ............................... SUCCESS [  0.457 s]
+[INFO] WildFly: EE ........................................ SUCCESS [  6.884 s]
+[INFO] WildFly: IIOP Openjdk Subsystem .................... SUCCESS [  3.283 s]
+[INFO] WildFly: Transaction Subsystem ..................... SUCCESS [  6.460 s]
+[INFO] WildFly: Clustering marshalling modules ............ SUCCESS [  0.028 s]
+[INFO] WildFly: Clustering marshalling API ................ SUCCESS [  0.234 s]
+[INFO] WildFly: Infinispan modules ........................ SUCCESS [  0.025 s]
+[INFO] WildFly: Infinispan SPI ............................ SUCCESS [  1.150 s]
+[INFO] WildFly: Security Subsystem parent ................. SUCCESS [  0.029 s]
+[INFO] WildFly: Security Subsystem ........................ SUCCESS [  6.331 s]
+[INFO] WildFly: Connector Subsystem ....................... SUCCESS [ 17.181 s]
+[INFO] WildFly: Clustering public API ..................... SUCCESS [  0.314 s]
+[INFO] WildFly: EE clustering ............................. SUCCESS [  0.026 s]
+[INFO] WildFly: EE clustering SPI ......................... SUCCESS [  0.635 s]
+[INFO] WildFly: SFSB clustering ........................... SUCCESS [  0.024 s]
+[INFO] WildFly: SFSB clustering - SPI ..................... SUCCESS [  0.539 s]
+[INFO] WildFly: Clustering marshalling SPI ................ SUCCESS [  1.475 s]
+[INFO] WildFly: Clustering integration with JBoss Marshalling SUCCESS [  0.830 s]
+[INFO] WildFly: Singleton modules ......................... SUCCESS [  0.025 s]
+[INFO] WildFly: Singleton API ............................. SUCCESS [  0.756 s]
+[INFO] WildFly: Clustering SPI ............................ SUCCESS [  0.348 s]
+[INFO] WildFly: EJB Subsystem ............................. SUCCESS [ 13.298 s]
+[INFO] WildFly: Web Common Classes ........................ SUCCESS [  0.717 s]
+[INFO] WildFly: Undertow .................................. SUCCESS [  7.959 s]
+[INFO] WildFly: Web Services Subsystem .................... SUCCESS [  0.015 s]
+[INFO] WildFly: Web Services Server Integration Subsystem . SUCCESS [  6.692 s]
+[INFO] WildFly: Application Client Bootstrap .............. SUCCESS [  0.432 s]
+[INFO] WildFly: Batch Integration ......................... SUCCESS [  0.072 s]
+[INFO] WildFly: Batch Integration Subsystem (JBeret implementation) SUCCESS [  4.082 s]
+[INFO] WildFly: Batch Integration Subsystem ............... SUCCESS [  2.366 s]
+[INFO] WildFly: Bean Validation ........................... SUCCESS [  2.139 s]
+[INFO] WildFly: Servlet Feature Pack ...................... SUCCESS [  3.400 s]
+[INFO] WildFly: JPA ....................................... SUCCESS [  0.018 s]
+[INFO] jipijapa SPI ....................................... SUCCESS [  0.157 s]
+[INFO] WildFly: Weld ...................................... SUCCESS [  0.016 s]
+[INFO] WildFly: Weld Subsystem SPI ........................ SUCCESS [  0.227 s]
+[INFO] WildFly: Weld Common Tools ......................... SUCCESS [  0.316 s]
+[INFO] WildFly: JPA Subsystem ............................. SUCCESS [  2.246 s]
+[INFO] WildFly: Weld Subsystem ............................ SUCCESS [  5.174 s]
+[INFO] WildFly: PicketLink Subsystem ...................... SUCCESS [  6.638 s]
+[INFO] WildFly: Security Subsystem API .................... SUCCESS [  0.226 s]
+[INFO] WildFly: System JMX Module ......................... SUCCESS [  0.139 s]
+[INFO] WildFly: JAX-RS Integration ........................ SUCCESS [  2.241 s]
+[INFO] WildFly: RTS Subsystem ............................. SUCCESS [  2.326 s]
+[INFO] jipijapa Hibernate 5.x (JPA 2.1) integration ....... SUCCESS [  0.323 s]
+[INFO] jipijapa Hibernate 4.3.x (JPA 2.1) integration ..... SUCCESS [  1.719 s]
+[INFO] jipijapa Hibernate 4.1.x + 4.2.x (JPA 2.0) integration SUCCESS [  0.265 s]
+[INFO] jipijapa EclipseLink integration ................... SUCCESS [  0.161 s]
+[INFO] jipijapa OpenJPA integration ....................... SUCCESS [  0.300 s]
+[INFO] WildFly: EJB Client BOM ............................ SUCCESS [  0.071 s]
+[INFO] WildFly: JMS Client BOM ............................ SUCCESS [  0.196 s]
+[INFO] WildFly: EJB and JMS client combined jar ........... SUCCESS [  4.137 s]
+[INFO] WildFly: EE clustering - Infinispan service provider SUCCESS [  0.927 s]
+[INFO] WildFly: SFSB clustering - Infinispan integration .. SUCCESS [  4.098 s]
+[INFO] WildFly: JGroups Subsystem ......................... SUCCESS [ 12.050 s]
+[INFO] WildFly: Clustering marshalling Infinispan adapters  SUCCESS [  0.184 s]
+[INFO] WildFly: Infinispan subsystem ...................... SUCCESS [ 50.308 s]
+[INFO] WildFly: Clustering API implementation ............. SUCCESS [  0.910 s]
+[INFO] WildFly: Singleton extension ....................... SUCCESS [  3.309 s]
+[INFO] WildFly: Web session clustering .................... SUCCESS [  0.021 s]
+[INFO] WildFly: Web session clustering API ................ SUCCESS [  0.139 s]
+[INFO] WildFly: Web session clustering SPI ................ SUCCESS [  1.097 s]
+[INFO] WildFly: Web session clustering - Infinispan service provider SUCCESS [  2.273 s]
+[INFO] WildFly: Web session clustering - Undertow integration SUCCESS [  1.141 s]
+[INFO] WildFly: EJB Container Managed Persistence Subsystem SUCCESS [  1.841 s]
+[INFO] Wildfly: Config Admin .............................. SUCCESS [  1.631 s]
+[INFO] WildFly: JAXR Client ............................... SUCCESS [  1.676 s]
+[INFO] WildFly: JBoss Diagnostic Reporter ................. SUCCESS [  0.017 s]
+[INFO] WildFly: JDR ....................................... SUCCESS [  1.843 s]
+[INFO] WildFly: JSF ....................................... SUCCESS [  0.017 s]
+[INFO] WildFly: JSF Subsystem ............................. SUCCESS [  1.710 s]
+[INFO] WildFly: JSF Injection Handlers .................... SUCCESS [  0.309 s]
+[INFO] WildFly: JSR-77 Subsystem .......................... SUCCESS [  2.216 s]
+[INFO] WildFly: JacORB Subsystem .......................... SUCCESS [  7.434 s]
+[INFO] WildFly: Mail subsystem ............................ SUCCESS [  5.446 s]
+[INFO] WildFly: Messaging Subsystem With ActiveMQ Artemis . SUCCESS [  9.612 s]
+[INFO] WildFly: (Legacy) Messaging Subsystem .............. SUCCESS [ 16.285 s]
+[INFO] WildFly: mod_cluster Subsystem ..................... SUCCESS [  0.016 s]
+[INFO] WildFly: mod_cluster Extension ..................... SUCCESS [  7.047 s]
+[INFO] WildFly: mod_cluster Undertow Integration .......... SUCCESS [  1.190 s]
+[INFO] WildFly: POJO Subsystem ............................ SUCCESS [  1.450 s]
+[INFO] WildFly: Service Archive Subsystem ................. SUCCESS [  1.601 s]
+[INFO] WildFly: Web Subsystem ............................. SUCCESS [  5.175 s]
+[INFO] WildFly: Weld EJB .................................. SUCCESS [  0.249 s]
+[INFO] WildFly: Weld JPA .................................. SUCCESS [  0.234 s]
+[INFO] WildFly: Weld Bean Validation ...................... SUCCESS [  0.179 s]
+[INFO] WildFly: Weld Webservices .......................... SUCCESS [  1.597 s]
+[INFO] WildFly: Weld Transactions ......................... SUCCESS [  0.191 s]
+[INFO] WildFly: XTS Subsystem ............................. SUCCESS [  3.584 s]
+[INFO] WildFly: Full Feature Pack ......................... SUCCESS [ 17.819 s]
+[INFO] WildFly: Build ..................................... SUCCESS [ 19.608 s]
+[INFO] WildFly: Distribution .............................. SUCCESS [ 20.630 s]
+[INFO] WildFly: JSF Multi-JSF installer ................... SUCCESS [  1.542 s]
+[INFO] WildFly: Exported Java EE Specification APIs ....... SUCCESS [  0.037 s]
+[INFO] WildFly: Validation Tests for Exported Java EE Specification APIs SUCCESS [  0.039 s]
+[INFO] WildFly: Servlet Build ............................. SUCCESS [  0.462 s]
+[INFO] WildFly: Servlet Distribution ...................... SUCCESS [  1.401 s]
+[INFO] WildFly: Web Services Tests Integration Subsystem .. SUCCESS [  1.573 s]
+[INFO] WildFly Test Suite: Shared ......................... SUCCESS [  0.578 s]
+[INFO] WildFly Test Suite: Aggregator ..................... SUCCESS [  0.016 s]
+[INFO] WildFly Test Suite: Integration (parent) ........... SUCCESS [  0.311 s]
+[INFO] WildFly Test Suite: Integration - Web .............. SUCCESS [ 44.440 s]
+[INFO] WildFly Test Suite: Integration - Smoke ............ SUCCESS [ 53.678 s]
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time: 07:23 min
+[INFO] Finished at: 2017-05-05T02:47:04+00:00
+[INFO] Final Memory: 322M/795M
+[INFO] ------------------------------------------------------------------------
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Above is a summary of the built components in &lt;code class=&quot;highlighter-rouge&quot;&gt;wildfly&lt;/code&gt;. After all the components are built, it will be assembled into a runnable application server. You can find it in the &lt;code class=&quot;highlighter-rouge&quot;&gt;build/target&lt;/code&gt; directory of the project. Here are the contents of the directory:&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;$ ls build/target
+archive-tmp  wildfly-11.0.0.Beta1-SNAPSHOT  wildfly-11.0.0.Beta1-SNAPSHOT.zip
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;From above, we can see the application server is in &lt;code class=&quot;highlighter-rouge&quot;&gt;wildfly-11.0.0.Beta1-SNAPSHOT&lt;/code&gt;, and there is also a zipped pacakge for distribution. We can enter the &lt;code class=&quot;highlighter-rouge&quot;&gt;wildfly-11.0.0.Beta1-SNAPSHOT&lt;/code&gt; directory and check its contents:&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;[weli@io wildfly]$ cd build/target/wildfly-11.0.0.Beta1-SNAPSHOT/
+[weli@io wildfly-11.0.0.Beta1-SNAPSHOT]$ ls
+appclient  bin  copyright.txt  docs  domain  jboss-modules.jar  LICENSE.txt  modules  README.txt  standalone  welcome-content
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;From the above output, we can see the application server is in the directory. Now we can start the server with the following command:&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;$ bin/standalone.sh
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;The above command will run the Wildfly in standalone mode, and here is the output of the server:&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;===
+
+  JBoss Bootstrap Environment
+
+  JBOSS_HOME: /home/weli/projs/wildfly/build/target/wildfly-11.0.0.Beta1-SNAPSHOT
+
+  JAVA: java
+
+  JAVA_OPTS:  -server -Xms64m -Xmx512m -XX:MetaspaceSize=96M -XX:MaxMetaspaceSize=256m -Djava.net.preferIPv4Stack=true -Djboss.modules.system.pkgs=org.jboss.byteman -Djava.awt.headless=true
+
+=========================================================================
+
+03:20:01,271 INFO  [org.jboss.modules] (main) JBoss Modules version 1.6.0.Beta6
+03:20:01,581 INFO  [org.jboss.msc] (main) JBoss MSC version 1.2.7.SP1
+03:20:01,746 INFO  [org.jboss.as] (MSC service thread 1-8) WFLYSRV0049: WildFly Core 3.0.0.Beta17 &quot;Kenny&quot; starting
+03:20:03,284 INFO  [org.jboss.as.controller.management-deprecated] (Controller Boot Thread) WFLYCTL0028: Attribute 'security-realm' in the resource at address '/core-service=management/management-interface=http-interface' is deprecated, and may be removed in future version. See the attribute description in the output of the read-resource-description operation to learn more about the deprecation.
+03:20:03,305 INFO  [org.wildfly.security] (ServerService Thread Pool -- 5) ELY00001: WildFly Elytron version 1.1.0.Beta38
+03:20:03,319 INFO  [org.jboss.as.controller.management-deprecated] (ServerService Thread Pool -- 29) WFLYCTL0028: Attribute 'security-realm' in the resource at address '/subsystem=undertow/server=default-server/https-listener=https' is deprecated, and may be removed in future version. See the attribute description in the output of the read-resource-description operation to learn more about the deprecation.
+03:20:03,395 INFO  [org.jboss.as.server] (Controller Boot Thread) WFLYSRV0039: Creating http management service using socket-binding (management-http)
+03:20:03,414 INFO  [org.xnio] (MSC service thread 1-5) XNIO version 3.5.0.Beta5
+03:20:03,423 INFO  [org.xnio.nio] (MSC service thread 1-5) XNIO NIO Implementation Version 3.5.0.Beta5
+03:20:03,464 INFO  [org.jboss.remoting] (MSC service thread 1-5) JBoss Remoting version 5.0.0.Beta20
+03:20:03,486 INFO  [org.jboss.as.jaxrs] (ServerService Thread Pool -- 42) WFLYRS0016: RESTEasy version 3.0.22.Final
+03:20:03,488 INFO  [org.jboss.as.naming] (ServerService Thread Pool -- 49) WFLYNAM0001: Activating Naming Subsystem
+03:20:03,490 INFO  [org.jboss.as.clustering.infinispan] (ServerService Thread Pool -- 41) WFLYCLINF0001: Activating Infinispan subsystem.
+03:20:03,499 INFO  [org.jboss.as.jsf] (ServerService Thread Pool -- 47) WFLYJSF0007: Activated the following JSF Implementations: [main]
+03:20:03,509 WARN  [org.jboss.as.txn] (ServerService Thread Pool -- 58) WFLYTX0013: Node identifier property is set to the default value. Please make sure it is unique.
+03:20:03,526 INFO  [org.wildfly.extension.io] (ServerService Thread Pool -- 40) WFLYIO001: Worker 'default' has auto-configured to 8 core threads with 64 task threads based on your 4 available processors
+03:20:03,559 INFO  [org.jboss.as.security] (ServerService Thread Pool -- 57) WFLYSEC0002: Activating Security Subsystem
+03:20:03,568 INFO  [org.jboss.as.connector.subsystems.datasources] (ServerService Thread Pool -- 36) WFLYJCA0004: Deploying JDBC-compliant driver class org.h2.Driver (version 1.4)
+03:20:03,577 INFO  [org.jboss.as.webservices] (ServerService Thread Pool -- 60) WFLYWS0002: Activating WebServices Extension
+03:20:03,583 INFO  [org.jboss.as.connector] (MSC service thread 1-4) WFLYJCA0009: Starting JCA Subsystem (WildFly/IronJacamar 1.4.4.Final)
+03:20:03,613 INFO  [org.jboss.as.connector.deployers.jdbc] (MSC service thread 1-5) WFLYJCA0018: Started Driver service with driver-name = h2
+03:20:03,597 INFO  [org.jboss.as.security] (MSC service thread 1-7) WFLYSEC0001: Current PicketBox version=5.0.1.Final
+03:20:03,665 INFO  [org.wildfly.extension.undertow] (MSC service thread 1-6) WFLYUT0003: Undertow 1.4.13.Final starting
+03:20:03,666 INFO  [org.jboss.as.naming] (MSC service thread 1-6) WFLYNAM0003: Starting Naming Service
+03:20:03,667 INFO  [org.jboss.as.mail.extension] (MSC service thread 1-6) WFLYMAIL0001: Bound mail session [java:jboss/mail/Default]
+03:20:04,080 INFO  [org.wildfly.extension.undertow] (ServerService Thread Pool -- 59) WFLYUT0014: Creating file handler for path '/home/weli/projs/wildfly/build/target/wildfly-11.0.0.Beta1-SNAPSHOT/welcome-content' with options [directory-listing: 'false', follow-symlink: 'false', case-sensitive: 'true', safe-symlink-paths: '[]']
+03:20:04,096 INFO  [org.jboss.as.ejb3] (MSC service thread 1-8) WFLYEJB0481: Strict pool slsb-strict-max-pool is using a max instance size of 64 (per class), which is derived from thread worker pool sizing.
+03:20:04,098 INFO  [org.wildfly.extension.undertow] (MSC service thread 1-5) WFLYUT0012: Started server default-server.
+03:20:04,099 INFO  [org.jboss.as.ejb3] (MSC service thread 1-7) WFLYEJB0482: Strict pool mdb-strict-max-pool is using a max instance size of 16 (per class), which is derived from the number of CPUs on this host.
+03:20:04,105 INFO  [org.wildfly.extension.undertow] (MSC service thread 1-8) WFLYUT0018: Host default-host starting
+03:20:04,205 INFO  [org.wildfly.extension.undertow] (MSC service thread 1-5) WFLYUT0006: Undertow HTTP listener default listening on 127.0.0.1:8080
+03:20:04,420 INFO  [org.jboss.as.patching] (MSC service thread 1-8) WFLYPAT0050: WildFly cumulative patch ID is: base, one-off patches include: none
+03:20:04,465 INFO  [org.jboss.as.ejb3] (MSC service thread 1-2) WFLYEJB0493: EJB subsystem suspension complete
+03:20:04,507 WARN  [org.jboss.as.domain.management.security] (MSC service thread 1-8) WFLYDM0111: Keystore /home/weli/projs/wildfly/build/target/wildfly-11.0.0.Beta1-SNAPSHOT/standalone/configuration/application.keystore not found, it will be auto generated on first use with a self signed certificate for host localhost
+03:20:04,554 INFO  [org.jboss.as.server.deployment.scanner] (MSC service thread 1-5) WFLYDS0013: Started FileSystemDeploymentService for directory /home/weli/projs/wildfly/build/target/wildfly-11.0.0.Beta1-SNAPSHOT/standalone/deployments
+03:20:04,724 INFO  [org.wildfly.extension.undertow] (MSC service thread 1-2) WFLYUT0006: Undertow HTTPS listener https listening on 127.0.0.1:8443
+03:20:04,730 INFO  [org.infinispan.factories.GlobalComponentRegistry] (MSC service thread 1-5) ISPN000128: Infinispan version: Infinispan 'Chakra' 8.2.6.Final
+03:20:04,732 INFO  [org.jboss.as.connector.subsystems.datasources] (MSC service thread 1-1) WFLYJCA0001: Bound data source [java:jboss/datasources/ExampleDS]
+03:20:04,840 INFO  [org.jboss.ws.common.management] (MSC service thread 1-8) JBWS022052: Starting JBossWS 5.1.8.Final (Apache CXF 3.1.11)
+03:20:04,994 INFO  [org.jboss.as.server] (Controller Boot Thread) WFLYSRV0212: Resuming server
+03:20:04,996 INFO  [org.jboss.as] (Controller Boot Thread) WFLYSRV0060: Http management interface listening on http://127.0.0.1:9990/management
+03:20:04,997 INFO  [org.jboss.as] (Controller Boot Thread) WFLYSRV0051: Admin console listening on http://127.0.0.1:9990
+03:20:04,997 INFO  [org.jboss.as] (Controller Boot Thread) WFLYSRV0025: WildFly Core 3.0.0.Beta17 &quot;Kenny&quot; started in 4127ms - Started 397 of 615 services (401 services are lazy, passive or on-demand)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;The above output shows the server has been started. Until now, we have fetched the Wildfly source from Github repository, and we have built it locally in our machine, and then we run the application server locally. This is the basis to play with Wildfly source code. In future, we just need to keep pulling the newest code of Wildfly from the Github and compile it, then we can keep running a newest Wildfly server for study.&lt;/p&gt;
+
+</description>
+          <pubDate>2017-05-05T00:00:00+00:00</pubDate>
+          <link>/2017/05/05/wildfly-src.html</link>
+          <guid isPermaLink="true">/2017/05/05/wildfly-src.html</guid>
         </item>
       
     
