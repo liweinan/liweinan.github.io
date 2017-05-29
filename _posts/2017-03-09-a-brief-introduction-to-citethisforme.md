@@ -1,6 +1,6 @@
 ---
-title: A Brief Introduction To Cite This For Me
-abstract: Cite This For Me is an online citation tool for students and researchers to cite multiple types of sources. In this article, I'd like to provide a brief introduction to the tool.
+title: "A Brief Introduction To Cite This For Me"
+abstract: "Cite This For Me is an online citation tool for students and researchers to cite multiple types of sources. In this article, I'd like to provide a brief introduction to the tool."
 ---
 
 # {{ page.title }}

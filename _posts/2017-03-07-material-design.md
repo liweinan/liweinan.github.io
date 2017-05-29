@@ -1,6 +1,6 @@
 ---
-title: An Introduction To Material Design And Relative Atom Themes
-abstract: Material Design is a design guideline developed by Google, and in Atom there are relative themes using the guideline. In this article, I'd like to give you a brief introduction on the guideline and the relative Atom themes.
+title: "An Introduction To Material Design And Relative Atom Themes"
+abstract: "Material Design is a design guideline developed by Google, and in Atom there are relative themes using the guideline. In this article, I'd like to give you a brief introduction on the guideline and the relative Atom themes."
 ---
 
 # {{ page.title }}

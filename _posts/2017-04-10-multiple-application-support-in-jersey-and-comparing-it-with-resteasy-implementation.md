@@ -1,6 +1,6 @@
 ---
-title: Multiple Application Support In Jersey And Comparing It With RESTEasy Implementation
-abstract: Jersey supports multiple Application classes to be registered, on the other side currently RESTEasy doesn't support multiple Application classes deployment yet. In this article I'd like to give a brief introduction on Jersey implementation and compare it with RESTEasy current design.
+title: "Multiple Application Support In Jersey And Comparing It With RESTEasy Implementation"
+abstract: "Jersey supports multiple Application classes to be registered, on the other side currently RESTEasy doesn't support multiple Application classes deployment yet. In this article I'd like to give a brief introduction on Jersey implementation and compare it with RESTEasy current design."
 ---
 
 # {{ page.title }}

@@ -1,6 +1,6 @@
 ---
-title: A Test to Github Math Engine
-abstract: This article is for testing the MathJax support in posts.
+title: "A Test to Github Math Engine"
+abstract: "This article is for testing the MathJax support in posts."
 ---
 
 # {{ page.title }}

@@ -1,6 +1,6 @@
 ---
-title: An Introduction to Visual Paradigm
-abstract: There are many UML modeling tools on the market. In this article, I'd like to introduce the one I used in my daily work called Visual Paradigm.
+title: "An Introduction to Visual Paradigm"
+abstract: "There are many UML modeling tools on the market. In this article, I'd like to introduce the one I used in my daily work called Visual Paradigm."
 ---
 
 # {{ page.title }}

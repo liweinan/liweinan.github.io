@@ -1,6 +1,6 @@
 ---
-title: Using NetworkManager-tui To Manage The Network From Text User Interface
-abstract: Sometimes it's more convenient to manage the network from text user interface. In this article I'd like to share a curses-based tool named NetworkManager-tui.
+title: "Using NetworkManager-tui To Manage The Network From Text User Interface"
+abstract: "Sometimes it's more convenient to manage the network from text user interface. In this article I'd like to share a curses-based tool named NetworkManager-tui."
 ---
 
 # {{ page.title }}

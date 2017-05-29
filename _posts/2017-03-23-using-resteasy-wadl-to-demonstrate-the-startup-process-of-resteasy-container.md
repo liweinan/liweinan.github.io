@@ -1,6 +1,6 @@
 ---
-title: Using RESTEasy WADL To Demonstrate The Startup Process Of RESTEasy Container
-abstract: RESTEasy WADL is a module that can generate WADL data for the restful resources. It needs to scan the RESTEasy container to get all the resources and methods information to generate the WADL data correctly, so analyzing the RESTEasy WADL intialization process can help us to better understanding the RESTEasy container structure. In this article I will use the code of RESTEasy WADL for this purpose.
+title: "Using RESTEasy WADL To Demonstrate The Startup Process Of RESTEasy Container"
+abstract: "RESTEasy WADL is a module that can generate WADL data for the restful resources. It needs to scan the RESTEasy container to get all the resources and methods information to generate the WADL data correctly, so analyzing the RESTEasy WADL intialization process can help us to better understanding the RESTEasy container structure. In this article I will use the code of RESTEasy WADL for this purpose."
 ---
 
 # {{ page.title }}

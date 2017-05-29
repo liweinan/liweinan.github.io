@@ -1,6 +1,6 @@
 ---
-title: A Java Implementation of Dijkstra's Algorithm
-abstract: In this article I'd like to show you a java implementation of Dijkstra's Algorithm I've written.
+title: "A Java Implementation of Dijkstra's Algorithm"
+abstract: "In this article I'd like to show you a java implementation of Dijkstra's Algorithm I've written."
 ---
 
 # {{ page.title }}

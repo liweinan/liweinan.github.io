@@ -1,6 +1,6 @@
 ---
-title: Write An Apache HTTPD Module
-abstract: In this article I'd like to show you how to write a module for Apache HTTPD.
+title: "Write An Apache HTTPD Module"
+abstract: "In this article I'd like to show you how to write a module for Apache HTTPD."
 ---
 
 # {{ page.title }}

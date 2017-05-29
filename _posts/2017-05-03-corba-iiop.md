@@ -1,6 +1,6 @@
 ---
-title: An Introduction To The CORBA And Java RMI-IIOP
-abstract: In this article, I'd like to introduce to you the Common Object Request Broker Architecture and its implementation in Java.
+title: "An Introduction To The CORBA And Java RMI-IIOP"
+abstract: "In this article, I'd like to introduce to you the Common Object Request Broker Architecture and its implementation in Java."
 ---
 
 # {{ page.title }}

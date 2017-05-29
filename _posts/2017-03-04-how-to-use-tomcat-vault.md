@@ -1,6 +1,6 @@
 ---
-title: How To Use Tomcat Vault
-abstract: Tomcat Vault is a tool that allows you to encrypt the passwords in Apache Tomcat configuration files. In this article I'd like to show you how to integrate it into Apache Tomcat.
+title: "How To Use Tomcat Vault"
+abstract: "Tomcat Vault is a tool that allows you to encrypt the passwords in Apache Tomcat configuration files. In this article I'd like to show you how to integrate it into Apache Tomcat."
 ---
 
 # {{ page.title }}

@@ -1,6 +1,6 @@
 ---
-title: How To Use Apache Commons Daemon
-abstract: Apache Commons Daemon is a tool provided by Apache community which can help you to manage your Java application as a standard system daemon. In this article I'd like to show you the basic usage of it.
+title: "How To Use Apache Commons Daemon"
+abstract: "Apache Commons Daemon is a tool provided by Apache community which can help you to manage your Java application as a standard system daemon. In this article I'd like to show you the basic usage of it."
 ---
 
 # {{ page.title }}
