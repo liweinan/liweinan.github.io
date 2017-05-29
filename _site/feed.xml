@@ -280,17 +280,6 @@ WFLYCTL0184:    New missing/unsatisfied dependencies:
     
       
         <item>
-          <title>All the future articles will be put into weinan.io</title>
-          <description>&lt;p&gt;I’m tired of maintaining two blogs at same time. All the future articles on Wildfly will be put into &lt;a href=&quot;weinan.io&quot;&gt;weinan.io&lt;/a&gt;.&lt;/p&gt;
-</description>
-          <pubDate>2017-05-28T00:00:00+00:00</pubDate>
-          <link>/2017/05/28/future-work.html</link>
-          <guid isPermaLink="true">/2017/05/28/future-work.html</guid>
-        </item>
-      
-    
-      
-        <item>
           <title>Adventures in JDBC and the PostgreSQL JDBC driver: Part 7 - The JDBC driver loading process in Wildfly</title>
           <description>&lt;p&gt;In the previous article, we have learned how to add a JDBC database driver module into Wildfly, and how to configure a datasource to use hte driver. In this article, let’s see the JDBC driver loading process in Wildfly.&lt;/p&gt;
 
