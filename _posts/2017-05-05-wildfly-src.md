@@ -3,6 +3,8 @@ title: "Fetching and compiling the Wildfly upstream source"
 abstract: "In this article I want to teach you how to fetch the Wildfly code from Github and compile it for playing."
 ---
 
+# {{ page.title }}
+
 In this article I want to teach you how to fetch the Wildfly code from Github and compile it for playing. First we need to clone the Wildfly source repository from Github, and here is the address of the repository:
 
 - [https://github.com/wildfly/wildfly.git](https://github.com/wildfly/wildfly.git)

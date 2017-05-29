@@ -3,6 +3,8 @@ title: A Non-recursive Approach To The Fibonacci Sequence Generator
 abstract: We usually know the Fibonacci sequence generator for learning the recursive algorithm. In this article, I'd like to introduce to you a non-recursive implementation.
 ---
 
+# {{ page.title }}
+
 {{ page.abstract }}
 
 Here is the recursive version of the Fibonacci sequence generator we usually learn from the text book[^fibrec]:

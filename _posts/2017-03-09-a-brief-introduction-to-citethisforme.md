@@ -3,6 +3,8 @@ title: A Brief Introduction To Cite This For Me
 abstract: Cite This For Me is an online citation tool for students and researchers to cite multiple types of sources. In this article, I'd like to provide a brief introduction to the tool.
 ---
 
+# {{ page.title }}
+
 {{ page.abstract }}
 
 The major advantage of _Cite This For Me_[^citethisforme] is that it can cite multiple types of sources, not merely limited to journal articles. Here is the screenshot that shows the reference types the tool supports:

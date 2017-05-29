@@ -3,6 +3,8 @@ title: "The articles & books I read and the videos I watched last week"
 abstract: "Here is a list of the articles & books I read and the videos I watched last week."
 ---
 
+# {{ page.title }}
+
 Articles:
 
 - [JSR 292 and the Multi-lingual JVM](https://www.infoq.com/articles/invokedynamic)
