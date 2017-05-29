@@ -1,5 +1,6 @@
 ---
 title: "The articles & books I read and the videos I watched last week"
+abstract: "Here is a list of the articles & books I read and the videos I watched last week."
 ---
 
 Articles:
