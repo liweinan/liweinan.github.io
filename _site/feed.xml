@@ -7,6 +7,279 @@
     
       
         <item>
+          <title>Adventures in JDBC and the PostgreSQL JDBC driver: Part 8 - The datasource loading process in Wildfly</title>
+          <description>&lt;p&gt;In previous article, I have introduced the JDBC driver loading process in Wildfly. In this article, I’d like to show you the datasource loading process.&lt;/p&gt;
+
+&lt;p&gt;Firstly, let’s review the datasource and driver configuration in &lt;code class=&quot;highlighter-rouge&quot;&gt;standalone.xml&lt;/code&gt;:&lt;/p&gt;
+
+&lt;div class=&quot;language-xml highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nt&quot;&gt;&amp;lt;subsystem&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;xmlns=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;urn:jboss:domain:datasources:4.0&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
+    &lt;span class=&quot;nt&quot;&gt;&amp;lt;datasources&amp;gt;&lt;/span&gt;
+        &lt;span class=&quot;nt&quot;&gt;&amp;lt;datasource&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;jndi-name=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;java:jboss/datasources/weli&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;pool-name=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;weli&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;enabled=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;true&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;use-java-context=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;true&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
+            &lt;span class=&quot;nt&quot;&gt;&amp;lt;connection-url&amp;gt;&lt;/span&gt;jdbc:postgresql://localhost/weli&lt;span class=&quot;nt&quot;&gt;&amp;lt;/connection-url&amp;gt;&lt;/span&gt;
+            &lt;span class=&quot;nt&quot;&gt;&amp;lt;driver&amp;gt;&lt;/span&gt;postgresql&lt;span class=&quot;nt&quot;&gt;&amp;lt;/driver&amp;gt;&lt;/span&gt;
+            &lt;span class=&quot;nt&quot;&gt;&amp;lt;security&amp;gt;&lt;/span&gt;
+                &lt;span class=&quot;nt&quot;&gt;&amp;lt;user-name&amp;gt;&lt;/span&gt;weli&lt;span class=&quot;nt&quot;&gt;&amp;lt;/user-name&amp;gt;&lt;/span&gt;
+            &lt;span class=&quot;nt&quot;&gt;&amp;lt;/security&amp;gt;&lt;/span&gt;
+        &lt;span class=&quot;nt&quot;&gt;&amp;lt;/datasource&amp;gt;&lt;/span&gt;
+        &lt;span class=&quot;nt&quot;&gt;&amp;lt;drivers&amp;gt;&lt;/span&gt;
+            &lt;span class=&quot;nt&quot;&gt;&amp;lt;driver&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;name=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;postgresql&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;module=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;org.postgresql&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;/&amp;gt;&lt;/span&gt;
+        &lt;span class=&quot;nt&quot;&gt;&amp;lt;/drivers&amp;gt;&lt;/span&gt;
+    &lt;span class=&quot;nt&quot;&gt;&amp;lt;/datasources&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;/subsystem&amp;gt;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;The above XML data defines our PostgreSQL datasource and the driver. I have removed the sample H2 database configuration to focus on our PostgreSQL topic. In previous article, we have seen how does the &lt;code class=&quot;highlighter-rouge&quot;&gt;postgresql&lt;/code&gt; driver is loaded into Wildfly. The Wildfly server uses &lt;code class=&quot;highlighter-rouge&quot;&gt;JdbcDriverAdd&lt;/code&gt; class to do the driver loading work, and it will find the &lt;code class=&quot;highlighter-rouge&quot;&gt;Driver&lt;/code&gt; interface implementation for us automatically.&lt;/p&gt;
+
+&lt;p&gt;Now we should check how does Wildfly load the &lt;code class=&quot;highlighter-rouge&quot;&gt;datasource&lt;/code&gt;. From the above configuration, we can see the &lt;code class=&quot;highlighter-rouge&quot;&gt;datasource&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;driver&lt;/code&gt; are actually two independent elements. In the &lt;code class=&quot;highlighter-rouge&quot;&gt;datasource&lt;/code&gt; configuration, it refers to the driver with the &lt;code class=&quot;highlighter-rouge&quot;&gt;driver&lt;/code&gt; item. Here is the snippet:&lt;/p&gt;
+
+&lt;div class=&quot;language-xml highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nt&quot;&gt;&amp;lt;driver&amp;gt;&lt;/span&gt;postgresql&lt;span class=&quot;nt&quot;&gt;&amp;lt;/driver&amp;gt;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;So we can guess in the Wildfly code, the datasource will refer to the driver in such a loose way. Now let’s the Wildfly code side. The core class that deals with the datasource loading is &lt;code class=&quot;highlighter-rouge&quot;&gt;AbstractDataSourceAdd&lt;/code&gt;. It is an abstract class that contains most of the code, and &lt;code class=&quot;highlighter-rouge&quot;&gt;DataSourceAdd&lt;/code&gt; class extends it to add several addition methods. Here is the class diagram of these two classes:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/jdbc/DataSourceAdd.png&quot; alt=&quot;/assets/jdbc/DataSourceAdd.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;From the above diagram, we can see the &lt;code class=&quot;highlighter-rouge&quot;&gt;AbstractDataSourceAdd&lt;/code&gt; class contains a &lt;code class=&quot;highlighter-rouge&quot;&gt;performRuntime(...)&lt;/code&gt; method. This is the entry point of the datasource handler, and we will check it in detail later. (Besides &lt;code class=&quot;highlighter-rouge&quot;&gt;DataSourceAdd&lt;/code&gt; class, there is another class called &lt;code class=&quot;highlighter-rouge&quot;&gt;XaDataSourceAdd&lt;/code&gt; that implements the &lt;code class=&quot;highlighter-rouge&quot;&gt;AbstractDataSourcceAdd&lt;/code&gt; class. We won’t discuss the two phase commit in this article, so we won’t check the &lt;code class=&quot;highlighter-rouge&quot;&gt;XaDataSourceAdd&lt;/code&gt; class.)&lt;/p&gt;
+
+&lt;p&gt;I set several breakpoints in the &lt;code class=&quot;highlighter-rouge&quot;&gt;performRuntime(...)&lt;/code&gt; method of the &lt;code class=&quot;highlighter-rouge&quot;&gt;AbstractDataSourceAdd&lt;/code&gt; class and start the Wildfly server in standalone mode. Here is the screenshot that the code stopped at breakpoint:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/jdbc/firstRuntimeStep.png&quot; alt=&quot;/assets/jdbc/firstRuntimeStep.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;The above screenshot shows that the &lt;code class=&quot;highlighter-rouge&quot;&gt;performRuntime(...)&lt;/code&gt; method will call the &lt;code class=&quot;highlighter-rouge&quot;&gt;firstRuntimeStep(...)&lt;/code&gt; method.&lt;/p&gt;
+
+&lt;p&gt;I have set a breakpoint in &lt;code class=&quot;highlighter-rouge&quot;&gt;firstRuntimeStep(...)&lt;/code&gt; method, and here is the screenshot:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/jdbc/firstRuntimeStep2.png&quot; alt=&quot;/assets/jdbc/firstRuntimeStep.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;From the above screenshot, we can see in &lt;code class=&quot;highlighter-rouge&quot;&gt;firstRuntimeStep(...)&lt;/code&gt; method it will create an instance of &lt;code class=&quot;highlighter-rouge&quot;&gt;AbstractDataSourceService&lt;/code&gt; class by &lt;code class=&quot;highlighter-rouge&quot;&gt;createDataSourceService(dsName, jndiName)&lt;/code&gt; method. This is an abstract method that will be implemented by &lt;code class=&quot;highlighter-rouge&quot;&gt;DataSourceAdd&lt;/code&gt; class or the &lt;code class=&quot;highlighter-rouge&quot;&gt;XaDataSourceAdd&lt;/code&gt; class.&lt;/p&gt;
+
+&lt;p&gt;In our example, because we are using &lt;code class=&quot;highlighter-rouge&quot;&gt;datasource&lt;/code&gt; setting in configuration, and not the &lt;code class=&quot;highlighter-rouge&quot;&gt;xa-datasource&lt;/code&gt;, so we are actually using the &lt;code class=&quot;highlighter-rouge&quot;&gt;DataSourceAdd.createDataSourceService(...)&lt;/code&gt; method to create the an instance of &lt;code class=&quot;highlighter-rouge&quot;&gt;LocalDataSourceService&lt;/code&gt;. Here is the screenshot of the code in the method:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/jdbc/DataSourceAdd.createDataSourceService.png&quot; alt=&quot;/assets/jdbc/DataSourceAdd.createDataSourceService.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;From the above screenshot, we can see an instance of &lt;code class=&quot;highlighter-rouge&quot;&gt;LocalDataSourceService&lt;/code&gt; is created.&lt;/p&gt;
+
+&lt;p&gt;Here is the screenshot of the code running process:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/jdbc/DataSourceService.png&quot; alt=&quot;/assets/jdbc/DataSourceService.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;From the above diagram, we can see the instance of &lt;code class=&quot;highlighter-rouge&quot;&gt;AbstractDataSourceService&lt;/code&gt; is actually &lt;code class=&quot;highlighter-rouge&quot;&gt;LocalDataSourceService&lt;/code&gt;. Now let’s check the class diagram of these data source services:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/jdbc/DataSourceServices.png&quot; alt=&quot;/assets/jdbc/DataSourceServices.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;The above diagram shows the &lt;code class=&quot;highlighter-rouge&quot;&gt;AbstractDataSourceService&lt;/code&gt; and its two implementation classes: &lt;code class=&quot;highlighter-rouge&quot;&gt;LocalDataSourceService&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;XaDataSourceService&lt;/code&gt;. There is an important field in the  &lt;code class=&quot;highlighter-rouge&quot;&gt;AbstractDataSourceService&lt;/code&gt; class, which is &lt;code class=&quot;highlighter-rouge&quot;&gt;sqlDataSource : WildFlyDataSource&lt;/code&gt;. The &lt;code class=&quot;highlighter-rouge&quot;&gt;WildFlyDataSource&lt;/code&gt; is the datasource type finally returned to the user. We will verify this later. Here is the class diagram of &lt;code class=&quot;highlighter-rouge&quot;&gt;WildFlyDataSource&lt;/code&gt;:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/jdbc/WildFlyDataSource.png&quot; alt=&quot;/assets/jdbc/WildFlyDataSource.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;In this datasource class, the important methods are these &lt;code class=&quot;highlighter-rouge&quot;&gt;getConnection(...)&lt;/code&gt; methods. Users will get the database connections from the datasource, and don’t care whether these connections are pooled or not. Let’s see the code in &lt;code class=&quot;highlighter-rouge&quot;&gt;WildFlyDataSource&lt;/code&gt;:&lt;/p&gt;
+
+&lt;div class=&quot;language-java highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;WildFlyDataSource&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;implements&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;DataSource&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Serializable&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;cm&quot;&gt;/** DataSource */&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;transient&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;DataSource&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;delegate&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+    
+    &lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Connection&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;getConnection&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;throws&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;SQLException&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;delegate&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;getConnection&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;();&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;...&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;From the above code, we can see &lt;code class=&quot;highlighter-rouge&quot;&gt;WildFlyDataSource&lt;/code&gt; will just use a &lt;code class=&quot;highlighter-rouge&quot;&gt;delegate&lt;/code&gt; datasource to do the real work. To see how does &lt;code class=&quot;highlighter-rouge&quot;&gt;WildFlyDataSource&lt;/code&gt; being created, we need to go back to &lt;code class=&quot;highlighter-rouge&quot;&gt;DataSourceAdd.createDataSourceService(...)&lt;/code&gt; method to see how does &lt;code class=&quot;highlighter-rouge&quot;&gt;LocalDataSourceService&lt;/code&gt; get created. Here is the code:&lt;/p&gt;
+
+&lt;div class=&quot;language-java highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;protected&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;AbstractDataSourceService&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;createDataSourceService&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kd&quot;&gt;final&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;String&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;dsName&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;kd&quot;&gt;final&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;String&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;jndiName&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;throws&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;OperationFailedException&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+   &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;LocalDataSourceService&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;dsName&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ContextNames&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;bindInfoFor&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;jndiName&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;));&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;The above code shows that an instance of &lt;code class=&quot;highlighter-rouge&quot;&gt;LocalDataSourceService&lt;/code&gt; will be created, and its &lt;code class=&quot;highlighter-rouge&quot;&gt;WildFlyDataSource&lt;/code&gt; will be initialized during creation process. Let’s check the code of &lt;code class=&quot;highlighter-rouge&quot;&gt;LocalDataSourceService&lt;/code&gt;:&lt;/p&gt;
+
+&lt;div class=&quot;language-java highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kn&quot;&gt;package&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;org&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;jboss&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;as&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;connector&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;subsystems&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;datasources&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+
+&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;org.jboss.as.naming.deployment.ContextNames&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;org.jboss.jca.common.api.validator.ValidateException&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;org.jboss.msc.inject.Injector&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;org.jboss.msc.value.InjectedValue&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+
+&lt;span class=&quot;cm&quot;&gt;/**
+ * Local data-source service implementation.
+ * @author John Bailey
+ * @author Stefano Maestri
+ */&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;LocalDataSourceService&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;extends&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;AbstractDataSourceService&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+
+    &lt;span class=&quot;kd&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;final&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;InjectedValue&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ModifiableDataSource&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;dataSourceConfig&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;InjectedValue&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ModifiableDataSource&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;();&lt;/span&gt;
+
+    &lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;LocalDataSourceService&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kd&quot;&gt;final&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;String&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;dsName&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;final&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ContextNames&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;BindInfo&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;jndiName&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;final&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ClassLoader&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;classLoader&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;kd&quot;&gt;super&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;dsName&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;jndiName&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;classLoader&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+
+    &lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;LocalDataSourceService&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kd&quot;&gt;final&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;String&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;dsName&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;final&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ContextNames&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;BindInfo&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;jndiName&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;kd&quot;&gt;super&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;dsName&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;jndiName&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;null&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+
+    &lt;span class=&quot;nd&quot;&gt;@Override&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;AS7DataSourceDeployer&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;getDeployer&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;throws&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ValidateException&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;AS7DataSourceDeployer&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;dataSourceConfig&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;getValue&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;().&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;getUnModifiableInstance&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;());&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+
+    &lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Injector&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ModifiableDataSource&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;getDataSourceConfigInjector&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;dataSourceConfig&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;From the class definition, we can see the &lt;code class=&quot;highlighter-rouge&quot;&gt;LocalDataSourceService&lt;/code&gt; class extends the &lt;code class=&quot;highlighter-rouge&quot;&gt;AbstractDataSourceService&lt;/code&gt; class, and the constructor of the &lt;code class=&quot;highlighter-rouge&quot;&gt;LocalDataSourceService&lt;/code&gt; class will just call the constructor &lt;code class=&quot;highlighter-rouge&quot;&gt;AbstractDataSourceService&lt;/code&gt; class.&lt;/p&gt;
+
+&lt;p&gt;We have seen the class diagram of &lt;code class=&quot;highlighter-rouge&quot;&gt;AbstractDataSourceService&lt;/code&gt; class in above, and we see the class stores the necessary attributes of a data source. The constructor of &lt;code class=&quot;highlighter-rouge&quot;&gt;AbstractDataSourceService&lt;/code&gt; code is listed in below:&lt;/p&gt;
+
+&lt;div class=&quot;language-java highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;protected&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;AbstractDataSourceService&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kd&quot;&gt;final&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;String&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;dsName&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;final&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ContextNames&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;BindInfo&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;jndiName&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;final&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ClassLoader&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;classLoader&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;dsName&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;dsName&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;classLoader&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;classLoader&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;jndiName&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;jndiName&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;From the above code, we can see the &lt;code class=&quot;highlighter-rouge&quot;&gt;AbstractDataSourceService&lt;/code&gt; class will store the name and JNDI name of a datasource. This info is extracted from the configuration file (&lt;code class=&quot;highlighter-rouge&quot;&gt;standalone.xml&lt;/code&gt; in standalone mode) set by the users.&lt;/p&gt;
+
+&lt;p&gt;Now we can check the &lt;code class=&quot;highlighter-rouge&quot;&gt;start(...)&lt;/code&gt; method of the &lt;code class=&quot;highlighter-rouge&quot;&gt;AbstractDataSourceService&lt;/code&gt;. Here is the sequence diagram the &lt;code class=&quot;highlighter-rouge&quot;&gt;start(...)&lt;/code&gt; method:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/jdbc/org.jboss.as.connector.subsystems.datasources.AbstractDataSourceService.start(StartContext).png&quot; alt=&quot;/assets/jdbc/org.jboss.as.connector.subsystems.datasources.AbstractDataSourceService.start(StartContext).png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;From the above diagram, we can see that the instance of &lt;code class=&quot;highlighter-rouge&quot;&gt;WildFlyDataSource&lt;/code&gt; is created in &lt;code class=&quot;highlighter-rouge&quot;&gt;start(...)&lt;/code&gt; method. To create the &lt;code class=&quot;highlighter-rouge&quot;&gt;WildFlyDataSource&lt;/code&gt; class instance, it uses the &lt;code class=&quot;highlighter-rouge&quot;&gt;AS7DataSourceDeployer&lt;/code&gt; to deploy a &lt;code class=&quot;highlighter-rouge&quot;&gt;CommonDeployment&lt;/code&gt; (the instance name is &lt;code class=&quot;highlighter-rouge&quot;&gt;deploymentMD&lt;/code&gt;) into the Wildfly container.&lt;/p&gt;
+
+&lt;p&gt;The &lt;code class=&quot;highlighter-rouge&quot;&gt;AS7DataSourceDeploy&lt;/code&gt; class is an inner class of &lt;code class=&quot;highlighter-rouge&quot;&gt;AbstractDataSourceService&lt;/code&gt; class, and its core part is the &lt;code class=&quot;highlighter-rouge&quot;&gt;deploy(...)&lt;/code&gt; method. Basicially speaking, the &lt;code class=&quot;highlighter-rouge&quot;&gt;deploy(...)&lt;/code&gt; method will register the datasource information and its driver reference into the container, and prepare the &lt;code class=&quot;highlighter-rouge&quot;&gt;CommonDeployment&lt;/code&gt; to fetch the &lt;code class=&quot;highlighter-rouge&quot;&gt;WildFlyDataSource&lt;/code&gt; from it. Here is the sequence diagram of the &lt;code class=&quot;highlighter-rouge&quot;&gt;AbstractDataSourceService.deploy(...)&lt;/code&gt; method:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/jdbc/AS7DataSourceDeployer.deploy(ServiceContainer).png&quot; alt=&quot;/assets/jdbc/AS7DataSourceDeployer.deploy(ServiceContainer).png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;From the above diagram, we can see that the datasource and its referred driver infomation will be wrapped into &lt;code class=&quot;highlighter-rouge&quot;&gt;dataSourceConfig : org.jboss.jca.common.api.metadata.ds.DataSource&lt;/code&gt;. This is the important thing we should know: Wildfly is using the JCA architecture(&lt;a href=&quot;https://en.wikipedia.org/wiki/Java_EE_Connector_Architecture&quot;&gt;Java EE Connector Architecture&lt;/a&gt;) to wrap the datasource. In Wildfly, the JCA implementation is provided by the IronJacamar project(&lt;a href=&quot;http://www.ironjacamar.org/&quot;&gt;http://www.ironjacamar.org/&lt;/a&gt;). We can’t dive into too many details of this part in this article, and I’ll articles on the topic in future.&lt;/p&gt;
+
+&lt;p&gt;Now let’s go back to the &lt;code class=&quot;highlighter-rouge&quot;&gt;AbstractDataSourceService.start(...)&lt;/code&gt; method:&lt;/p&gt;
+
+&lt;div class=&quot;language-java highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;synchronized&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;start&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;StartContext&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;startContext&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;throws&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;StartException&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;kd&quot;&gt;final&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ServiceContainer&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;container&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;startContext&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;getController&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;().&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;getServiceContainer&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;();&lt;/span&gt;
+
+        &lt;span class=&quot;n&quot;&gt;deploymentMD&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;getDeployer&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;().&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;deploy&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;container&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;deploymentMD&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;getCfs&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;().&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;length&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;!=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;throw&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ConnectorLogger&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;ROOT_LOGGER&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;cannotStartDs&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;();&lt;/span&gt;
+        &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;sqlDataSource&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;WildFlyDataSource&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;((&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;javax&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;sql&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;DataSource&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;deploymentMD&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;getCfs&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;()[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;],&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;jndiName&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;getAbsoluteJndiName&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;());&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;...&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;From the above code, we can see that the &lt;code class=&quot;highlighter-rouge&quot;&gt;WildFlyDataSource&lt;/code&gt; is created from the &lt;code class=&quot;highlighter-rouge&quot;&gt;org.jboss.jca.deployers.common.CommonDeployment&lt;/code&gt;. In conclusion, our datasource and its relying driver information is registered into the connector system, and the datasource is managed by the connector system.&lt;/p&gt;
+
+&lt;p&gt;In addition, we can see the driver loading process and the datasource loading process are independent from each other. The driver loading is handled by &lt;code class=&quot;highlighter-rouge&quot;&gt;JdbcDriverAdd&lt;/code&gt; as we saw in last chapter, and the datasource loading is handled by &lt;code class=&quot;highlighter-rouge&quot;&gt;DataSourceAdd&lt;/code&gt; as we learned in this article.&lt;/p&gt;
+
+&lt;p&gt;During the &lt;code class=&quot;highlighter-rouge&quot;&gt;DataSourceAdd&lt;/code&gt; loading process, it will just record the JDBC driver needed by the Datasource, but it will not perform the action to connect the driver with datasource. We can verify this by setting multiple breakpoints in the code, and check when does the server will add the driver to the datasource. I have set some breakpoints in &lt;code class=&quot;highlighter-rouge&quot;&gt;AbstractDataSourceAdd&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;AbstractDataSourceService&lt;/code&gt; and we will use them. In addition, let’s modify the datasource config in &lt;code class=&quot;highlighter-rouge&quot;&gt;standalone.xml&lt;/code&gt; a little bit:&lt;/p&gt;
+
+&lt;div class=&quot;language-xml highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nt&quot;&gt;&amp;lt;subsystem&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;xmlns=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;urn:jboss:domain:datasources:4.0&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
+    &lt;span class=&quot;nt&quot;&gt;&amp;lt;datasources&amp;gt;&lt;/span&gt;
+        &lt;span class=&quot;nt&quot;&gt;&amp;lt;datasource&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;jndi-name=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;java:jboss/datasources/weli&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;pool-name=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;weli&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;enabled=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;true&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;use-java-context=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;true&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
+            &lt;span class=&quot;nt&quot;&gt;&amp;lt;connection-url&amp;gt;&lt;/span&gt;jdbc:postgresql://localhost/weli&lt;span class=&quot;nt&quot;&gt;&amp;lt;/connection-url&amp;gt;&lt;/span&gt;
+            &lt;span class=&quot;nt&quot;&gt;&amp;lt;driver&amp;gt;&lt;/span&gt;void&lt;span class=&quot;nt&quot;&gt;&amp;lt;/driver&amp;gt;&lt;/span&gt;
+            &lt;span class=&quot;nt&quot;&gt;&amp;lt;security&amp;gt;&lt;/span&gt;
+                &lt;span class=&quot;nt&quot;&gt;&amp;lt;user-name&amp;gt;&lt;/span&gt;weli&lt;span class=&quot;nt&quot;&gt;&amp;lt;/user-name&amp;gt;&lt;/span&gt;
+            &lt;span class=&quot;nt&quot;&gt;&amp;lt;/security&amp;gt;&lt;/span&gt;
+        &lt;span class=&quot;nt&quot;&gt;&amp;lt;/datasource&amp;gt;&lt;/span&gt;
+        &lt;span class=&quot;nt&quot;&gt;&amp;lt;drivers&amp;gt;&lt;/span&gt;
+            &lt;span class=&quot;nt&quot;&gt;&amp;lt;driver&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;name=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;postgresql&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;module=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;org.postgresql&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;/&amp;gt;&lt;/span&gt;
+        &lt;span class=&quot;nt&quot;&gt;&amp;lt;/drivers&amp;gt;&lt;/span&gt;
+    &lt;span class=&quot;nt&quot;&gt;&amp;lt;/datasources&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;/subsystem&amp;gt;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;From the above code, we can see our datasource refers to a driver named &lt;code class=&quot;highlighter-rouge&quot;&gt;void&lt;/code&gt;, and this driver is not configured anywhere. We can deduce that the Wildfly server will throw error for this config, because it can’t find the &lt;code class=&quot;highlighter-rouge&quot;&gt;void&lt;/code&gt; driver for the datasource. Now let’s run the Wildfly server in standalone mode to see what happened:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;./standalone.sh
+...
+20:40:27,768 INFO  &lt;span class=&quot;o&quot;&gt;[&lt;/span&gt;org.jboss.as.connector.subsystems.datasources] &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;ServerService Thread Pool -- 33&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; WFLYJCA0005: Deploying non-JDBC-compliant driver class org.postgresql.Driver &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;version 42.0&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+20:40:27,774 INFO  &lt;span class=&quot;o&quot;&gt;[&lt;/span&gt;org.jboss.as.connector.deployers.jdbc] &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;MSC service thread 1-7&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; WFLYJCA0018: Started Driver service with driver-name &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; postgresql
+...
+20:40:30,919 ERROR &lt;span class=&quot;o&quot;&gt;[&lt;/span&gt;org.jboss.as.controller.management-operation] &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;Controller Boot Thread&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; WFLYCTL0013: Operation &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;add&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; failed - address: &lt;span class=&quot;o&quot;&gt;([&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;subsystem&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&amp;gt; &lt;span class=&quot;s2&quot;&gt;&quot;datasources&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;,
+    &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;data-source&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&amp;gt; &lt;span class=&quot;s2&quot;&gt;&quot;weli&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;])&lt;/span&gt; - failure description: &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;s2&quot;&gt;&quot;WFLYCTL0412: Required services that are not installed:&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&amp;gt; &lt;span class=&quot;o&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;jboss.jdbc-driver.void&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;]&lt;/span&gt;,
+    &lt;span class=&quot;s2&quot;&gt;&quot;WFLYCTL0180: Services with missing/unavailable dependencies&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&amp;gt; &lt;span class=&quot;o&quot;&gt;[&lt;/span&gt;
+        &lt;span class=&quot;s2&quot;&gt;&quot;org.wildfly.data-source.weli is missing [jboss.jdbc-driver.void]&quot;&lt;/span&gt;,
+        &lt;span class=&quot;s2&quot;&gt;&quot;jboss.driver-demander.java:jboss/datasources/weli is missing [jboss.jdbc-driver.void]&quot;&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;]&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+20:40:30,921 ERROR &lt;span class=&quot;o&quot;&gt;[&lt;/span&gt;org.jboss.as.controller.management-operation] &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;Controller Boot Thread&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; WFLYCTL0013: Operation &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;add&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; failed - address: &lt;span class=&quot;o&quot;&gt;([&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;subsystem&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&amp;gt; &lt;span class=&quot;s2&quot;&gt;&quot;datasources&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;,
+    &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;data-source&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&amp;gt; &lt;span class=&quot;s2&quot;&gt;&quot;weli&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;])&lt;/span&gt; - failure description: &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;s2&quot;&gt;&quot;WFLYCTL0412: Required services that are not installed:&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&amp;gt; &lt;span class=&quot;o&quot;&gt;[&lt;/span&gt;
+        &lt;span class=&quot;s2&quot;&gt;&quot;jboss.jdbc-driver.void&quot;&lt;/span&gt;,
+        &lt;span class=&quot;s2&quot;&gt;&quot;jboss.jdbc-driver.void&quot;&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;]&lt;/span&gt;,
+    &lt;span class=&quot;s2&quot;&gt;&quot;WFLYCTL0180: Services with missing/unavailable dependencies&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&amp;gt; &lt;span class=&quot;o&quot;&gt;[&lt;/span&gt;
+        &lt;span class=&quot;s2&quot;&gt;&quot;org.wildfly.data-source.weli is missing [jboss.jdbc-driver.void]&quot;&lt;/span&gt;,
+        &lt;span class=&quot;s2&quot;&gt;&quot;jboss.driver-demander.java:jboss/datasources/weli is missing [jboss.jdbc-driver.void]&quot;&lt;/span&gt;,
+        &lt;span class=&quot;s2&quot;&gt;&quot;org.wildfly.data-source.weli is missing [jboss.jdbc-driver.void]&quot;&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;]&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+20:40:31,155 INFO  &lt;span class=&quot;o&quot;&gt;[&lt;/span&gt;org.jboss.as.controller] &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;Controller Boot Thread&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; WFLYCTL0183: Service status report
+WFLYCTL0184:    New missing/unsatisfied dependencies:
+      service jboss.jdbc-driver.void &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;missing&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; dependents: &lt;span class=&quot;o&quot;&gt;[&lt;/span&gt;service jboss.driver-demander.java:jboss/datasources/weli, service org.wildfly.data-source.weli]
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;I have extracted the relative log from server output. From the above output, we can see the &lt;code class=&quot;highlighter-rouge&quot;&gt;datasources&lt;/code&gt; subsystem is started, and the &lt;code class=&quot;highlighter-rouge&quot;&gt;postgresql&lt;/code&gt; driver is installed successfuly. During the datasource loading process, it reports error that it can not find the &lt;code class=&quot;highlighter-rouge&quot;&gt;void&lt;/code&gt; driver. This is what we expected.&lt;/p&gt;
+
+&lt;p&gt;Now let’s stop the server and restart it in debug mode to do the more fine-grained analysis. The first breakpoint that the startup process met is shown in below screenshot:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/jdbc/breakpoint-ds1.png&quot; alt=&quot;/assets/jdbc/breakpoint-ds1.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;The above screenshot will start to register the datasource. Now let’s continue the server startup process, until it met the second breakpoint:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/jdbc/breakpoint-ds2.png&quot; alt=&quot;/assets/jdbc/breakpoint-ds2.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;From the above screenshot, we can see the code stops at the last line of &lt;code class=&quot;highlighter-rouge&quot;&gt;AbstractDataSourceAdd.firstRuntimeStep(...)&lt;/code&gt;, and the last step is to add driver demander of the datasource. Until this point, the server still haven’t load the driver, and it just add the datasource with the connector. Then I continued the server startup process, and this time the code stopped at the breakpoint I set in &lt;code class=&quot;highlighter-rouge&quot;&gt;JdbcDriverAdd&lt;/code&gt;:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/jdbc/breakpoint-ds3.png&quot; alt=&quot;/assets/jdbc/breakpoint-ds3.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;This is reasonable because in &lt;code class=&quot;highlighter-rouge&quot;&gt;standalone.xml&lt;/code&gt; we can see the &lt;code class=&quot;highlighter-rouge&quot;&gt;driver&lt;/code&gt; setting is in below of the &lt;code class=&quot;highlighter-rouge&quot;&gt;datasource&lt;/code&gt; setting.&lt;/p&gt;
+
+&lt;div class=&quot;language-xml highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nt&quot;&gt;&amp;lt;subsystem&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;xmlns=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;urn:jboss:domain:datasources:4.0&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
+    &lt;span class=&quot;nt&quot;&gt;&amp;lt;datasources&amp;gt;&lt;/span&gt;
+        &lt;span class=&quot;nt&quot;&gt;&amp;lt;datasource&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;jndi-name=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;java:jboss/datasources/weli&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;pool-name=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;weli&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;enabled=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;true&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;use-java-context=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;true&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
+            &lt;span class=&quot;nt&quot;&gt;&amp;lt;connection-url&amp;gt;&lt;/span&gt;jdbc:postgresql://localhost/weli&lt;span class=&quot;nt&quot;&gt;&amp;lt;/connection-url&amp;gt;&lt;/span&gt;
+            &lt;span class=&quot;nt&quot;&gt;&amp;lt;driver&amp;gt;&lt;/span&gt;void&lt;span class=&quot;nt&quot;&gt;&amp;lt;/driver&amp;gt;&lt;/span&gt;
+            &lt;span class=&quot;nt&quot;&gt;&amp;lt;security&amp;gt;&lt;/span&gt;
+                &lt;span class=&quot;nt&quot;&gt;&amp;lt;user-name&amp;gt;&lt;/span&gt;weli&lt;span class=&quot;nt&quot;&gt;&amp;lt;/user-name&amp;gt;&lt;/span&gt;
+            &lt;span class=&quot;nt&quot;&gt;&amp;lt;/security&amp;gt;&lt;/span&gt;
+        &lt;span class=&quot;nt&quot;&gt;&amp;lt;/datasource&amp;gt;&lt;/span&gt;
+        &lt;span class=&quot;nt&quot;&gt;&amp;lt;drivers&amp;gt;&lt;/span&gt;
+            &lt;span class=&quot;nt&quot;&gt;&amp;lt;driver&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;name=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;postgresql&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;module=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;org.postgresql&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;/&amp;gt;&lt;/span&gt;
+        &lt;span class=&quot;nt&quot;&gt;&amp;lt;/drivers&amp;gt;&lt;/span&gt;
+    &lt;span class=&quot;nt&quot;&gt;&amp;lt;/datasources&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;/subsystem&amp;gt;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;From the above configuration, we can see that the the &lt;code class=&quot;highlighter-rouge&quot;&gt;driver&lt;/code&gt; section is belowing the &lt;code class=&quot;highlighter-rouge&quot;&gt;datasource&lt;/code&gt; section, but in &lt;code class=&quot;highlighter-rouge&quot;&gt;datasource&lt;/code&gt; section it refers to the driver with &lt;code class=&quot;highlighter-rouge&quot;&gt;driver&lt;/code&gt; item. By setting the breakpoints in &lt;code class=&quot;highlighter-rouge&quot;&gt;AbstractDataSourceAdd&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;JdbcDriverAdd&lt;/code&gt;, we can also confirm the &lt;code class=&quot;highlighter-rouge&quot;&gt;AbstractDataSourceAdd&lt;/code&gt; executed before the &lt;code class=&quot;highlighter-rouge&quot;&gt;JdbcDriverAdd&lt;/code&gt;. In conclusion, the Wildfly datasource subsystem will connect the datasource with its driver after loading them independently.&lt;/p&gt;
+
+&lt;p&gt;Finally I continued the startup process, and the &lt;code class=&quot;highlighter-rouge&quot;&gt;JdbcDriverAdd&lt;/code&gt; successfully installed the jdbc driver. At last, the &lt;code class=&quot;highlighter-rouge&quot;&gt;org.jboss.as.controller.management-operation&lt;/code&gt; module threw the error as we see in above. We won’t dive into details of the &lt;code class=&quot;highlighter-rouge&quot;&gt;management-operation&lt;/code&gt; in this article.&lt;/p&gt;
+
+&lt;p&gt;In this article, I have introduced the datasource loading process. In next article, I’ll introduce the usage of datasource in Wildfly.&lt;/p&gt;
+</description>
+          <pubDate>2017-05-28T00:00:00+00:00</pubDate>
+          <link>/2017/05/28/jdbc-part8.html</link>
+          <guid isPermaLink="true">/2017/05/28/jdbc-part8.html</guid>
+        </item>
+      
+    
+      
+        <item>
           <title>Adventures in JDBC and the PostgreSQL JDBC driver: Part 7 - The JDBC driver loading process in Wildfly</title>
           <description>&lt;p&gt;In the previous article, we have learned how to add a JDBC database driver module into Wildfly, and how to configure a datasource to use hte driver. In this article, let’s see the JDBC driver loading process in Wildfly.&lt;/p&gt;
 
@@ -90,7 +363,7 @@
 
 &lt;p&gt;The above articles will give you an introduction to the Wildfly micro container design.&lt;/p&gt;
 
-&lt;p&gt;I haven’t determined the topic to write in next article. You will see when it comes out.&lt;/p&gt;
+&lt;p&gt;In this article, we have checked how does Wildfly load the JDBC driver. In next article, I will introduce the Wildfly datasource loading process.&lt;/p&gt;
 
 </description>
           <pubDate>2017-05-25T00:00:00+00:00</pubDate>
