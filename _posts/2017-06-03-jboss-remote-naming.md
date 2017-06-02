@@ -39,7 +39,7 @@ From the above diagram, we can see the `NamingStore` interface contains the oper
 
 We can see there are multiple implementations of `NamingStore` in above. The `InMemoryNamingStore` is not used in Wildfly production environment, but you can check its code see how to implement a naming store. The `ServiceBasedNamingStore` and its subclass are used by Wildfly runtime. We can see its usages in these classes:
 
-```java
+```bash
 $ pwd
 /Users/weli/projs/jboss/wildfly/naming
 $ grep -rl 'ServiceBasedNamingStore' *
