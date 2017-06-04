@@ -127,7 +127,7 @@ TODO
 
 From the above diagram, we can see the `ProtocolCommand` defines two methods: one is `handleServerMessage(...)` and the other is `handleClientMessage(...)`.
 
-In `handleServerMessage(...)` method, it uses the `remoteNamingService` (There is currently a type in the class, and I have submitted the PR to fix it. See [fix a minor typo in ProtocolCommand #32](https://github.com/jbossas/jboss-remote-naming/pull/32/files)) to interact with the naming service provider(The Wildfly server in our case).
+In `handleServerMessage(...)` method, it uses the `remoteNamingService` (There is currently a type in the class, and I have submitted the PR to fix it. See: [fix a minor typo in ProtocolCommand #32](https://github.com/jbossas/jboss-remote-naming/pull/32/files)) to interact with the naming service provider(The Wildfly server in our case).
 
 In `handleClientMessage(...)` method, it uses the `namingStore` to deal with the user requests. This is very similar to the situation we have see in the previous article, which Wildfly uses the local `NamingStore` to deal with the local JNDI requests.
 
