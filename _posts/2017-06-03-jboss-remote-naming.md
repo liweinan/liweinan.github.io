@@ -30,7 +30,6 @@ From the above declaration, we can see `NamingService` implements the `Service<N
 
 ![/assets/naming/NamingStore.png](/assets/naming/NamingStore.png)
 
-
 From the above diagram, we can see the `NamingStore` interface contains the operations defined by the JNDI spec. For example, there are operations like `lookup`, `list`, `listBindings`, etc.
 
 `NamingStore` is an interface that can be implemented as a standalone container, or provided by the underlying application server. Here is the class diagram of the interface and its implementations:
