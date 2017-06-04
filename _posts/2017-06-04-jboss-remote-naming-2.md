@@ -47,7 +47,11 @@ So we should focus on checking the `RemoteNamingService` class provided by the `
 
 [https://github.com/jbossas/jboss-remote-naming](https://github.com/jbossas/jboss-remote-naming)
 
-You need to clone the above repository to your local machine to check the source code.
+You need to clone the above repository to your local machine to check the source code. Here is the screenshot of the project in my IDE:
+
+[https://github.com/jbossas/remote-naming.png](https://github.com/jbossas/remote-naming.png)
+
+From the above screenshot, you can see the project structure of the `jboss-remote-naming` project.
 
 Now let's see the class diagram of the `RemoteNamingService` class:
 
@@ -117,13 +121,13 @@ From the above screenshot, we can see the operations implemented by the class. B
 
 Now let's check the `RemoteNamingStore` interface and its implementation `RemoteNamingStoreV1`. Here is the class diagram of them:
 
-TODO
+![/assets/naming/RemoteNamingStore.png](/assets/naming/RemoteNamingStore.png)
 
 From the above diagram, we can see the `RemoteNamingStore` is used to store the naming resources provide the resources via JNDI operations.
 
 What's the relationship of the `RemoteNamingStore` interface and the `RemoteNamingServer` interface? To answer this question, we can check the `ProtocolCommand` interface. Here is the class diagram of the interface:
 
-TODO
+![/assets/naming/ProtocolCommand.png](/assets/naming/ProtocolCommand.png)
 
 From the above diagram, we can see the `ProtocolCommand` defines two methods: one is `handleServerMessage(...)` and the other is `handleClientMessage(...)`.
 
