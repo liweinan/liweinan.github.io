@@ -49,7 +49,7 @@ So we should focus on checking the `RemoteNamingService` class provided by the `
 
 You need to clone the above repository to your local machine to check the source code. Here is the screenshot of the project in my IDE:
 
-[https://github.com/jbossas/remote-naming.png](https://github.com/jbossas/remote-naming.png)
+![/assets/naming/remote-naming.png](/assets/naming/remote-naming.png)
 
 From the above screenshot, you can see the project structure of the `jboss-remote-naming` project.
 
