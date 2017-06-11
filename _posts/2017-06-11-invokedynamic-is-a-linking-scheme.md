@@ -241,7 +241,7 @@ The above two `LambdaMetafactory.metafactory(...)` methods are invoked by the tw
 
 The final result returned by `LambdaMetafactory.metafactory(...)` is a `CallSite` class instance, and it contains the `MethodHandle` class instance to be invoked.
 
-From the above process, we can see the lambda expression helps us to create anonymous class and the Java compiler will generate the `invokedynamic` instruction for the lambda expression. At last, the bootstrap method like ``LambdaMetafactory.metafactory(...)` will be put into the bootstrap methods table, and they are used to do the real linking job.  
+From the above process, we can see the lambda expression helps us to create anonymous class and the Java compiler will generate the `invokedynamic` instruction for the lambda expression. At last, the bootstrap method like `LambdaMetafactory.metafactory(...)` will be put into the bootstrap methods table, and they are used to do the real linking job.  
 
 
 
