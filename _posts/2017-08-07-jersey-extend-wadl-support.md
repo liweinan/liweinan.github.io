@@ -187,7 +187,30 @@ And here is the content of the `xsd0.xsd`:
 </xs:schema>
 ```
 
-This is related with the JAXB class resource in the example, and we will check the detail later.
+This is related with the JAXB class resource in the example, and we will check the detail later. Now we can check the server output in detail. Here is the part I'm interested in:
+
+```
+Aug 07, 2017 4:51:10 PM org.glassfish.jersey.server.wadl.config.WadlGeneratorLoader loadWadlGenerator
+INFO: Loading wadlGenerator org.glassfish.jersey.server.wadl.internal.generators.WadlGeneratorGrammarsSupport
+Aug 07, 2017 4:51:10 PM org.glassfish.jersey.server.wadl.config.WadlGeneratorLoader loadWadlGenerator
+INFO: Loading wadlGenerator org.glassfish.jersey.server.wadl.internal.generators.WadlGeneratorGrammarsSupport
+Aug 07, 2017 4:51:10 PM org.glassfish.jersey.server.wadl.internal.WadlApplicationContextImpl attachExternalGrammar
+INFO: The wadl application already contains a grammars element, were adding elements of the provided grammars file.
+Aug 07, 2017 4:53:08 PM org.glassfish.jersey.server.wadl.config.WadlGeneratorLoader loadWadlGenerator
+INFO: Loading wadlGenerator org.glassfish.jersey.server.wadl.internal.generators.WadlGeneratorGrammarsSupport
+Aug 07, 2017 4:53:08 PM org.glassfish.jersey.server.wadl.internal.WadlApplicationContextImpl attachExternalGrammar
+INFO: The wadl application already contains a grammars element, were adding elements of the provided grammars file.
+```
+
+From the above debug log output, we can see the load process of `WadlGeneratorGrammarsSupport`. We can see a class named `WadlGeneratorLoader`, and there is a method named `loadWadlGenerator`. We will check this later. Then we can see a class `WadlApplicationContextImpl` and its method `attachExternalGrammar`. This should be the place that deals with the grammars, and we will check in detail later. At last, we can see some `INFO` like this:
+
+```
+INFO: The wadl application already contains a grammars element, were adding elements of the provided grammars file.
+```
+
+This is because we didn't override the default grammars generation by setting `overrideGrammars` to `false` in `WadlGeneratorGrammarsSupport`, and that's what we expected.
+
+
 
 
 
