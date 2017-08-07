@@ -210,8 +210,88 @@ INFO: The wadl application already contains a grammars element, were adding elem
 
 This is because we didn't override the default grammars generation by setting `overrideGrammars` to `false` in `WadlGeneratorGrammarsSupport`, and that's what we expected.
 
+Now let's check `WadlApplicationContextImpl` in detail. In the class there is a `getApplication(...)` method:
 
+```java
+@Override
+public ApplicationDescription getApplication(final UriInfo uriInfo, final boolean detailedWadl) {
+    final ApplicationDescription applicationDescription = getWadlBuilder(detailedWadl, uriInfo)
+            .generate(resourceContext.getResourceModel().getRootResources());
+    final Application application = applicationDescription.getApplication();
+    for (final Resources resources : application.getResources()) {
+        if (resources.getBase() == null) {
+            resources.setBase(uriInfo.getBaseUri().toString());
+        }
+    }
+    attachExternalGrammar(application, applicationDescription, uriInfo.getRequestUri());
+    return applicationDescription;
+}
+```
 
+From the above code, we can see a method named `attachExternalGrammar(...)` is used to deal with the grammars section. Here is the code of the `attachExternalGrammar(...)` method:
+
+```java
+/**
+ * Update the application object to include the generated grammar objects.
+ */
+private void attachExternalGrammar(
+        final Application application,
+        final ApplicationDescription applicationDescription,
+        URI requestURI) {
+
+    // Massage the application.wadl URI slightly to get the right effect
+    //
+
+    try {
+        final String requestURIPath = requestURI.getPath();
+
+        if (requestURIPath.endsWith("application.wadl")) {
+            requestURI = UriBuilder.fromUri(requestURI)
+                    .replacePath(
+                            requestURIPath
+                                    .substring(0, requestURIPath.lastIndexOf('/') + 1))
+                    .build();
+        }
+
+        final String root = application.getResources().get(0).getBase();
+        final UriBuilder extendedPath = root != null
+                ? UriBuilder.fromPath(root).path("/application.wadl/") : UriBuilder.fromPath("./application.wadl/");
+        final URI rootURI = root != null ? UriBuilder.fromPath(root).build() : null;
+
+        // Add a reference to this grammar
+        //
+
+        final Grammars grammars;
+        if (application.getGrammars() != null) {
+            LOGGER.info(LocalizationMessages.ERROR_WADL_GRAMMAR_ALREADY_CONTAINS());
+            grammars = application.getGrammars();
+        } else {
+            grammars = new Grammars();
+            application.setGrammars(grammars);
+        }
+
+        // Create a reference back to the root WADL
+        //
+
+        for (final String path : applicationDescription.getExternalMetadataKeys()) {
+            final URI schemaURI = extendedPath.clone().path(path).build();
+            final String schemaPath = rootURI != null ? requestURI.relativize(schemaURI).toString() : schemaURI.toString();
+
+            final Include include = new Include();
+            include.setHref(schemaPath);
+            final Doc doc = new Doc();
+            doc.setLang("en");
+            doc.setTitle("Generated");
+            include.getDoc().add(doc);
+
+            // Finally add to list
+            grammars.getInclude().add(include);
+        }
+    } catch (final Exception e) {
+        throw new ProcessingException(LocalizationMessages.ERROR_WADL_EXTERNAL_GRAMMAR(), e);
+    }
+}
+```
 
 
 
