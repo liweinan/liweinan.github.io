@@ -49,7 +49,39 @@ From above code we can see Jersey supports several extended WADL documents by di
 
 ![/assets/2017-08-07-wadl-generator.png](/assets/2017-08-07-wadl-generator.png)
 
-From the above diagram, we can see the relationship of the `WadlGenerator` interface and its implementation classes.
+From the above diagram, we can see the relationship of the `WadlGenerator` interface and its implementation classes. I want to focus on `WadlGeneratorGrammarsSupport` in this article, so I will check the `grammars` part of the WADL output in detail. I comment out other two parts in `SampleWadlGeneratorConfig`:
+
+```java
+public class SampleWadlGeneratorConfig extends WadlGeneratorConfig {
+
+    @Override
+    public List<WadlGeneratorDescription> configure() {
+        return generator(WadlGeneratorGrammarsSupport.class)
+                .prop("grammarsStream", "application-grammars.xml")
+                .prop("overrideGrammars", true)
+//                .generator(WadlGeneratorApplicationDoc.class)
+//                .prop("applicationDocsStream", "application-doc.xml")
+//                .generator(WadlGeneratorResourceDocSupport.class)
+//                .prop("resourceDocStream", "resourcedoc.xml")
+                .descriptions();
+    }
+
+}
+```
+
+And I run the sample server with following command:
+
+```bash
+$ mvn clean package exec:java -Dmaven.test.skip=true
+```
+
+And the server started like this:
+
+![/assets/2017-08-07-server-start.png](/assets/2017-08-07-server-start.png)
+
+
+
+
 
 ### _References_
 
