@@ -293,7 +293,34 @@ private void attachExternalGrammar(
 }
 ```
 
+In above code, I can see the generated `include` part is added into `grammars` section. Here is the relative code:
 
+```java
+for (final String path : applicationDescription.getExternalMetadataKeys()) {
+    final URI schemaURI = extendedPath.clone().path(path).build();
+    final String schemaPath = rootURI != null ? requestURI.relativize(schemaURI).toString() : schemaURI.toString();
+
+    final Include include = new Include();
+    include.setHref(schemaPath);
+    final Doc doc = new Doc();
+    doc.setLang("en");
+    doc.setTitle("Generated");
+    include.getDoc().add(doc);
+
+    // Finally add to list
+    grammars.getInclude().add(include);
+}
+```
+
+I set a breakpoint to above logic, and set Maven to run in remote debug mode with this command:
+
+```bash
+export MAVEN_OPTS="-Xdebug -Xnoagent -Djava.compiler=NONE -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=8989"
+```
+
+And then I restart the server, and remote debug it in IntelliJ. Here is the callstack I got in IntelliJ:
+
+![/assets/2017-08-08-grammar-callstack.png](/assets/2017-08-08-grammar-callstack.png)
 
 ### _References_
 
