@@ -76,8 +76,6 @@ Please note `Application` is just a method to help users to register their reste
 
 ### _References_
 
----
-
 [^1]: [JerseyServletContainerInitializer.java](https://github.com/jersey/jersey/blob/master/containers/jersey-servlet/src/main/java/org/glassfish/jersey/servlet/init/JerseyServletContainerInitializer.java#L156)
 
 [^2]: [ResourceConfig.java](https://github.com/jersey/jersey/blob/master/core-server/src/main/java/org/glassfish/jersey/server/ResourceConfig.java#L108)

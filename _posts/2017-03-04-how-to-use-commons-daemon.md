@@ -379,5 +379,3 @@ Currently the `systemd` can achieve most parts of  the process control function 
 [^6]: [What benefit do I get from JSVC over just using systemd?](http://stackoverflow.com/questions/28894008/what-benefit-do-i-get-from-jsvc-over-just-using-systemd)
 
 ### _References_
-
----

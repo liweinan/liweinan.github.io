@@ -153,6 +153,4 @@ I won't dig into more details in this article, but you should get a good underst
 
 ### _References_
 
----
-
 [^undertow]: [http://undertow.io.](http://undertow.io/)

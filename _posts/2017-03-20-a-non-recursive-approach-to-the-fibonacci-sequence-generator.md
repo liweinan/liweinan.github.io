@@ -77,7 +77,5 @@ In conclusion, though the recursive implementation is clean in design, but somet
 
 ### _References_
 
----
-
 [^fibrec]: [http://introcs.cs.princeton.edu.](http://introcs.cs.princeton.edu/java/23recursion/Fibonacci.java.html)
 [^tail]: [https://en.wikipedia.org.](https://en.wikipedia.org/wiki/Tail_call)

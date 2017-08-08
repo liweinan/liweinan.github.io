@@ -54,5 +54,3 @@ From the above diagram we can see the main logic is `registry.getResourceInvoker
 After getting the invoker, the dispatcher will run `invoker.invoke()` method to call the real method matches the incoming request. The discussion on invoker is out of the scope in this article, and I'll write another article to introduce the design on invoker.
 
 ### _References_
-
----

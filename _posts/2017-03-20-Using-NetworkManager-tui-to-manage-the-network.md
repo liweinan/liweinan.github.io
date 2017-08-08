@@ -68,5 +68,3 @@ I won't explain much about the usage of `nmcli` in this article. If you need to 
 [^nmcli]:[https://fedoraproject.org.](https://fedoraproject.org/wiki/Networking/CLI)
 
 ### _References_
-
----

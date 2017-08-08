@@ -127,5 +127,3 @@ for (ResteasyWadlServiceRegistry subService : serviceRegistry.getLocators())
 We can see again from here that the resource locators are just nested resources.
 
 ### _References_
-
----

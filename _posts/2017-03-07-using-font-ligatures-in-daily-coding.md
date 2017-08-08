@@ -48,5 +48,3 @@ Finally, I'd like to recommend an interesting article related with ligatures[^de
 [^decline-and-fall-of-the-ligature]: [Decline And Fall Of The Ligature](http://ilovetypography.com/2007/09/09/decline-and-fall-of-the-ligature/)
 
 ### _References_
-
----

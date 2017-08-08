@@ -221,8 +221,6 @@ Above are just some personal comments and they are not the decisions from RESTEa
 
 ### _References_
 
----
-
 [^1]: [Central Authentication Service (CAS).](https://github.com/apereo/cas)
 [^2]: [OpenID.](https://en.wikipedia.org/wiki/OpenID)
 [^3]: [Security Assertion Markup Language.](https://en.wikipedia.org/wiki/Security_Assertion_Markup_Language)

@@ -592,5 +592,3 @@ From the above screenshot, we can see client on machine A gets the result from `
 In this article, we have written a Java application with CORBA standard and Java RMI-IIOP implementation. We have seen the achitecture defined by the CORBA, and we see how does Java platform provides us multiple tools to write the application that conforms to the standard. The CORBA and Java RMI-IIOP standards are the basis of many modern application servers. I wish this article is a good start for you to dig deeper in this area in future.
 
 ### _References_
-
----

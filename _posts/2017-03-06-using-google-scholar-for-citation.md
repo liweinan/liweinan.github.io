@@ -38,5 +38,3 @@ As you can see in this article, with the help of _Google Scholar_ and _BibDesk_,
 [^bibdesk]: [BibDesk](http://bibdesk.sourceforge.net/)
 
 ### _References_
-
----
