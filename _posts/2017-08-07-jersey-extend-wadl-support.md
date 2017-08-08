@@ -322,6 +322,32 @@ And then I restart the server, and remote debug it in IntelliJ. Here is the call
 
 ![/assets/2017-08-08-grammar-callstack.png](/assets/2017-08-08-grammar-callstack.png)
 
+From above screenshot, we can see the `applicationDescription` has the `getExternalMetadataKeys()` method, and `path` is fetched from it. The default path value is `xsd0.xsd`. This is the automatically generated grammar file by Jersey. Here is the code of `getExternalMetadataKeys()` method inside `ApplicationDescription` class:
+
+```java
+/**
+ * @return A set of all the external metadata keys
+ */
+public Set<String> getExternalMetadataKeys() {
+    return _externalGrammarDefiniton.map.keySet();
+}
+```
+
+We can see the method only return the key set of `_externalGrammarDefiniton`. Here is the definition of `_externalGrammarDefiniton` inside `ApplicationDescription`:
+
+```java
+private WadlGenerator.ExternalGrammarDefinition _externalGrammarDefiniton;
+```
+
+From above we can see the `ExternalGrammarDefinition` is an inner class of `WadlGenerator`, and here is the class diagram of it:
+
+![/assets/2017-08-08-ExternalGrammarDefinition.png](/assets/2017-08-08-ExternalGrammarDefinition.png)
+
+From above diagram we can see the `ExternalGrammarDefinition` class has a map of `ExternalGrammar` and a list of `Resolver`. Here is the class diagram of these classes:
+
+![/assets/2017-08-08-ExternalGrammar.png](/assets/2017-08-08-ExternalGrammar.png)
+
+
 ### _References_
 
 ---
