@@ -347,6 +347,13 @@ From above diagram we can see the `ExternalGrammarDefinition` class has a map of
 
 ![/assets/2017-08-08-ExternalGrammar.png](/assets/2017-08-08-ExternalGrammar.png)
 
+From above diagram, we can see `ExternalGrammar` contains `_content` with type of `byte[]`. The `ExternalGrammar` is used in `WadlResource`. Here is the class diagram of the `WadlResource`:
+
+![/assets/2017-08-09-WadlResource.png](/assets/2017-08-09-WadlResource.png)
+
+Here is the sequence diagram of the `getWadl` method in `WadlResource`:
+
+![/assets/org.glassfish.jersey.server.wadl.internal.WadlApplicationContextImpl.attachExternalGrammar(Application, ApplicationDescription, URI).png](/assets/org.glassfish.jersey.server.wadl.internal.WadlApplicationContextImpl.attachExternalGrammar(Application, ApplicationDescription, URI).png)
 
 ### _References_
 
