@@ -361,7 +361,7 @@ From the above sequence diagram, we can see the method will get `ApplicationDesc
 
 From the above sequence diagram, we can see the method will finally call the `getExternalGrammar(...)` method in `ApplicationDescription`. Here is the sequence diagram:
 
-![/assets/org.glassfish.jersey.server.wadl.internal.WadlResource.getExternalGrammar(UriInfo, String).png)](/assets/org.glassfish.jersey.server.wadl.internal.WadlResource.getExternalGrammar(UriInfo, String).png))
+![/assets/org.glassfish.jersey.server.wadl.internal.ApplicationDescription.getExternalGrammar(String).png)](/assets/org.glassfish.jersey.server.wadl.internal.ApplicationDescription.getExternalGrammar(String).png)
 
 From above we can see the method will return the instance of `ExternalGrammar`.
 
