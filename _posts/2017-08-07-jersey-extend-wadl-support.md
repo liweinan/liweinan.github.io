@@ -351,16 +351,20 @@ From above diagram, we can see `ExternalGrammar` contains `_content` with type o
 
 ![/assets/2017-08-09-WadlResource.png](/assets/2017-08-09-WadlResource.png)
 
-This is a JAX-RS resource class created by Jeresy to provide the `/application.wadl' resource. I'd like to check the `getWadl(...)` and `getExternalGrammar(...)` methods in the class. Firstly here is the sequence diagram of the `getWadl(...)` method in `WadlResource`:
+This is a JAX-RS resource class created by Jeresy to provide the `/application.wadl` resource. I'd like to check the `getWadl(...)` and `getExternalGrammar(...)` methods in the class. Firstly here is the sequence diagram of the `getWadl(...)` method in `WadlResource`:
 
 ![/assets/org.glassfish.jersey.server.wadl.internal.WadlApplicationContextImpl.attachExternalGrammar(Application, ApplicationDescription, URI).png](/assets/org.glassfish.jersey.server.wadl.internal.WadlApplicationContextImpl.attachExternalGrammar(Application, ApplicationDescription, URI).png)
 
-From the above sequence diagram, we can see the method will get `ApplicationDescription` from `WadlApplicationContext`, and then from `WadlApplicationContext` it will get the `ApplicationDescription`. Finally the `Application` will be fetched from `WadlApplicationDescription`.
+From the above sequence diagram, we can see the method will get `ApplicationDescription` from `WadlApplicationContext`, and then from `WadlApplicationContext` it will get the `ApplicationDescription`. Finally the `Application` will be fetched from `WadlApplicationDescription`. Now let's check the sequence diagram of the `getExternalGrammar(...)` method:
 
-Now let's check the sequence diagram of the `getExternalGrammar(...)` method.
+![/assets/org.glassfish.jersey.server.wadl.internal.WadlResource.getExternalGrammar(UriInfo, String).png](/assets/org.glassfish.jersey.server.wadl.internal.WadlResource.getExternalGrammar(UriInfo, String).png)
+
+From the above sequence diagram, we can see the method will finally call the `getExternalGrammar(...)` method in `ApplicationDescription`. Here is the sequence diagram:
+
+![/assets/org.glassfish.jersey.server.wadl.internal.WadlResource.getExternalGrammar(UriInfo, String).png)](/assets/org.glassfish.jersey.server.wadl.internal.WadlResource.getExternalGrammar(UriInfo, String).png))
+
+From above we can see the method will return the instance of `ExternalGrammar`.
 
 ### _References_
-
----
 
 [^jersey]: Jersey codebase Github mirror: [https://github.com/jersey/jersey](https://github.com/jersey/jersey)
