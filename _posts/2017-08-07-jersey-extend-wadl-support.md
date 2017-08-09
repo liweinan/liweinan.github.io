@@ -351,7 +351,7 @@ From above diagram, we can see `ExternalGrammar` contains `_content` with type o
 
 ![/assets/2017-08-09-WadlResource.png](/assets/2017-08-09-WadlResource.png)
 
-Here is the sequence diagram of the `getWadl` method in `WadlResource`:
+This is a JAX-RS resource class created by Jeresy to provide the `/application.wadl' resource. I'd like to check the `getWadl(...)` and `getExternalGrammar(...)` methods in the class. Firstly here is the sequence diagram of the `getWadl(...)` method in `WadlResource`:
 
 ![/assets/org.glassfish.jersey.server.wadl.internal.WadlApplicationContextImpl.attachExternalGrammar(Application, ApplicationDescription, URI).png](/assets/org.glassfish.jersey.server.wadl.internal.WadlApplicationContextImpl.attachExternalGrammar(Application, ApplicationDescription, URI).png)
 
