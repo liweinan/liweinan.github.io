@@ -363,7 +363,23 @@ From the above sequence diagram, we can see the method will finally call the `ge
 
 ![/assets/org.glassfish.jersey.server.wadl.internal.ApplicationDescription.getExternalGrammar(String).png)](/assets/org.glassfish.jersey.server.wadl.internal.ApplicationDescription.getExternalGrammar(String).png)
 
-From above we can see the method will return the instance of `ExternalGrammar`.
+From above we can see the method will return the instance of `ExternalGrammar`. After learning the above WADL generation process, now let's check how does the default `xsd0.xsd` grammars get generated.
+
+Firstly we should check the `getExternalGrammar(...)` method in `WadlResource`, because from the `@Path` configuration of this method, we can see it will serve the `/application.wadl/{path}` path, and so it will serve the generated `/application.wadl/xsd0.xsd` path. This is the core part of the `getExternalGrammar(...)` method:
+
+```java
+ApplicationDescription applicationDescription =
+        wadlContext.getApplication(uriInfo, WadlUtils.isDetailedWadlRequested(uriInfo));
+
+// Fail is we don't have any metadata for this path
+ApplicationDescription.ExternalGrammar externalMetadata = applicationDescription.getExternalGrammar(path);
+```
+
+In above code, the `ApplicationDescription` is fetched from `WadlContenxt`, and in `ApplicationDescription` it contains `ExternalGrammar`. Finally, in `ExternalGrammar` it contains the generated WADL data. We can confirm this by setting a breakpoint in the `getApplication()` method of `WadlApplicationContextImpl` class, and here is the screenshot:
+
+![/assets/WadlApplicationContextImpl.png](/assets/WadlApplicationContextImpl.png)
+
+From the above screenshot, we can see the `_content` in `_externalGrammarDefiniton` of `WadlApplicationContextImpl` contains the generated WADL data related with `xsd0.xsd`, and this generation process happened in `getApplication()` method.
 
 ### _References_
 
