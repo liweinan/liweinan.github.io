@@ -381,8 +381,17 @@ In above code, the `ApplicationDescription` is fetched from `WadlContenxt`, and 
 
 From the above screenshot, we can see the `_content` in `_externalGrammarDefiniton` of `WadlApplicationContextImpl` contains the generated WADL data related with `xsd0.xsd`, and this generation process happened in `getApplication()` method.
 
-![/assets/WadlGeneratorJAXBGrammarGenerator.png](/assets/WadlGeneratorJAXBGrammarGenerator.png)
+In `getApplication(...)` method of `WadlApplicationContextImpl`, the core part is here:
 
+```java
+final ApplicationDescription applicationDescription = getWadlBuilder(detailedWadl, uriInfo)
+        .generate(resourceContext.getResourceModel().getRootResources());
+
+```
+
+We can see it will call its `getWadlBuilder(...)` method to get an instance of `WadlBuilder` and then use it to generate the WADL data. I set a breakpoint here and found that the class that implements the `WadlBuilder` interface fetched here is `WadlGeneratorJAXBGrammarGenerator`. Here is the class diagram of `WadlGeneratorJAXBGrammarGenerator`:
+
+![/assets/WadlGeneratorJAXBGrammarGenerator.png](/assets/WadlGeneratorJAXBGrammarGenerator.png)
 
 
 ### _References_
