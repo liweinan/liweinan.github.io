@@ -381,6 +381,10 @@ In above code, the `ApplicationDescription` is fetched from `WadlContenxt`, and 
 
 From the above screenshot, we can see the `_content` in `_externalGrammarDefiniton` of `WadlApplicationContextImpl` contains the generated WADL data related with `xsd0.xsd`, and this generation process happened in `getApplication()` method.
 
+![/assets/WadlGeneratorJAXBGrammarGenerator.png](/assets/WadlGeneratorJAXBGrammarGenerator.png)
+
+
+
 ### _References_
 
 [^jersey]: Jersey codebase Github mirror: [https://github.com/jersey/jersey](https://github.com/jersey/jersey)
