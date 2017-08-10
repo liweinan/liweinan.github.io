@@ -447,6 +447,18 @@ I set a breakpoint here and found that the class that implements the `WadlBuilde
 
 ![/assets/WadlGeneratorJAXBGrammarGenerator.png](/assets/WadlGeneratorJAXBGrammarGenerator.png)
 
+The purpose of calling the `createExternalGrammar()` method in `WadlGeneratorJAXBGrammarGenerator` is to fill the `WadlGenerator.ExternalGrammarDefinition`. After the method is called inside `WadlBuilder.generator()`, we can see the `_content` inside `ExternalGrammarDefinition` is filled. Here is the screenshot:
+
+![/assets/2017-08-10-content.png](/assets/2017-08-10-content.png)
+
+After above internal grammars generation process is done, the main work is almost done. It will attach the rest of metadata to the grammars section, and finally the filled `ApplicationDescription.ExternalGrammar` will be returned to `WadlResource`. Here is the screenshot:
+
+![/assets/2017-08-10-WadlResource.png](/assets/2017-08-10-WadlResource.png)
+
+From the above screenshot, we can see the `ApplicationDescription.ExternalGrammar` is finally returned to `WadlResource.getExternalGrammar(...)` method, and it will be returned to the caller of `/application.wadl/xsd0.xsd`.
+
+In the next step, I'd like to analyze how the `xsd0.xsd` is related with the generated grammars.
+
 ### _References_
 
 [^jersey]: Jersey codebase Github mirror: [https://github.com/jersey/jersey](https://github.com/jersey/jersey)
