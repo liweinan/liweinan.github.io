@@ -457,7 +457,11 @@ After above internal grammars generation process is done, the main work is almos
 
 From the above screenshot, we can see the `ApplicationDescription.ExternalGrammar` is finally returned to `WadlResource.getExternalGrammar(...)` method, and it will be returned to the caller of `/application.wadl/xsd0.xsd`.
 
-In the next step, I'd like to analyze how the `xsd0.xsd` is related with the generated grammars.
+From the above learning, we can see the `getWadl(...)` method and the `getExternalGrammar(...)` method in `WadlResource` class are almost the same. They all rely on the underlying Jersey structures to generate WADL resources, but one return the whole WADL data and the other one just return the generated external grammar data. Here are is comparation result of the two methods:
+
+![/assets/2017-08-11-diff.png](/assets/2017-08-11-diff.png)
+
+TODO: In the next step, I'd like to analyze how the `xsd0.xsd` is related with the generated grammars.
 
 ### _References_
 
