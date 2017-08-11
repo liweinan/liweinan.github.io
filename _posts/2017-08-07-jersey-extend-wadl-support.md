@@ -635,7 +635,17 @@ From the above learning, we can see the `getWadl(...)` method and the `getExtern
 
 ![/assets/2017-08-11-diff.png](/assets/2017-08-11-diff.png)
 
-TODO: In the next step, I'd like to analyze how the `xsd0.xsd` is related with the generated grammars.
+In the next step, I'd like to analyze how the `xsd0.xsd` is related with the generated grammars. I set a breakpoint in the `WadlResource.getExternalGrammar(...)` method, and then I request with following command:
+
+```bash
+$ curl http://localhost:8080/extended-wadl-webapp/application.wadl/xsd1.xsd
+```
+
+In above command I used `xsd1.xsd` in request URL to see if Jersey generate the path dynamically and if it will serve it. Here is the breakpoint screenshot from server side:
+
+![/assets/2017-08-11-xsd1.png](/assets/2017-08-11-xsd1.png)
+
+From above screenshot we can see the `xsd1.xsd` is passed into the method as `path` parameter. However inside `_externamGrammarDefinition` the `key` is still `xsd0.xsd`. From this we can see Jersey doesn't generate the URL dynamically, and it serves the `xsd0.xsd` statically.
 
 ### _References_
 
