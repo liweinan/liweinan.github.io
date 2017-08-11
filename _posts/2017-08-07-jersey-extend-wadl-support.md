@@ -647,6 +647,164 @@ In above command I used `xsd1.xsd` in request URL to see if Jersey generate the 
 
 From above screenshot we can see the `xsd1.xsd` is passed into the method as `path` parameter. However inside `_externamGrammarDefinition` the `key` is still `xsd0.xsd`. From this we can see Jersey doesn't generate the URL dynamically, and it serves the `xsd0.xsd` statically.
 
+This process happens in `WadlGeneratorJAXBGrammarGenerator.buildModelAndSchemas(...)` method. Here is the screenshot inside the method:
+
+![/assets/2017-08-11-generate-xsd1.png](/assets/2017-08-11-generate-xsd1.png)
+
+From the above screenshot, we can see the filename generation process. Here is the full code of the method:
+
+```java
+/**
+ * Build the JAXB model and generate the schemas based on tha data
+ *
+ * @param extraFiles additional files.
+ * @return class to {@link QName} resolver.
+ */
+private Resolver buildModelAndSchemas(final Map<String, ApplicationDescription.ExternalGrammar> extraFiles) {
+
+    // Lets get all candidate classes so we can create the JAX-B context
+    // include any @XmlSeeAlso references.
+
+    final Set<Class> classSet = new HashSet<>(seeAlsoClasses);
+
+    for (final TypeCallbackPair pair : nameCallbacks) {
+        final GenericType genericType = pair.genericType;
+        final Class<?> clazz = genericType.getRawType();
+
+        // Is this class itself interesting?
+
+        if (clazz.getAnnotation(XmlRootElement.class) != null) {
+            classSet.add(clazz);
+        } else if (SPECIAL_GENERIC_TYPES.contains(clazz)) {
+
+            final Type type = genericType.getType();
+            if (type instanceof ParameterizedType) {
+                final Type parameterType = ((ParameterizedType) type).getActualTypeArguments()[0];
+                if (parameterType instanceof Class) {
+                    classSet.add((Class) parameterType);
+                }
+            }
+        }
+    }
+
+    // Create a JAX-B context, and use this to generate us a bunch of
+    // schema objects
+
+    JAXBIntrospector introspector = null;
+
+    try {
+        final JAXBContext context = JAXBContext.newInstance(classSet.toArray(new Class[classSet.size()]));
+
+        final List<StreamResult> results = new ArrayList<>();
+
+        context.generateSchema(new SchemaOutputResolver() {
+
+            int counter = 0;
+
+            @Override
+            public Result createOutput(final String namespaceUri, final String suggestedFileName) {
+                final StreamResult result = new StreamResult(new CharArrayWriter());
+                result.setSystemId("xsd" + (counter++) + ".xsd");
+                results.add(result);
+                return result;
+            }
+        });
+
+        // Store the new files for later use
+        //
+
+        for (final StreamResult result : results) {
+            final CharArrayWriter writer = (CharArrayWriter) result.getWriter();
+            final byte[] contents = writer.toString().getBytes("UTF8");
+            extraFiles.put(
+                    result.getSystemId(),
+                    new ApplicationDescription.ExternalGrammar(
+                            MediaType.APPLICATION_XML_TYPE, // I don't think there is a specific media type for XML Schema
+                            contents));
+        }
+
+        // Create an introspector
+        //
+
+        introspector = context.createJAXBIntrospector();
+
+    } catch (final JAXBException e) {
+        LOGGER.log(Level.SEVERE, "Failed to generate the schema for the JAX-B elements", e);
+    } catch (final IOException e) {
+        LOGGER.log(Level.SEVERE, "Failed to generate the schema for the JAX-B elements due to an IO error", e);
+    }
+
+    // Create introspector
+
+    if (introspector != null) {
+        final JAXBIntrospector copy = introspector;
+
+        return new Resolver() {
+
+            public QName resolve(final Class type) {
+
+                Object parameterClassInstance = null;
+                try {
+                    final Constructor<?> defaultConstructor =
+                            AccessController.doPrivileged(new PrivilegedExceptionAction<Constructor<?>>() {
+                                @SuppressWarnings("unchecked")
+                                @Override
+                                public Constructor<?> run() throws NoSuchMethodException {
+                                    final Constructor<?> constructor = type.getDeclaredConstructor();
+                                    constructor.setAccessible(true);
+                                    return constructor;
+                                }
+                            });
+                    parameterClassInstance = defaultConstructor.newInstance();
+                } catch (final InstantiationException | SecurityException | IllegalAccessException
+                        | IllegalArgumentException | InvocationTargetException ex) {
+                    LOGGER.log(Level.FINE, null, ex);
+                } catch (final PrivilegedActionException ex) {
+                    LOGGER.log(Level.FINE, null, ex.getCause());
+                }
+
+                if (parameterClassInstance == null) {
+                    return null;
+                }
+
+                try {
+                    return copy.getElementName(parameterClassInstance);
+                } catch (final NullPointerException e) {
+                    // EclipseLink throws an NPE if an object annotated with @XmlType and without the @XmlRootElement
+                    // annotation is passed as a parameter of #getElementName method.
+                    return null;
+                }
+            }
+        };
+    } else {
+        return null; // No resolver created
+    }
+}
+```
+
+The above method is called by the `createExternalGrammar()` method in the same class:
+
+```java
+public ExternalGrammarDefinition createExternalGrammar() {
+
+     // Right now lets generate some external metadata
+
+     final Map<String, ApplicationDescription.ExternalGrammar> extraFiles = new HashMap<>();
+
+     // Build the model as required
+     final Resolver resolver = buildModelAndSchemas(extraFiles);
+
+     // Pass onto the next delegate
+     final ExternalGrammarDefinition previous = wadlGeneratorDelegate.createExternalGrammar();
+     previous.map.putAll(extraFiles);
+     if (resolver != null) {
+         previous.addResolver(resolver);
+     }
+
+     return previous;
+}
+```
+
 ### _References_
 
 [^jersey]: Jersey codebase Github mirror: [https://github.com/jersey/jersey](https://github.com/jersey/jersey)
