@@ -782,7 +782,7 @@ private Resolver buildModelAndSchemas(final Map<String, ApplicationDescription.E
 }
 ```
 
-The above method is used to generate the default grammars file, and it is called by the `createExternalGrammar()` method in the same class. Here is the code of `createExternalGrammar()` method:
+The above method is used to generate the default grammars file, and it is called by the `WadlGeneratorJAXBGrammarGenerator.createExternalGrammar()` method in the same class. Here is the code of `WadlGeneratorJAXBGrammarGenerator.createExternalGrammar()` method:
 
 ```java
 public ExternalGrammarDefinition createExternalGrammar() {
@@ -805,7 +805,11 @@ public ExternalGrammarDefinition createExternalGrammar() {
 }
 ```
 
+If we comment out `buildModelAndSchemas(...)` method like this:
 
+![/assets/2017-08-14-WadlGeneratorJAXBGrammarGenerator.png](/assets/2017-08-14-WadlGeneratorJAXBGrammarGenerator.png)
+
+Then we can generate 
 
 ### _References_
 
