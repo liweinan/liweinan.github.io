@@ -651,7 +651,7 @@ This process happens in `WadlGeneratorJAXBGrammarGenerator.buildModelAndSchemas(
 
 ![/assets/2017-08-11-generate-xsd1.png](/assets/2017-08-11-generate-xsd1.png)
 
-From the above screenshot, we can see the filename generation process. Here is the full code of the method:
+From the above screenshot, we can see the filename generation process. Here is the full code of the `buildModelAndSchemas(...)` method:
 
 ```java
 /**
@@ -782,7 +782,7 @@ private Resolver buildModelAndSchemas(final Map<String, ApplicationDescription.E
 }
 ```
 
-The above method is called by the `createExternalGrammar()` method in the same class:
+The above method is used to generate the default grammars file, and it is called by the `createExternalGrammar()` method in the same class. Here is the code of `createExternalGrammar()` method:
 
 ```java
 public ExternalGrammarDefinition createExternalGrammar() {
@@ -804,6 +804,8 @@ public ExternalGrammarDefinition createExternalGrammar() {
      return previous;
 }
 ```
+
+
 
 ### _References_
 
