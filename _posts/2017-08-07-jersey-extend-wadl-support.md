@@ -809,7 +809,29 @@ If we comment out `buildModelAndSchemas(...)` method like this:
 
 ![/assets/2017-08-14-WadlGeneratorJAXBGrammarGenerator.png](/assets/2017-08-14-WadlGeneratorJAXBGrammarGenerator.png)
 
-Then we can generate 
+And then recompile the `core-server` project. After compiling the above change and restart the example server, we can fetch the WADL data again:
+
+```
+$ curl http://localhost:8080/extended-wadl-webapp/application.wadl
+```
+
+And this time we can see the `grammars` part is empty:
+
+```xml
+<grammars/>
+```
+
+From above we can see the grammars generation and linking part is bypassed by the change. If we check the `xsd0.xsd`:
+
+```
+$ curl -I http://localhost:8080/extended-wadl-webapp/application.wadl/xsd0.xsd
+HTTP/1.1 404 Not Found
+Server: Grizzly/2.4.0
+Content-Length: 1104
+Content-Type: text/html;charset=ISO-8859-1
+```
+
+We can see the server returns `404` error this time, and it proves the internal xsd file didn't get generated.
 
 ### _References_
 
