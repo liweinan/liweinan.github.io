@@ -858,7 +858,100 @@ Here is the screenshot of the running status of the above method:
 
 ![/assets/2017-08-15-createExternalGrammar.png](/assets/2017-08-15-createExternalGrammar.png)
 
-From the above screenshot, we can see the `resolver` class is `WadlGeneratorJAXBGrammarGenerator`. This resolver will be added into `previous`, which is an instance of `ExternalGrammarDefinition` class with its `addResolver(...)`. In addition, the class of `wadlGeneratorDelegate` is `WadlGeneratorImpl`, it's used for both main WADL data generation and for external grammar generation.
+From the above screenshot, we can see the `resolver` class is an inner anonymous class inside the `WadlGeneratorJAXBGrammarGenerator` class. In addition, the `Resolver` interface is an inner interface inside `WadlGeneratorJAXBGrammarGenerator` class. Here is the
+
+This resolver will be added into `previous`, which is an instance of `ExternalGrammarDefinition` class with its `addResolver(...)`. In addition, the class of `wadlGeneratorDelegate` is `WadlGeneratorImpl`, it's used for both main WADL data generation and for external grammar generation.
+
+Now let's see the detail of `ExternalGrammarDefinition`. Here is the full code of it:
+
+```java
+/**
+ * And internal storage object to store the grammar definitions and
+ * any type resolvers that are created along the way.
+ */
+class ExternalGrammarDefinition {
+
+    // final public field to make a property was thinking about encapsulation
+    // but decided code much simpler without
+    public final Map<String, ApplicationDescription.ExternalGrammar>
+            map = new HashMap<String, ApplicationDescription.ExternalGrammar>();
+
+    private List<Resolver> typeResolvers = new ArrayList<Resolver>();
+
+    public void addResolver(Resolver resolver) {
+        assert !typeResolvers.contains(resolver) : "Already in list";
+        typeResolvers.add(resolver);
+    }
+
+    /**
+     * @param type the class to map
+     * @return The resolved qualified name if one is defined.
+     */
+    public QName resolve(Class type) {
+        QName name = null;
+        found:
+        for (Resolver resolver : typeResolvers) {
+            name = resolver.resolve(type);
+            if (name != null) {
+                break found;
+            }
+        }
+        return name;
+    }
+}
+```
+
+From above code we can see the `resolve(...)` method will use the passed in `resolver`, which is the instance of `WadlGeneratorJAXBGrammarGenerator` class in this case. The instance is actually created inside the above `buildModelAndSchemas(...)` method. Here is the review of the relative part of code:
+
+```java
+// Create introspector
+
+if (introspector != null) {
+    final JAXBIntrospector copy = introspector;
+
+    return new Resolver() {
+
+        public QName resolve(final Class type) {
+
+            Object parameterClassInstance = null;
+            try {
+                final Constructor<?> defaultConstructor =
+                        AccessController.doPrivileged(new PrivilegedExceptionAction<Constructor<?>>() {
+                            @SuppressWarnings("unchecked")
+                            @Override
+                            public Constructor<?> run() throws NoSuchMethodException {
+                                final Constructor<?> constructor = type.getDeclaredConstructor();
+                                constructor.setAccessible(true);
+                                return constructor;
+                            }
+                        });
+                parameterClassInstance = defaultConstructor.newInstance();
+            } catch (final InstantiationException | SecurityException | IllegalAccessException
+                    | IllegalArgumentException | InvocationTargetException ex) {
+                LOGGER.log(Level.FINE, null, ex);
+            } catch (final PrivilegedActionException ex) {
+                LOGGER.log(Level.FINE, null, ex.getCause());
+            }
+
+            if (parameterClassInstance == null) {
+                return null;
+            }
+
+            try {
+                return copy.getElementName(parameterClassInstance);
+            } catch (final NullPointerException e) {
+                // EclipseLink throws an NPE if an object annotated with @XmlType and without the @XmlRootElement
+                // annotation is passed as a parameter of #getElementName method.
+                return null;
+            }
+        }
+    };
+} else {
+    return null; // No resolver created
+}
+```
+
+The above code shows the implementation of the `resolver`.
 
 
 
