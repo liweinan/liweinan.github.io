@@ -831,7 +831,36 @@ Content-Length: 1104
 Content-Type: text/html;charset=ISO-8859-1
 ```
 
-We can see the server returns `404` error this time, and it proves the internal xsd file didn't get generated.
+We can see the server returns `404` error this time, and it proves the internal xsd file didn't get generated. Let's review the `ExternalGrammarDefinition.createExternalGrammar()` method, and here is the code:
+
+```java
+public ExternalGrammarDefinition createExternalGrammar() {
+
+    // Right now lets generate some external metadata
+
+    final Map<String, ApplicationDescription.ExternalGrammar> extraFiles = new HashMap<>();
+
+    // Build the model as required
+    final Resolver resolver = buildModelAndSchemas(extraFiles);
+
+    // Pass onto the next delegate
+    final ExternalGrammarDefinition previous = wadlGeneratorDelegate.createExternalGrammar();
+    previous.map.putAll(extraFiles);
+    if (resolver != null) {
+        previous.addResolver(resolver);
+    }
+
+    return previous;
+}
+```
+
+Here is the screenshot of the running status of the above method:
+
+![/assets/2017-08-15-createExternalGrammar.png](/assets/2017-08-15-createExternalGrammar.png)
+
+From the above screenshot, we can see the `resolver` class is `WadlGeneratorJAXBGrammarGenerator`. This resolver will be added into `previous`, which is an instance of `ExternalGrammarDefinition` class with its `addResolver(...)`. In addition, the class of `wadlGeneratorDelegate` is `WadlGeneratorImpl`, it's used for both main WADL data generation and for external grammar generation.
+
+
 
 ### _References_
 
