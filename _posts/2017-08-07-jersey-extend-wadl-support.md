@@ -858,9 +858,15 @@ Here is the screenshot of the running status of the above method:
 
 ![/assets/2017-08-15-createExternalGrammar.png](/assets/2017-08-15-createExternalGrammar.png)
 
-From the above screenshot, we can see the `resolver` class is an inner anonymous class inside the `WadlGeneratorJAXBGrammarGenerator` class. In addition, the `Resolver` interface is an inner interface inside `WadlGeneratorJAXBGrammarGenerator` class. Here is the
+From the above screenshot, we can see the `resolver` class is an inner anonymous class inside the `WadlGeneratorJAXBGrammarGenerator` class. In addition, the `Resolver` interface is an inner interface inside `WadlGeneratorJAXBGrammarGenerator` class.
 
 This resolver will be added into `previous`, which is an instance of `ExternalGrammarDefinition` class with its `addResolver(...)`. In addition, the class of `wadlGeneratorDelegate` is `WadlGeneratorImpl`, it's used for both main WADL data generation and for external grammar generation.
+
+Now let's review the above sequence. Here is the screenshot of the stacktrace:
+
+![/assets/2018-08-18-stacktrace.png](/assets/2018-08-18-stacktrace.png)
+
+From the above screenshot, we can see how the process started from `WadlResource`, to `WadlApplicationContextImpl`, passing through `WadlBuilder`, and finally goes into `WadlGeneratorJAXBGrammarGenerator`.
 
 Now let's see the detail of `ExternalGrammarDefinition`. Here is the full code of it:
 
@@ -951,9 +957,13 @@ if (introspector != null) {
 }
 ```
 
-The above code shows the implementation of the `resolver`.
+The above code shows the implementation of the `resolver`, and the especially the `resolve(...)` method. We can see it will finally return an instance of `QName`. Here is the relative code:
 
+```java
+return copy.getElementName(parameterClassInstance);
+```
 
+The class of `copy` instance is `JAXBIntrospector`.
 
 ### _References_
 
