@@ -866,7 +866,45 @@ Now let's review the above sequence. Here is the screenshot of the stacktrace:
 
 ![/assets/2018-08-18-stacktrace.png](/assets/2018-08-18-stacktrace.png)
 
-From the above screenshot, we can see how the process started from `WadlResource`, to `WadlApplicationContextImpl`, passing through `WadlBuilder`, and finally goes into `WadlGeneratorJAXBGrammarGenerator`.
+From the above screenshot, we can see how the process started from `WadlResource`, and here is the code:
+
+```java
+ApplicationDescription applicationDescription =
+                    wadlContext.getApplication(uriInfo, WadlUtils.isDetailedWadlRequested(uriInfo));
+```
+
+The `wadlContext` instance has class of `WadlApplicationContextImpl`, and here is the code:
+
+```java
+@Override
+public ApplicationDescription getApplication(final UriInfo uriInfo, final boolean detailedWadl) {
+    final ApplicationDescription applicationDescription = getWadlBuilder(detailedWadl, uriInfo)
+            .generate(resourceContext.getResourceModel().getRootResources());
+    final Application application = applicationDescription.getApplication();
+    for (final Resources resources : application.getResources()) {
+        if (resources.getBase() == null) {
+            resources.setBase(uriInfo.getBaseUri().toString());
+        }
+    }
+    attachExternalGrammar(application, applicationDescription, uriInfo.getRequestUri());
+    return applicationDescription;
+}
+```
+
+In above method, it will call the `getWadlBuilder(...)` method to get `WadlBuilder` and then call its `generate(...)` method. Here is the important code of `generate(...)` method:
+
+```java
+WadlGenerator.ExternalGrammarDefinition external =
+        _wadlGenerator.createExternalGrammar();
+```
+
+The class of `_wadlGenerator` is `WadlGeneratorJAXBGrammarGenerator`, and inside the `_wadlGenerator` it's calling the `buildModelAndSchemas(...)` method:
+
+```java
+final Resolver resolver = buildModelAndSchemas(extraFiles);
+```
+
+The above is the call process review.
 
 Now let's see the detail of `ExternalGrammarDefinition`. Here is the full code of it:
 
@@ -957,7 +995,7 @@ if (introspector != null) {
 }
 ```
 
-The above code shows the implementation of the `resolver`, and the especially the `resolve(...)` method. We can see it will finally return an instance of `QName`. Here is the relative code:
+The above code shows the implementation of the `resolver`, and especially the `resolve(...)` method. We can see it will finally return an instance of `QName`. Here is the relative code:
 
 ```java
 return copy.getElementName(parameterClassInstance);
