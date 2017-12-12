@@ -62,7 +62,7 @@ module_init(hello_start);
 module_exit(hello_end);
 ```
 
-另一个为`Makefile`：
+然后我们再创建一个`Makefile`：
 
 ```bash
 # Comment/uncomment the following line to disable/enable debugging
@@ -150,7 +150,7 @@ dmesg | tail
 -1 Invalid module format
 ```
 
-这个是在安装模块时可能会遇到的问题，一般是由于使用的kernel library与kernel版本不一致造成。那么可能就需要自己来编译Linux Kernel，Fedora针对内核编译也有十分方便的方法，请参考这篇文档 http://fedoraproject.org/wiki/Docs/CustomKernel
+这个是在安装模块时可能会遇到的问题，一般是由于使用的kernel library与kernel版本不一致造成。那么可能就需要自己来编译Linux Kernel，Fedora针对内核编译也有十分方便的方法，请参考这篇文档：http://fedoraproject.org/wiki/Docs/CustomKernel
 
 「关于Linux内核及驱动开发的一些有用资源」
 
