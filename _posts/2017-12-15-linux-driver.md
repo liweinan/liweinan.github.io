@@ -9,7 +9,7 @@ abstract: 做一个可读写的char设备。
 
 {{ page.abstract }}
 
-在上一篇文章中，我们制作了一个char设备，但是它是只读的。在这一篇文章中，我们做一个可读写的char设备。下面是设备的源代码，可以命名为`chardev_rw.c`
+在上一篇文章中，我们制作了一个char设备，但是它是只读的。在这一篇文章中，我们做一个可读写的char设备。下面是设备的源代码，可以命名为`chardev_rw.c`：
 
 ```c
 /*
@@ -303,6 +303,8 @@ $ echo "Hello, world!" > /dev/cdev_rw
 此时查看Linux的内核输出：
 
 ```bash
+$ dmesg
+...
 [ 1843.529688] cdev->device_opened
 [ 1843.529698] cdev->device_write: Hello, world!
 ```
@@ -319,9 +321,13 @@ Hello, world!
 此时我们写入内核的数据被读出来了。此时查看内核的日志：
 
 ```bash
+$ dmesg
+...
 [ 1843.529688] cdev->device_opened
 [ 1843.529698] cdev->device_write: Hello, world!
 [ 1843.529701] cdev->device_release
 [ 2236.527340] cdev->device_opened
 [ 2236.527349] cdev->device_read: Hello, world!
 ```
+
+可以看到设备释放，打开，读取的过程。通过这个过程，我们可以看到内核是如何管理char设备的。
