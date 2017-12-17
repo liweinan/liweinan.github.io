@@ -184,6 +184,10 @@ dev_t			i_rdev;
 struct cdev		*i_cdev;
 ```
 
+上面这两个类型的数据里面，其中`dev_t i_rdev`包含了设备的major number和minor number，然后`cdev`类型的数据包含了char device的相关信息。
+
+这篇文章我们可以使用一下`i_rdev`，从里面取得我们的char device的minor number。
+
 
 
 [^1]: http://elixir.free-electrons.com/linux/latest/source/include/linux/fs.h#L565
