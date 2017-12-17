@@ -263,10 +263,5 @@ $ dmesg
 
 可以看到，通过读取设备，我们调用了`device_opened()`函数，激活了里面的关于`MINOR` macro的输出，然后得到了设备的minor number。
 
-
-
-
-
-
-[^1]: http://elixir.free-electrons.com/linux/latest/source/include/linux/fs.h#L565
+[^1]: http://elixir.free-electrons.com/linux/latest/source/include/linux/fs.h
 [^2]: https://github.com/torvalds/linux/blob/master/include/linux/kdev_t.h
