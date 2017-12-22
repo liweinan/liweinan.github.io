@@ -63,7 +63,7 @@ q.enq(x) -> q.enq(y) -> q.deq(y) -> q.deq(x)
 
 所以我们要想协调各个threads的执行顺序，需要加锁，Sequential Consistency这个级别的并发要求是不保证multi-threads之间的代码执行顺序的。可以看出来，Sequential Consistency其实是一种比较弱的同步要求，而且它的要求不需要加锁，它是一个non-blocking的并发要求。
 
-接下来，我们看看下面这两个threads的程序执行过程：
+接下来我们看看下面这两个threads的程序执行过程：
 
 ![]({{ site.url }}/assets/ScreenSnapz1238.png)
 
