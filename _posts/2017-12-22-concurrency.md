@@ -18,6 +18,7 @@ abstract: 这篇文章介绍三种non-block的并发级别：Sequential Consiste
 简单来讲，Sequential Consistency就是保证一件事情：同一个thread下程序的执行顺序不能乱。这个要求具体的含义可以通过例子来展示。我们来看下面这个程序的执行过程：
 
 ![]({{ site.url }}/assets/ScreenSnapz1236.png)
+
 （图片来自「herlihy2011art」）
 
 上面这条虚线，我们可以理解为一个单线程的程序的执行过程。那么上面的程序执行过程对应代码大概是这样的：
@@ -35,6 +36,7 @@ q.enq(x) -> q.deq(y)
 一般现代的编译器在reorder这块都会对代码的功能判断的很准确，所以不会造成程序的逻辑错误，比如上面的两个操作，编译器是不会把它们reorder的。但是对于multi-threaded的程序，情况就复杂的多了。编译器很可能错误做一个它认为一个安全的codes reorder，但在多线程的环境下造成程序的逻辑错误。所以对于多线程的代码，我们最好不要打开编译器的允许codes reorder级别的优化选项。我们可以看下图中这个双线程程序的执行过程：
 
 ![]({{ site.url }}/assets/ScreenSnapz1237.png)
+
 （图片来自「herlihy2011art」）
 
 如上图所示，这是两个threads在公用一个队列q的情况。其中，上面那条thread的程序执行过程是：
@@ -60,6 +62,7 @@ q.enq(x) -> q.enq(y) -> q.deq(y) -> q.deq(x)
 这样破坏了Sequential Consistency吗？并没有，因为Sequential Consistency保证的是同一个thread里面代码的执行顺序不可以被打乱，但不保证multi-threads之间的代码的执行顺序。在操作系统的设计上，process scheduler也是这样做的，操作系统可以调整各个的threads的执行顺序，可以让先执行的thread休息一会，让后执行的thread跑一会，这个是现代多任务操作系统的基本功能。所以我们要想协调各个threads的执行顺序，需要加锁，Sequential Consistency这个级别的并发要求是不保证multi-threads之间的代码执行顺序的。可以看出来，Sequential Consistency其实是一种比较弱的同步要求，而且它的要求不需要加锁，它是一个non-blocking的并发要求。接下来我们看看下面这两个threads的程序执行过程：
 
 ![]({{ site.url }}/assets/ScreenSnapz1238.png)
+
 （图片来自「herlihy2011art」）
 
 上面这个双线程的程序，其实就是对两个队列p、q的操作。对p的操作，按照时间顺序是这样的：
@@ -121,6 +124,7 @@ q.enq(y) -> q.enq(x) -> q.deq(x)
 也就是说，serializability要求程序执行的“原子性”，每一个call应该是瞬间完成的。我们回过头来再来看这张图：
 
 ![]({{ site.url }}/assets/ScreenSnapz1238.png)
+
 （图片来自「herlihy2011art」）
 
 上面这张图是我们在讨论sequential consistency的时候用到的一个双线程的程序执行过程图。我们可以看到这个图里面把enq和deq的calls都标记成了一段时间，也就是说，每一个call都是需要一定长度的时间来完成，而不是一瞬间完成的，因此，thread 2上面的q.enq(y)可能被操作系统的process scheduler给提到thread 1上面的q.enq(x)之前完成。
