@@ -117,7 +117,15 @@ q.enq(y) -> q.enq(x)
 q.enq(y) -> q.enq(x) -> q.deq(x)
 ```
 
-这很显然是不符合q的first-in-first-out性质，自相矛盾了。因此，在不改变一个线程内部的代码执行顺序的前提下，上面这张图里的代码执行过程是自相矛盾的。我们通过反证法证明了所以上面这个双线程的程序执行过程不满足sequential consistency的要求。这是一个很有意思的分析过程：我们把p或者q的操作过程各自单独拿出来看，都是可以满足sequential consistency的，但是如果我们把对两个队列操作合并到一起，就会发现在时间线上，因为p的内在执行逻辑，导致q这里有了一个确定的执行过程，而这个过程与sequential consistency的要求矛盾。因此我们说，sequential consistency不是compositional的。也就是说，两个sequential consistent的过程，合并到一起后，不一定还是sequential consistent的。这就叫做：
+这很显然是不符合q的first-in-first-out性质，自相矛盾了。
+
+因此，在不改变一个线程内部的代码执行顺序的前提下，上面这张图里的代码执行过程是自相矛盾的。
+
+我们通过反证法证明了所以上面这个双线程的程序执行过程不满足sequential consistency的要求。
+
+这是一个很有意思的分析过程：我们把p或者q的操作过程各自单独拿出来看，都是可以满足sequential consistency的，但是如果我们把对两个队列操作合并到一起，就会发现在时间线上，因为p的内在执行逻辑，导致q这里有了一个确定的执行过程，而这个过程与sequential consistency的要求矛盾。
+
+因此我们说，sequential consistency不是compositional的。也就是说，两个sequential consistent的过程，合并到一起后，不一定还是sequential consistent的。书里做出的说明如下：
 
 > Sequential consistency is not compositional. 
 
@@ -127,7 +135,7 @@ q.enq(y) -> q.enq(x) -> q.deq(x)
 
 也就是说，serializability要求程序执行的“原子性”，每一个call应该是瞬间完成的。我们回过头来再来看这张图：
 
-![]({{ site.url }}/assets/ScreenSnapz1238.png)
+![]({{ site.url }}/assets/ScreenSnapz1237.png)
 
 （图片来自「herlihy2011art」）
 
@@ -139,7 +147,9 @@ q.enq(y) -> q.enq(x) -> q.deq(x)
 q.enq(x) -> q.enq(y) -> q.deq(y) -> q.deq(x)。
 ```
 
-当然我们知道这个执行顺序有逻辑错误，因为q是先入先出的数据结构，因此我们可以说上面的程序过程不满足serializability的要求，但是满足sequential consistency的要求。也就是说serializability是比sequential consistency在同步性上要求更高的。此外，serializability是compositional的，具体的证明过程不在这篇文章里详细展开了，大家可以自己再看书学习证明过程。
+当然我们知道这个执行顺序有逻辑错误，因为q是先入先出的数据结构，因此我们可以说上面的程序过程不满足serializability的要求，但是满足sequential consistency的要求。也就是说serializability是比sequential consistency在同步性上要求更高的。
+
+此外，serializability是compositional的，具体的证明过程不在这篇文章里详细展开了，大家可以自己再看书学习证明过程。
 
 最后简单说一下quiescent consistency，这个同步要求比sequential consistency和serializability都要弱，因为它允许同一条thread内的代码执行顺序被打乱，在这个条件下，基本上已经没有什么同步性可言，对大家的实际使用价值可能不大。总结一下就是：
 
