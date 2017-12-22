@@ -61,7 +61,9 @@ q.enq(x) -> q.enq(y) -> q.deq(y) -> q.deq(x)
 
 这样破坏了Sequential Consistency吗？并没有，因为Sequential Consistency保证的是同一个thread里面代码的执行顺序不可以被打乱，但不保证multi-threads之间的代码的执行顺序。在操作系统的设计上，process scheduler也是这样做的，操作系统可以调整各个的threads的执行顺序，可以让先执行的thread休息一会，让后执行的thread跑一会，这个是现代多任务操作系统的基本功能。
 
-所以我们要想协调各个threads的执行顺序，需要加锁，Sequential Consistency这个级别的并发要求是不保证multi-threads之间的代码执行顺序的。可以看出来，Sequential Consistency其实是一种比较弱的同步要求，而且它的要求不需要加锁，它是一个non-blocking的并发要求。接下来我们看看下面这两个threads的程序执行过程：
+所以我们要想协调各个threads的执行顺序，需要加锁，Sequential Consistency这个级别的并发要求是不保证multi-threads之间的代码执行顺序的。可以看出来，Sequential Consistency其实是一种比较弱的同步要求，而且它的要求不需要加锁，它是一个non-blocking的并发要求。
+
+接下来，我们看看下面这两个threads的程序执行过程：
 
 ![]({{ site.url }}/assets/ScreenSnapz1238.png)
 
