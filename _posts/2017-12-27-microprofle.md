@@ -5,7 +5,7 @@ abstract: OpenTracing是一个开源的，分布式的tracing standard。最近�
 
 ## {{ page.title }}
 
-OpenTracing是一个开源的，分布式的tracing standard[spec]。很多项目都实现这个标准，比如eclipse社区的Microservices OpenTracing[^eclipse]。最近在参与这个标准的jax-rs实现，在这里写一些心得。
+OpenTracing是一个开源的，分布式的tracing standard[^spec]。很多项目都实现这个标准，比如eclipse社区的Microservices OpenTracing[^eclipse]。最近在参与这个标准的jax-rs实现，在这里写一些心得。
 
 这篇文章里试玩一下这个标准的JAX-RS实现模块[^jaxrsimpl]。因为这个项目在我写这篇文章的时候还在开发阶段，所以需要补充一些代码进去，所以我把它fork到了自己的Github空间里[^forkedjaxrsimpl]。这篇文章使用我的这个forked项目。
 
