@@ -140,7 +140,7 @@ Hello, world!$
 
 此时查看服务端的tracing输出：
 
-```txt
+```json
 extract(Builtin.HTTP_HEADERS, io.opentracing.contrib.jaxrs2.server.ServerHeadersExtractTextMap@280ba5f0)
 {
   "context" : {
