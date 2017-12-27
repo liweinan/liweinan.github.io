@@ -1,17 +1,16 @@
 ---
-title: 使用Microprofile OpenTracing的JAX-RS实现模块（上）
-abstract: Microprofile OpenTracing是Eclipse推的一个分布式的Microservice Instrumenting Standard，本文试用它的JAX-RS模块。
+title: 使用OpenTracing的JAX-RS实现模块（上）
+abstract: OpenTracing是一个开源的，分布式的tracing standard。最近在参与这个标准的jax-rs实现，在这里写一些心得。
 ---
 
 ## {{ page.title }}
 
-Microprofile OpenTracing是Eclipse推的一个分布式的Microservice Instrumenting Standard。以下是它的官方文档[^spec]给出的定义：
-
-> The OpenTracing project’s purpose is to provide a standard API for instrumenting microservices for distributed tracing.
-
-[^spec]: https://github.com/eclipse/microprofile-opentracing/blob/master/spec/src/main/asciidoc/microprofile-opentracing.asciidoc
+OpenTracing是一个开源的，分布式的tracing standard[spec]。很多项目都实现这个标准，比如eclipse社区的Microservices OpenTracing[^eclipse]。最近在参与这个标准的jax-rs实现，在这里写一些心得。
 
 这篇文章里试玩一下这个标准的JAX-RS实现模块[^jaxrsimpl]。因为这个项目在我写这篇文章的时候还在开发阶段，所以需要补充一些代码进去，所以我把它fork到了自己的Github空间里[^forkedjaxrsimpl]。这篇文章使用我的这个forked项目。
+
+[^spec]: http://opentracing.io/
+[^eclipse]: https://github.com/eclipse/microprofile-opentracing/blob/master/spec/src/main/asciidoc/microprofile-opentracing.asciidoc
 
 [^jaxrsimpl]: https://github.com/opentracing-contrib/java-jaxrs
 [^forkedjaxrsimpl]: https://github.com/liweinan/java-jaxrs
