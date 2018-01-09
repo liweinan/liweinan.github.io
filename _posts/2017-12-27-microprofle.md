@@ -1,5 +1,5 @@
 ---
-title: 使用OpenTracing的JAX-RS实现模块（上）
+title: 使用OpenTracing的JAX-RS实现模块
 abstract: OpenTracing是一个开源的，分布式的tracing standard。最近在参与这个标准的jax-rs实现，在这里写一些心得。
 ---
 
@@ -164,7 +164,7 @@ extract(Builtin.HTTP_HEADERS, io.opentracing.contrib.jaxrs2.server.ServerHeaders
 
 ![]({{ site.url }}/assets/ScreenSnapz1254.png)
 
-上篇先讲这么多，下篇重点介绍opentracing的框架设计，和这个jax-rs tracing项目的具体实现。
+先讲这么多。
 
 
 
