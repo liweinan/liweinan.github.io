@@ -16,7 +16,7 @@ opentracing针对上面的API，提供了一些基础的实现，位于「opentr
 
 [^2]: https://github.com/opentracing/opentracing-java/tree/master/opentracing-util
 
-![]({{ site.url }}/assets/opentrace-util.jpg)
+![]({{ site.url }}/assets/opentracing-util.jpg)
 
 
 
