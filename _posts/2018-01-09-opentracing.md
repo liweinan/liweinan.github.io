@@ -5,7 +5,6 @@ abstract: 分析opentracing的接口设计。
 
 ## {{ page.title }}
 
-
 以下是「opentrace-api」[^1]的核心接口的类图：
 
 ![]({{ site.url }}/assets/opentrace-api.jpg)
