@@ -1,5 +1,5 @@
 ---
-title: 「ThreadLocalActiveSpanSource」和「ThreadLocalActiveSpan」
+title: Opentracing：「ThreadLocalActiveSpanSource」和「ThreadLocalActiveSpan」
 abstract: 分析「ThreadLocalActiveSpanSource」和「ThreadLocalActiveSpan」这两个Classes之间的关系。
 author: 阿男
 ---
