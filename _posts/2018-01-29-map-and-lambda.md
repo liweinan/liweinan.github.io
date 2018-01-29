@@ -108,7 +108,7 @@ irb(main):001:0> [1, 2, 3].map { |n| n*n }
 => [1, 4, 9]
 ```
 
-如上所示，大括号里面的"n*n"就是一个匿名函数。但是ruby里面还有自己的"proc"和"lambda"这两种具体的东西，有ruby自己特有的定义和实现[^ruby]。
+如上所示，大括号里面的`n*n`就是一个匿名函数。但是ruby里面还有自己的"proc"和"lambda"这两种具体的东西，有ruby自己特有的定义和实现[^ruby]。
 
 [^ruby]: http://awaxman11.github.io/blog/2013/08/05/what-is-the-difference-between-a-block/
 
