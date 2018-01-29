@@ -99,7 +99,7 @@ Prelude> map (+1) [1, 2, 3]
 
 接下来看看各种语言当中的map。
 
-.R.U.B.Y.
+> .R.U.B.Y.
 
 首先我们来看ruby，ruby中真正意义上的"lambda"应该是它的"block"的概念，下面是例子：
 
@@ -122,7 +122,7 @@ ruby把匿名函数这块考虑的特别细致，所以在语言实现的时候�
 
 那么ruby是functional还是imperative呢？可以说，它是一种融合，以imperative为主，但吸收了很多functional的设计思想的语言。
 
-.L.I.S.P.
+> .L.I.S.P.
 
 接下来我们看看lisp，lisp是实现lambda和map的祖师爷了，而且lisp中的这两个概念是原汁原味的。下面是例子：
 
@@ -137,7 +137,7 @@ lisp的函数命名有点混乱，学习lisp的朋友相信都有体会。
 
 lisp是纯正的functional语言了，但是它不是强类型定义的语言，这点要和haskell和scala区分开。
 
-.G.R.O.O.V.Y.
+> .G.R.O.O.V.Y.
 
 Groovy里面的lambda概念的实现就是closure，语法就是大括号包裹一个匿名函数：
 
@@ -150,7 +150,7 @@ groovy:000> [1, 2, 3].collect { x -> x * x }
 
 Groovy实际上就是Java的一层糖衣了，各种设计思想都贴近Java本身。那么我们自然而然下一个语言讨论Java。
 
-.J.A.V.A.
+> .J.A.V.A.
 
 从Java 8开始，Java开始实现了一些函数式语言的设计的设计了，核心的语言特性包括：lambda expression，functional interface。
 
@@ -189,7 +189,7 @@ List results = Arrays.asList(1, 2, 3).stream().map(x -> x * x).collect(Collector
 
 可以看到，Java的lambda表达式是一种匿名函数的书写方法，并且可以把函数作为参数进行传递了。可以说从Java 8开始，Java已经是一门函数式语言了。
 
-.C.L.O.J.U.R.E.
+> .C.L.O.J.U.R.E.
 
 Clojure可以说是Lisp的近亲，但真正深入学习进取，可以发现这只是表面现象。clojure借用了lisp的语法，设计理念，但是背后还是有巨大差异。
 
@@ -210,7 +210,7 @@ http://www.tryclj.com/
 
 可以看到clojure和lisp的map和lambda差不多，只不过在clojure中，"lambda"叫"fn"，"mapcar"叫"map"。
 
-.H.A.S.K.E.L.L.
+> .H.A.S.K.E.L.L.
 
 我们来看看Haskell中的map与lambda：
 
@@ -233,7 +233,7 @@ Prelude> map (\x -> x * x) [1, 2, 3]
 
 这个反斜杠的语法格式，大家记住就可以了。
 
-.S.C.A.L.A.
+> .S.C.A.L.A.
 
 Scala可以算是最"杂糅"的一门语言了。首先，它是object-oriented语言，它的语法可能欺骗了很多初学者，觉得和Java差不多。
 
