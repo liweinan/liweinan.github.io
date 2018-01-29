@@ -201,7 +201,7 @@ http://www.tryclj.com/
 
 输入代码如下：
 ```clojure
-(map (fn [x] (* x x)) '(1 2 3))
+(map (fn [x] (* x x)) '(1 2 3))
 ```
 
 上面是clojure的map方法，它接受一个匿名函数（用fn定义）作为参数，并接受待处理的list（'1 2 3）作为第二参数。下面是运行结果：
