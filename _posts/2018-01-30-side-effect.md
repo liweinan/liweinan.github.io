@@ -5,7 +5,7 @@ abstract: 学习side effect的概念，并通过理解side effect，明白无状
 
 ## {{ page.title }}
 
-所谓side effect[^def]，就是指代码中一处功能，除了返回它的值以外，还修改了公共数据的状态。比如下面这段代码：
+所谓side effect[^def]，就是指代码中一处功能，除了返回它的值以外，还修改了公共数据的状态，或者影响了系统的整体行为。比如下面这段代码：
 
 [^def]: http://en.wikipedia.org/wiki/Side_effect_(computer_science)
 
