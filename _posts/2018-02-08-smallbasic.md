@@ -49,4 +49,4 @@ TextWindow.WriteLine("Hello, world!")
 
 此外，在`Hello, world`下面还有一行`Press any key to continue...`，就是告诉大家，随便按键盘的一个键，就可以退出这个文本窗口，返回编程环境了。
 
-这篇文章里为大家简单介绍了一下Small Basic，直观地体会了一下Small Basic的编程环境。从下篇文章开始，阿男将带大家学习Small Basic的绘图功能。
+这篇文章里为大家简单介绍了一下Small Basic，直观地体会了一下Small Basic的编程环境。
