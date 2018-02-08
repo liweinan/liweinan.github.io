@@ -5,3 +5,7 @@ google_analytics: UA-98502720-1
 disqus:
    shortname: weinan-io
 theme: jekyll-theme-cayman
+plugins:
+  - jekyll-seo-tag
+webmaster_verifications:
+  baidu: H3WlhxyTrS
