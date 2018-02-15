@@ -1,5 +1,5 @@
 ---
-title: 玩转WebSocket（中）
+title: 玩转WebSocket（下）
 abstract: 这篇对websocket进行协议分析，并介绍如何使用httpd做为websocket的代理。
 ---
 
