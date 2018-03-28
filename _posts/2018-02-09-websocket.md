@@ -16,11 +16,11 @@ $ npm install nodejs-websocket
 如果你是在MacOS下，可以用Homebrew来安装ruby和nodejs：
 
 ```bash
-$ npm install ruby
+$ brew install ruby
 ```
 
 ```bash
-$ npm install nodejs
+$ brew install nodejs
 ```
 
 安装完成后，撰写下述服务端js代码，并将文件命名为`ws.js`：
