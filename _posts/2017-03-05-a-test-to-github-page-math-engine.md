@@ -33,3 +33,7 @@ $$
 \sum_{k=0}^n (-1)^{k}\lambda^{n-k }\sigma_{k}(A). \label{eq:characteristic}
 \end{equation}
 $$
+
+$$
+p \left( h _ { j } = 1 \right) = \frac { 1 } { 1 + \exp \left( - b _ { j } - \sum _ { i \in \operatorname { vis } } v _ { i } w _ { i j } \right) }
+$$
