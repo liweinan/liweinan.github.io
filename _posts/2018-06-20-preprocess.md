@@ -50,15 +50,21 @@ int main() {
 
 我们接下来再看常用的`include`这个macro command，它的功能就是把一个文件的内容展开到`include`所在位置。下面是代码的例子：
 
-```c
+```bash
 $ cat foo.h
+```
+
+```c
 void foo();
 ```
 
 上面这个`foo.h`是一个header file，我们可以在别的代码文件里通过`#include`来引用它：
 
-```c
+```bash
 $ cat macro_expand.c
+```
+
+```c
 #include "foo.h"
 
 int main() {
