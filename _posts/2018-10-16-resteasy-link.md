@@ -53,9 +53,7 @@ transfer-encoding: chunked
 
 ```bash
 $ http -v --json http://127.0.0.1:8081/book/foo
-```
 
-```json
 GET /book/foo HTTP/1.1
 Accept: application/json, */*
 Accept-Encoding: gzip, deflate
