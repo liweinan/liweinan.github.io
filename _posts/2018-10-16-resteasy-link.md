@@ -131,7 +131,7 @@ Class Diagram14.png
 
 测试启动后，重新进行请求：
 
-```json
+```bash
 $ http -v --json http://127.0.0.1:8081/book/foo
 GET /book/foo HTTP/1.1
 Accept: application/json, */*
