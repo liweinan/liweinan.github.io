@@ -162,14 +162,200 @@ $
 
 可以看到`rest`为我们默认添加了一些资源链接，同时`comment`的相关操作地址也加进来了。
 
-注意`RESTServiceDiscovery`是自动生成一套atom links，而不管你的服务有没有实现这些links。比如我们可以测试其中一个url：
+上面这些links是从具体的service服务中来，分别是`BookStore`和`BookStoreMinimal`：
+
+![]({{ site.url }}/assets/46FCA5A1-1D2C-4C37-87A6-86D83B82D3FC.png)
+
+这两个classes的类图：
+
+![]({{ site.url }}/assets/Class Diagram15.png)
+
+用来调用服务的客户端接口是`BookStoreService`：
+
+![]({{ site.url }}/assets/Class Diagram16.png)
+
+如果我们只使用`BookStore`或者只使用`BookStoreMinimal`：
+
+![]({{ site.url }}/assets/1011BB81-5593-460A-8579-C7547C08B74F.png)
+
+实际的输出结果不变：
 
 ```bash
-$ http --json --pretty all http://127.0.0.1:8081/book/comments
-HTTP/1.1 204 No Content
+$ http --json --pretty all http://127.0.0.1:8081/book/foo
+HTTP/1.1 200 OK
+Content-Type: application/json
 connection: keep-alive
+transfer-encoding: chunked
+
+{
+    "book": {
+        "@author": "bar",
+        "@title": "foo",
+        "rest": [
+            {
+                "@href": "http://127.0.0.1:8081/book/foo",
+                "@rel": "self"
+            },
+            {
+                "@href": "http://127.0.0.1:8081/book/foo",
+                "@rel": "update"
+            },
+            {
+                "@href": "http://127.0.0.1:8081/book/foo",
+                "@rel": "remove"
+            },
+            {
+                "@href": "http://127.0.0.1:8081/books",
+                "@rel": "add"
+            },
+            {
+                "@href": "http://127.0.0.1:8081/books",
+                "@rel": "list"
+            },
+            {
+                "@href": "http://127.0.0.1:8081/book/foo/comment-collection",
+                "@rel": "comment-collection"
+            },
+            {
+                "@href": "http://127.0.0.1:8081/book/foo/comments",
+                "@rel": "comments"
+            }
+        ]
+    }
+}
 ```
 
-可以看到这个link并没有被我们的service实现。
+比对`BookStore`和`BookStoreMinimal`的区别：
+
+![]({{ site.url }}/assets/566BDA96-9136-4972-B704-BC960D310A0C.png)
+
+可以看到就是`@LinkResource`标记里面的内容更加完整。
+
+我们在测试里面只使用`BookStoreMinimal`：
+
+![]({{ site.url }}/assets/B7C003D4-F823-407B-BBD4-432FFCAD8E4B.png)
+
+然后把`BookStoreMinimal`里的`@LinkResource`全部都注释掉：
+
+![]({{ site.url }}/assets/A4F57A8C-DAFD-41FB-A2C6-F6D687790DD8.png)
+
+然后重新启动测试：
+
+![]({{ site.url }}/assets/EEAB375D-D305-43D6-A110-398B9E1E78F5.png)
+
+然后执行客户端的请求：
+
+```bash
+$ http --json --pretty all http://127.0.0.1:8081/book/foo
+HTTP/1.1 200 OK
+Content-Type: application/json
+connection: keep-alive
+transfer-encoding: chunked
+
+{
+    "book": {
+        "@author": "bar",
+        "@title": "foo"
+    }
+}
+```
+
+此时可以看到所有的atom links信息都没有了。
+
+如果我们重新用`@AddLinks`标记一个方法：
+
+![]({{ site.url }}/assets/C1444237-8394-4768-BFF2-6353F59D19E3.png)
+
+然后重新启动测试，并进行请求：
+
+```bash
+$ http --json --pretty all http://127.0.0.1:8081/book/foo
+HTTP/1.1 200 OK
+Content-Type: application/json
+connection: keep-alive
+transfer-encoding: chunked
+
+{
+    "book": {
+        "@author": "bar",
+        "@title": "foo",
+        "rest": {
+            "@href": "http://127.0.0.1:8081/books",
+            "@rel": "list"
+        }
+    }
+}
+```
+
+此时可以看到相关方法的atom link回来了。
+
+如果此时去掉`@AddLinks`的标记：
+
+![]({{ site.url }}/assets/C1A9B668-54DB-4C55-B0CC-D68363437B98.png)
+
+然后再次重新启动测试，并重新请求：
+
+```bash
+$ http --json --pretty all http://127.0.0.1:8081/book/foo
+HTTP/1.1 200 OK
+Content-Type: application/json
+connection: keep-alive
+transfer-encoding: chunked
+
+{
+    "book": {
+        "@author": "bar",
+        "@title": "foo"
+    }
+}
+```
+
+可以看到`Book`里面的`rest`并没有被注入：
+
+![]({{ site.url }}/assets/9170E8D3-BA5F-46E0-99CA-700102BAB355.png)
+
+通过以上过程，就理清楚了`AtomLink`和`LinkResource`的功能：
+
+- `LinkResource`用来标记需要在atom links里出现的方法，并保存在`RESTServiceDiscovery`的instance里面。
+- `AtomLink`用来标记方法，把返回类型的instance里面注入`RESTServiceDiscovery`的instance。但是返回类型要像上面的`Book`一样，里面包含`RESTServiceDiscovery`的instance，比如`rest`。
+
+下面给出`LinkResource`和`AtomLink`的完整的文档：
+
+```java
+/**
+ * <p>
+ * This holds a list of atom links describing the REST service discovered. This will
+ * be injected by RESTEasy on any entity in the response if the JAX-RS method was
+ * annotated with {@link AddLinks @AddLinks} if your entity declares a field of this
+ * type.
+ * </p>
+ * <p>
+ * For this to work you need to add {@link LinkResource @LinkResource} annotations on
+ * all the JAX-RS methods you want to be discovered.
+ * </p>
+ * @author <a href="mailto:stef@epardaud.fr">Stéphane Épardaud</a>
+ */
+@XmlRootElement
+@XmlAccessorType(XmlAccessType.NONE)
+public class RESTServiceDiscovery extends ArrayList<RESTServiceDiscovery.AtomLink>
+```
+
+```java
+/**
+ * Use on any JAX-RS method if you want RESTEasy to inject the RESTServiceDiscovery
+ * to every entity in the response. This will only inject RESTServiceDiscovery instances
+ * on entities that have a field of this type, but it will be done recursively on the response's
+ * entity.
+ * @author <a href="mailto:stef@epardaud.fr">Stéphane Épardaud</a>
+ */
+@Target( { ElementType.TYPE, ElementType.METHOD, ElementType.PARAMETER,
+      ElementType.FIELD })
+@Retention(RetentionPolicy.RUNTIME)
+@Decorator(processor = LinkDecorator.class, target = Marshaller.class)
+@Documented
+public @interface AddLinks
+```
+
+以上是完整的分析过程。
 
 ∎
