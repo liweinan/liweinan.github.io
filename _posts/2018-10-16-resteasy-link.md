@@ -113,7 +113,7 @@ $
 
 上面的"`TestLinks.testLinks()`这个testcase涉及到两个classes，分别是`Book`和`Comment`：
 
-Class Diagram14.png
+![]({{ site.url }}/assets/Class Diagram14.png)
 
 可以看到，`Book`包含`Comment`，而这两个classes里面都包含`RESTServiceDiscovery`。
 
