@@ -76,6 +76,6 @@ scala>
 - [Fast CSV and JSON Ingestion in PostgreSQL with COPY](https://info.crunchydata.com/blog/fast-csv-and-json-ingestion-in-postgresql-with-copy)
 - [postgresql - Inserting valid json with copy into postgres table - Stack Overflow](https://stackoverflow.com/questions/24190039/inserting-valid-json-with-copy-into-postgres-table)
 - [PostgreSQL: Documentation: 11: 9.15. JSON Functions and Operators](https://www.postgresql.org/docs/current/static/functions-json.html)
-- [Create Quick JSON Data Dumps From PostgreSQL | Hashrocket](https://hashrocket.com/blog/posts/create-quick-json-data-dumps-from-postgresql)
+- [Create Quick JSON Data Dumps From PostgreSQL](https://hashrocket.com/blog/posts/create-quick-json-data-dumps-from-postgresql)
 - [Is PostgreSQL Your Next JSON Database? - Compose Articles](https://www.compose.com/articles/is-postgresql-your-next-json-database/)
-- [Postgres JSON: Unleash the Power of Storing JSON in Postgres | Codeship | via @codeship](https://blog.codeship.com/unleash-the-power-of-storing-json-in-postgres/)
+- [Postgres JSON: Unleash the Power of Storing JSON in Postgres](https://blog.codeship.com/unleash-the-power-of-storing-json-in-postgres/)
