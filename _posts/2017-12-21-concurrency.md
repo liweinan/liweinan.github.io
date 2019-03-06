@@ -77,7 +77,7 @@ abstract: 梳理学习的脉络，给大家讲讲`atomicity`，`lock`，`consist
 
 如果你不使用`volatile`关键字，另一个thread读到的可能还是另一个CPU里面的「缓存」数据，而不是「内存」里面更新后的数据。下图展示了CPU缓存，Thread观测到的数据，以及内存的关系[^1]：
 
-![]({{ site.url }}/assets/58331383fbcfc4e45cd2e7b64d1b9463.jpeg)
+![](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/58331383fbcfc4e45cd2e7b64d1b9463.jpeg)
 
 所以，`lock`的实现，要基于所有这些层次丰富的世界进行考量，要考虑到所有的观测不一致的可能性。所以说，软件的「锁」的实现，是基于「硬件」，「操作系统」，「虚拟机」一个综合考虑，最终落到一个实处：CPU是一个晶振芯片，时间的原子性。
 
@@ -95,7 +95,7 @@ abstract: 梳理学习的脉络，给大家讲讲`atomicity`，`lock`，`consist
 
 好，我们来看CPU的cache的实现[^2]：
 
-![]({{ site.url }}/assets/a9557dcd20f2d034d8f2a28c643e7974.gif)
+![](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/a9557dcd20f2d034d8f2a28c643e7974.gif)
 
 如上所示，CPU里面有Cache Line的概念，也就是说，如果是在一条cache line的的数据被修改，那么一条线上各个CPU的cache都要被更新。就像上面看到的那样，就算这条线上的某一个数据被更新，那这条线上所有的cached data都要从内存重新加载。Intel的这个设计，叫做`MESI (Modified/Exclusive/Shared/Invalid) protocol`。
 
@@ -139,11 +139,11 @@ x = -4
 
 高级别的优化，甚至会打乱源代码的执行顺序，编译器在认为破坏代码顺序不回影响运算结果的话，会做这种优化。为什么要打乱代码的执行顺序？因为CPU有pipeline的设计[^3]：
 
-![]({{ site.url }}/assets/1630ffd4bedee551d54565fad2cdc6cf.jpeg)
+![](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/1630ffd4bedee551d54565fad2cdc6cf.jpeg)
 
 如上图所示，CPU内部有`Instruction Fetch`单元，`Instruction Decode`单元，`Execution`单元，`Memory Access`单元。因此，每一个CPU周期，不同的单元可以并行执行各自的任务。因此如果我们合理安排汇编代码，比如一条取内存的代码，跟着一条执行运算的指令，CPU就可以并行执行两条指令：
 
-![]({{ site.url }}/assets/a8f11c9955c560dbcfab55cc877bbb0b.jpeg)
+![](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/a8f11c9955c560dbcfab55cc877bbb0b.jpeg)
 
 因此compiler可能会把源代码中的代码顺序重新安排得更合理，让CPU执行效率更高。
 

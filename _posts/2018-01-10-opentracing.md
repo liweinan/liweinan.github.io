@@ -35,7 +35,7 @@ $ mvn exec:exec
 
 执行状态如下：
 
-![]({{ site.url }}/assets/iTerm2ScreenSnapz001.png)
+![](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/iTerm2ScreenSnapz001.png)
 
 此时访问服务：
 
@@ -45,7 +45,7 @@ http://127.0.0.1:10001/
 
 效果如下：
 
-![]({{ site.url }}/assets/Donuts as a Service - Mozilla Firefox_001.png)
+![](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/Donuts as a Service - Mozilla Firefox_001.png)
 
 试着在里面order几个donuts。此时jaegertracing会trace这个过程，可以访问jaegertracing的服务端口，进行trace log的查看：
 
@@ -55,14 +55,14 @@ http://localhost:16686
 
 效果如下：
 
-![]({{ site.url }}/assets/Jaeger UI - Mozilla Firefox_003.png)
+![](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/Jaeger UI - Mozilla Firefox_003.png)
 
 如上图所示，注意要选取「Service」为「MicroDonuts」才可以看到相关的日志。此时还可以查看具体的spans：
 
-![]({{ site.url }}/assets/Parallels DesktopScreenSnapz003.png)
+![](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/Parallels DesktopScreenSnapz003.png)
 
 如上图所示，点击这个圆点，进入查看所包含的具体spans，截图如下：
 
-![]({{ site.url }}/assets/Jaeger UI - Mozilla Firefox_004.png)
+![](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/Jaeger UI - Mozilla Firefox_004.png)
 
 以上是「opentracing-walkthrough」这个项目的基本试玩过程。

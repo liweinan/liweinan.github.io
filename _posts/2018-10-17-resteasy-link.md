@@ -7,7 +7,7 @@ abstract: resteasy-link提供复杂的标记支持并提供了测试用例作为
 
 resteasy-link提供复杂的标记支持并提供了测试用例作为例子：
 
-![]({{ site.url }}/assets/3A5CFA98-BC42-4DDF-928C-90A7177C229C.png)
+![](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/3A5CFA98-BC42-4DDF-928C-90A7177C229C.png)
 
 启动测试，并进行请求：
 
@@ -86,7 +86,7 @@ transfer-encoding: chunked
 
 注意上面的link里面，有`next`这一项：
 
-![]({{ site.url }}/assets/EE029F4F-8D83-474A-8D81-17408F909E99.png)
+![](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/EE029F4F-8D83-474A-8D81-17408F909E99.png)
 
 我们可以使用提供的这个link：
 
@@ -165,11 +165,11 @@ transfer-encoding: chunked
 
 上面的数据里于是有了`prev`这一项：
 
-![]({{ site.url }}/assets/57C71C71-A15C-42E2-BC90-DE16CA12B4F1.png)
+![](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/57C71C71-A15C-42E2-BC90-DE16CA12B4F1.png)
 
 上面这些数据是通过`ScrollableCollection`产生的：
 
-![]({{ site.url }}/assets/93727E31-84B5-4247-8784-0E38E0861150.png)
+![](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/93727E31-84B5-4247-8784-0E38E0861150.png)
 
 以下是`BookStore.java`的文字部分：
 
@@ -194,7 +194,7 @@ public ScrollableCollection getScrollableComments(@Context UriInfo uriInfo, @Pat
 
 上面的`LinkResources`是针对`ScrollableCollection`而进行标记的。`ScrollableCollection`的class diagram如下：
 
-![]({{ site.url }}/assets/Class Diagram17.png)
+![](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/Class Diagram17.png)
 
 `ScrollableCollection `通过实现`ResourceFacade`接口，来绑定annotations里面的`@ParamBinding`的一些参数，并注入到`ScrollableCollection`的相关属性里面去。
 

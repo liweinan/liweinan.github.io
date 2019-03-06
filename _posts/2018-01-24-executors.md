@@ -38,31 +38,31 @@ Thread.currentThread().wait();
 
 虽然我们使用的是「SingleThreadExecutor」，但它也会开启一个新的Thread执行任务。但是如果跑上面的代码，我们会发现main thread会被这个task给block住。下面是代码执行的截图：
 
-![]({{ site.url }}/assets/IntelliJ IDEAScreenSnapz002.4daf8b8779684220b846abe2dd533ae6.png)
+![](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/IntelliJ IDEAScreenSnapz002.4daf8b8779684220b846abe2dd533ae6.png)
 
 可以看到main thread永不退出，被executor service里面的task给block住了。除非我们加入代码，让executor service进行shutdown，main thread才会退出：
 
-![]({{ site.url }}/assets/IntelliJ IDEAScreenSnapz005.fcedf0292eb047baa2e71f3a97a0e9d7.png)
+![](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/IntelliJ IDEAScreenSnapz005.fcedf0292eb047baa2e71f3a97a0e9d7.png)
 
 如上所示，使用「shutdown()」方法，这个任务就退出了，于是main thread也跟着退出。
 
 我想知道上面这个场景是如何实现的，就跟踪了一下Executors的代码。首先，ExecutorService的submit方法是这样的：
 
-![]({{ site.url }}/assets/IntelliJ IDEAScreenSnapz006.a8311e60cf064e6abde39dc4c7c47b33.png)
+![](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/IntelliJ IDEAScreenSnapz006.a8311e60cf064e6abde39dc4c7c47b33.png)
 
 是在AbstractExecutorService里面实现的，这个submit方法里面的重点是上面这个execute方法。
 
 跟踪进execute方法，重点是这个addWorker方法：
 
-![]({{ site.url }}/assets/IntelliJ IDEAScreenSnapz007.ed4f9fe9f0ce45dca0950c135a1fa117.png)
+![](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/IntelliJ IDEAScreenSnapz007.ed4f9fe9f0ce45dca0950c135a1fa117.png)
 
 再进入addWorker方法查看，重点是这里：
 
-![]({{ site.url }}/assets/IntelliJ IDEAScreenSnapz008.5e23c673b01c4a0a9facbce70ee560fa.png)
+![](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/IntelliJ IDEAScreenSnapz008.5e23c673b01c4a0a9facbce70ee560fa.png)
 
 可以看到创建了一个Worker的实例。创建完worker以后，就会在addWorker方法里面启动它：
 
-![]({{ site.url }}/assets/IntelliJ IDEAScreenSnapz009.17b0fe895a524161a3bfe53587288882.png)
+![](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/IntelliJ IDEAScreenSnapz009.17b0fe895a524161a3bfe53587288882.png)
 
 如上所示，这个t就是一个Thread实例，封装在worker里面。Worker这个class在ThreadPoolExecutor内部，代码如下：
 
@@ -166,11 +166,11 @@ public void run() {
 
 也就是说，「runWorker」方法是worker的执行逻辑，而「runWorker」方法里面值得一看的是这里：
 
-![]({{ site.url }}/assets/IntelliJ IDEAScreenSnapz010.32a695e6c2d94202a75cfe1e574cffaf.png)
+![](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/IntelliJ IDEAScreenSnapz010.32a695e6c2d94202a75cfe1e574cffaf.png)
 
 这个「getTask()」有一处代码是可能block住当前thread的：
 
-![]({{ site.url }}/assets/IntelliJ IDEAScreenSnapz011.8842d6b6fbca40afbb354464e33c2b35.png)
+![](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/IntelliJ IDEAScreenSnapz011.8842d6b6fbca40afbb354464e33c2b35.png)
 
 这个workQueue是BlockingQueue类型，它的「take()」方法会hold住当前thread。
 
@@ -275,7 +275,7 @@ public class PlayWithDefaultThreadFactory {
 
 执行上面的代码，发现同一个thread group里面的thread会把组内的其它thread给block住（但不影响其它thread执行到结束，只是其它thread不会退出）：
 
-![]({{ site.url }}/assets/IntelliJ IDEAScreenSnapz013.987e844353584b19a51e796b1ef1fda1.png)
+![](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/IntelliJ IDEAScreenSnapz013.987e844353584b19a51e796b1ef1fda1.png)
 
 于是在上面的代码最后加上这样一行：
 
@@ -286,7 +286,7 @@ t.interrupt();
 
 执行代码，想法得到了验证：
 
-![]({{ site.url }}/assets/IntelliJ IDEAScreenSnapz014.570966686e374da684ccbceb761d964e.png)
+![](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/IntelliJ IDEAScreenSnapz014.570966686e374da684ccbceb761d964e.png)
 
 通过上面的分析，学习了thread group的概念，并且学习了Executor里面一些重要的设计思想，以及Executors内部包含的一些classes，比如DefaultThreadFactory的设计。
 

@@ -74,7 +74,7 @@ int main() {
 
 这样，通过`#include`，在预处理阶段，`foo.h`的内容就会展开到`macro_expand.c`的`#include`所在位置：
 
-![]({{ site.url }}/assets/iTerm2ScreenSnapz140.b341d138cf7144c3a2706df6f79388f9.png)
+![](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/iTerm2ScreenSnapz140.b341d138cf7144c3a2706df6f79388f9.png)
 
 可以看到`#include "foo.h"`被替换成了`foo.h`里面的实际内容。
 

@@ -7,7 +7,7 @@ abstract: 这篇对websocket进行协议分析，并介绍如何使用httpd做�
 
 接上篇，我们看一下客户端和服务端的通信数据。客户端和服务端的数据通信过程可以用Wireshark来捕获：
 
-![]({{ site.url }}/assets/51594ce5b0f741aeaa7e5e5004578771.png)
+![](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/51594ce5b0f741aeaa7e5e5004578771.png)
 
 如图中所示，我们可以看到websocket的upgrade请求：
 
@@ -31,7 +31,7 @@ Sec-WebSocket-Accept: 2T9o4TGeL7V6QJ/PnOsqmx4nEBk=
 
 接下来就是实际的websocket数据传输阶段：
 
-![]({{ site.url }}/assets/f80cca51665d472bad965711bde8bccf.png)
+![](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/f80cca51665d472bad965711bde8bccf.png)
 
 通过上面的分析过程我们可以粗略理解websocket的通信过程。特别是理解了websocket的初始请求协议格式，我们可以用cURL来手动组装一个请求：
 

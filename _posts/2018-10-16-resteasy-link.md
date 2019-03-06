@@ -9,7 +9,7 @@ abstract: 分析`RESTEasyServiceDiscovery`的功能。
 
 使用resteasy的源代码自带的`TestLinks.testLinks()`：
 
-![]({{ site.url }}/assets/6AF4FC21-6786-4893-9C43-87B9952BA3EC.png)
+![](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/6AF4FC21-6786-4893-9C43-87B9952BA3EC.png)
 
 在上面的测试代码里加了一行：
 
@@ -109,23 +109,23 @@ $
 
 上面的数据当中，`update`，`remove`，`self`，`add`……这些是定义在`@LinkResource`里面的：
 
-![]({{ site.url }}/assets/9F96EA36-FD02-4E98-BC39-CCF73CD52855.png)
+![](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/9F96EA36-FD02-4E98-BC39-CCF73CD52855.png)
 
 上面的"`TestLinks.testLinks()`这个testcase涉及到两个classes，分别是`Book`和`Comment`：
 
-![]({{ site.url }}/assets/Class Diagram14.png)
+![](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/Class Diagram14.png)
 
 可以看到，`Book`包含`Comment`，而这两个classes里面都包含`RESTServiceDiscovery`。
 
 这个`RESTServiceDiscovery`会按照convention，像上面给出的XML和JSON数据一样，默认生成一套URLs。如果我们去掉`Book`里面的`rest`，就可以看到差别。把`Book`里面的`rest`注释掉：
 
-![]({{ site.url }}/assets/D7F5F140-C249-417E-B314-A097EA4DBFBB.png)
+![](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/D7F5F140-C249-417E-B314-A097EA4DBFBB.png)
 
 注释掉`rest`后，重新启动测试：
 
-![]({{ site.url }}/assets/0612C1AB-184E-41DF-A366-9D5569EEA717.png)
+![](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/0612C1AB-184E-41DF-A366-9D5569EEA717.png)
 
-![]({{ site.url }}/assets/C6B5CFCB-3DF0-44DD-ADB8-2FF039A54960.png)
+![](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/C6B5CFCB-3DF0-44DD-ADB8-2FF039A54960.png)
 
 测试启动后，重新进行请求：
 
@@ -158,25 +158,25 @@ $
 
 可以看到只剩下`Book`自身的信息。比对前后的区别：
 
-![]({{ site.url }}/assets/D2DB50AF-16C1-4DF2-A2C3-4AB429A002A8.png)
+![](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/D2DB50AF-16C1-4DF2-A2C3-4AB429A002A8.png)
 
 可以看到`rest`为我们默认添加了一些资源链接，同时`comment`的相关操作地址也加进来了。
 
 上面这些links是从具体的service服务中来，分别是`BookStore`和`BookStoreMinimal`：
 
-![]({{ site.url }}/assets/46FCA5A1-1D2C-4C37-87A6-86D83B82D3FC.png)
+![](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/46FCA5A1-1D2C-4C37-87A6-86D83B82D3FC.png)
 
 这两个classes的类图：
 
-![]({{ site.url }}/assets/Class Diagram15.png)
+![](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/Class Diagram15.png)
 
 用来调用服务的客户端接口是`BookStoreService`：
 
-![]({{ site.url }}/assets/Class Diagram16.png)
+![](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/Class Diagram16.png)
 
 如果我们只使用`BookStore`或者只使用`BookStoreMinimal`：
 
-![]({{ site.url }}/assets/1011BB81-5593-460A-8579-C7547C08B74F.png)
+![](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/1011BB81-5593-460A-8579-C7547C08B74F.png)
 
 实际的输出结果不变：
 
@@ -227,21 +227,21 @@ transfer-encoding: chunked
 
 比对`BookStore`和`BookStoreMinimal`的区别：
 
-![]({{ site.url }}/assets/566BDA96-9136-4972-B704-BC960D310A0C.png)
+![](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/566BDA96-9136-4972-B704-BC960D310A0C.png)
 
 可以看到就是`@LinkResource`标记里面的内容更加完整。
 
 我们在测试里面只使用`BookStoreMinimal`：
 
-![]({{ site.url }}/assets/B7C003D4-F823-407B-BBD4-432FFCAD8E4B.png)
+![](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/B7C003D4-F823-407B-BBD4-432FFCAD8E4B.png)
 
 然后把`BookStoreMinimal`里的`@LinkResource`全部都注释掉：
 
-![]({{ site.url }}/assets/A4F57A8C-DAFD-41FB-A2C6-F6D687790DD8.png)
+![](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/A4F57A8C-DAFD-41FB-A2C6-F6D687790DD8.png)
 
 然后重新启动测试：
 
-![]({{ site.url }}/assets/EEAB375D-D305-43D6-A110-398B9E1E78F5.png)
+![](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/EEAB375D-D305-43D6-A110-398B9E1E78F5.png)
 
 然后执行客户端的请求：
 
@@ -264,7 +264,7 @@ transfer-encoding: chunked
 
 如果我们重新用`@AddLinks`标记一个方法：
 
-![]({{ site.url }}/assets/C1444237-8394-4768-BFF2-6353F59D19E3.png)
+![](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/C1444237-8394-4768-BFF2-6353F59D19E3.png)
 
 然后重新启动测试，并进行请求：
 
@@ -291,7 +291,7 @@ transfer-encoding: chunked
 
 如果此时去掉`@AddLinks`的标记：
 
-![]({{ site.url }}/assets/C1A9B668-54DB-4C55-B0CC-D68363437B98.png)
+![](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/C1A9B668-54DB-4C55-B0CC-D68363437B98.png)
 
 然后再次重新启动测试，并重新请求：
 
@@ -312,7 +312,7 @@ transfer-encoding: chunked
 
 可以看到`Book`里面的`rest`并没有被注入：
 
-![]({{ site.url }}/assets/9170E8D3-BA5F-46E0-99CA-700102BAB355.png)
+![](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/9170E8D3-BA5F-46E0-99CA-700102BAB355.png)
 
 通过以上过程，就理清楚了`AtomLink`和`LinkResource`的功能：
 

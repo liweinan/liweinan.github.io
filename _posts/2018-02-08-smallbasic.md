@@ -19,19 +19,19 @@ BASIC是一个充满了乐趣的编程工具，因为它强大的绘图能力，
 
 以下是Small Basic的网站：http://smallbasic.com/
 
-![]({{ site.url }}/assets/Parallels DesktopScreenSnapz011.81a022005b0648a8b48a7fcdb0def4e1.png)
+![](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/Parallels DesktopScreenSnapz011.81a022005b0648a8b48a7fcdb0def4e1.png)
 
 网站的右上是`Download`下载按钮，点击下载安装包即可，下载完成后，把Small Basic安装好，相信对大家都不是什么问题。默认是安装在C盘的`Program Files(x86) -> Microsoft`下：
 
-![]({{ site.url }}/assets/FinderScreenSnapz001.cb2b9c512c49495f83acf8334c20acc7.png)
+![](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/FinderScreenSnapz001.cb2b9c512c49495f83acf8334c20acc7.png)
 
 如上所示，点进去`Small Basic`就可以把编程环境运行起来了。一下是运行起来的Small Basic编程环境：
 
-![]({{ site.url }}/assets/FinderScreenSnapz002.6da9211f2dc043da805182e133276604.png)
+![](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/FinderScreenSnapz002.6da9211f2dc043da805182e133276604.png)
 
 如上所示，Small Basic的编程环境非常简洁，上面一行是大大的图标，非常直观，然后默认打开了一页写程序的窗口，叫做`无标题`。我们在这个里面输入代码试试看：
 
-![]({{ site.url }}/assets/Parallels DesktopScreenSnapz013.a35fb5285edd437588b75e7b3f58299b.png)
+![](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/Parallels DesktopScreenSnapz013.a35fb5285edd437588b75e7b3f58299b.png)
 
 如上所示，我们在默认的代码窗口里面输入了一行代码：
 
@@ -43,7 +43,7 @@ TextWindow.WriteLine("Hello, world!")
 
 我们试着运行这个代码，点击上面大大的蓝色`运行(F5)`，程序运行结果如下：
 
-![]({{ site.url }}/assets/UlyssesScreenSnapz002.3ae2f4b2c78849f086c9855d6cc733a7.png)
+![](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/UlyssesScreenSnapz002.3ae2f4b2c78849f086c9855d6cc733a7.png)
 
 如上所示，我们看到系统弹出了一个文本窗口，显示了`Hello, world!`，非常直观。
 

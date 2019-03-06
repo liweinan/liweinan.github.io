@@ -17,7 +17,7 @@ abstract: 这篇文章介绍三种non-block的并发级别：Sequential Consiste
 
 简单来讲，Sequential Consistency就是保证一件事情：同一个thread下程序的执行顺序不能乱。这个要求具体的含义可以通过例子来展示。我们来看下面这个程序的执行过程：
 
-![]({{ site.url }}/assets/ScreenSnapz1236.png)
+![](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/ScreenSnapz1236.png)
 
 （图片来自「herlihy2011art」）
 
@@ -35,7 +35,7 @@ q.enq(x) -> q.deq(y)
 
 一般现代的编译器在reorder这块都会对代码的功能判断的很准确，所以不会造成程序的逻辑错误，比如上面的两个操作，编译器是不会把它们reorder的。但是对于multi-threaded的程序，情况就复杂的多了。编译器很可能错误做一个它认为一个安全的codes reorder，但在多线程的环境下造成程序的逻辑错误。所以对于多线程的代码，我们最好不要打开编译器的允许codes reorder级别的优化选项。我们可以看下图中这个双线程程序的执行过程：
 
-![]({{ site.url }}/assets/ScreenSnapz1237.png)
+![](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/ScreenSnapz1237.png)
 
 （图片来自「herlihy2011art」）
 
@@ -65,7 +65,7 @@ q.enq(x) -> q.enq(y) -> q.deq(y) -> q.deq(x)
 
 接下来我们看看下面这两个threads的程序执行过程：
 
-![]({{ site.url }}/assets/ScreenSnapz1238.png)
+![](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/ScreenSnapz1238.png)
 
 （图片来自「herlihy2011art」）
 
@@ -135,7 +135,7 @@ q.enq(y) -> q.enq(x) -> q.deq(x)
 
 也就是说，serializability要求程序执行的“原子性”，每一个call应该是瞬间完成的。我们回过头来再来看这张图：
 
-![]({{ site.url }}/assets/ScreenSnapz1237.png)
+![](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/ScreenSnapz1237.png)
 
 （图片来自「herlihy2011art」）
 

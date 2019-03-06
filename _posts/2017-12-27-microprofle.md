@@ -109,7 +109,7 @@ $ mvn spring-boot:start
 
 运行起来的效果如下：
 
-![]({{ site.url }}/assets/ScreenSnapz1253.png)
+![](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/ScreenSnapz1253.png)
 
 服务启动后，使用`curl`来访问服务端：
 
@@ -162,7 +162,7 @@ extract(Builtin.HTTP_HEADERS, io.opentracing.contrib.jaxrs2.server.ServerHeaders
 
 可以看到上面的服务端有了json格式的tracing输出内容，这是`LoggingTracer`和它后面的opentracing框架所提供给我们的，在下篇中具体说明。下面是客户端和服务端在我机器上运行的截图：
 
-![]({{ site.url }}/assets/ScreenSnapz1254.png)
+![](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/ScreenSnapz1254.png)
 
 先讲这么多。
 

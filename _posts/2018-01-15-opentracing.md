@@ -27,7 +27,7 @@ $ tree
 
 从代码结构可以看到，这个例子包含一个「Client」，一个「Server」。然后「Message」是「Client」和「Server」共用的一个数据格式接口。下面是「Client」和「Server」的Class Diagram：
 
-![]({{ site.url }}/assets/opentracing_client_server.png)
+![](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/opentracing_client_server.png)
 
 「TestClientServerTest」负责启动「Server」并调用「Client」发送信息给「Server」。下面是「TestClientServerTest」的代码：
 
@@ -151,7 +151,7 @@ public class Server extends Thread {
 
 在上面的过程当中，是对Tracer的使用。其中，「ActiveSpan」会在tracing结束后，自动关闭自己，因为它扩展了Java 8的「Autoclosable」接口。下面是「ActiveSpan」的Class Diagram：
 
-![]({{ site.url }}/assets/active_span_autoclosable.png)
+![](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/active_span_autoclosable.png)
 
 因此「ActiveSpan」接口对「close()」方法的实现，就决定了它的关闭逻辑。因为「ActiveSpan」本身是个接口，所以具体的逻辑由使用者自己决定。
 
