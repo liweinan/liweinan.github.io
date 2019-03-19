@@ -68,7 +68,7 @@ final ResourceConfig resourceConfig = ResourceConfig.forApplicationClass(clazz, 
 
 The main logic of `addServletWithExistingRegistration()` is shown above. It will create an instance of `ResourceConfig` class[^2]. This class contains `Application` and the resource classes registered under the `Application`. Here is the class diagram of the `ResourceConfig`:
 
-![2017-04-10-ResourceConfig.png]({{ site.url }}/assets/2017-04-10-ResourceConfig.png)
+![2017-04-10-ResourceConfig.png](https://github.com/liweinan/blogpicbackup/blob/master/data/2017-04-10-ResourceConfig.png)
 
 From the above diagram, we can see `WrappingResourceConfig` contains `application : javax.ws.rs.core.Application` and `defaultClasses : java.util.Set<Class<?>> = new HashSet<>()`, this provides the `application -> resources` mapping. If RESTEasy wants to support multiple `Application` deployment, it also needs to have a data structure to record the relationship between each Application instance and its included resources.
 

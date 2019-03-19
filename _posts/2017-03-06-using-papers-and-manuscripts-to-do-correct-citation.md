@@ -27,7 +27,7 @@ However, I want a solution that can fully control the output I need and cite it 
 
 To achieve this goal, we can use several professional academic reference managers such as _Mendeley_ or _Papers_. My favorite tool on _MacOS_ is _Papers 3_. It can export paper reference as _BibTex_ library file like this:
 
-![bibtexexport]({{ site.url }}/assets/bibtexexport.png)
+![bibtexexport](https://github.com/liweinan/blogpicbackup/blob/master/data/bibtexexport.png)
 
 I can fully control the exported citation style in _Papars 3_ with its help. After the export is done, we get the `.bib` file like this:
 
@@ -37,11 +37,11 @@ exported.bib
 
 We can use free tools provided by _LaTex_ family to convert the above `.bib` file to _PDF_ format, and then copy the generated citation text from the _PDF_ file into our post page. For myself, I have a paper writing software called _Manuscripts_ that can do this. _Manuscripts_ has a feature to import `.bib` file and generate the bibliography for us:
 
-![importbib]({{ site.url }}/assets/importbib.png)
+![importbib](https://github.com/liweinan/blogpicbackup/blob/master/data/importbib.png)
 
 The generated bibliography conforms to formal formats:
 
-![bib]({{ site.url }}/assets/bib.png)
+![bib](https://github.com/liweinan/blogpicbackup/blob/master/data/bib.png)
 
 We can copy the citation text into our post. Here is the example how I can use it in this post:
 

@@ -368,19 +368,19 @@ http://127.0.0.1:8080
 
 We can access the URL shown above and get the following page:
 
-![Tomcat Default Page]({{ site.url }}/assets/vault01.png)
+![Tomcat Default Page](https://github.com/liweinan/blogpicbackup/blob/master/data/vault01.png)
 
 As the image shown above, we can see the default homepage of our Tomcat server. There is a button named `Manager App` at top-right of the page, please click it, and the login window will popup:
 
-![Login Page]({{ site.url }}/assets/vault02.png)
+![Login Page](https://github.com/liweinan/blogpicbackup/blob/master/data/vault02.png)
 
 We can input `manager` in `Name` field, and in `Password` field we can input `P@SSW0#D` as we set before. If tomcat-vault is working, then Tomcat should accept the password, though it's encrypted and stored in `VAULT.dat`. Let's try it:
 
-![Enter username and password]({{ site.url }}/assets/vault03.png)
+![Enter username and password](https://github.com/liweinan/blogpicbackup/blob/master/data/vault03.png)
 
 The authentication is passed and we entered the manager page:
 
-![Manager Page]({{ site.url }}/assets/vault04.png)
+![Manager Page](https://github.com/liweinan/blogpicbackup/blob/master/data/vault04.png)
 
 Till now we have gone through all the steps to integrate Tomcat-Vault into Tomcat. I have put a complete tomcat server into this repository, and it contains all the configuration files and keystore files we have used in this article. You can check it out and play with it
 

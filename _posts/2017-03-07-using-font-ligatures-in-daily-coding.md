@@ -19,7 +19,7 @@ The benefit of ligatures is the improvement of the readability of the symbols. H
 
 [^monospace]: [Monospaced font](https://en.wikipedia.org/wiki/Monospaced_font)
 
-![all_ligatures]({{ site.url }}/assets/all_ligatures.png)
+![all_ligatures](https://github.com/liweinan/blogpicbackup/blob/master/data/all_ligatures.png)
 
 As the diagram shown above, the ligatures greatly improved the conciseness and readability of the symbols. There are many monospaced fonts that supports ligatures that we can use in our daily coding work. Here are some popular ones: _FiraCode_, _Hasklig_[^hasklig] and _PragmataPro_[^pragmatapro].
 
@@ -33,13 +33,13 @@ Here is a screenshot of using _FiraCode_ in _Atom_[^atom]:
 
 [^atom]: [Atom: A hackable text editor for the 21st Century](https://atom.io/)
 
-![atom]({{ site.url }}/assets/2017-03-07-atom.png)
+![atom](https://github.com/liweinan/blogpicbackup/blob/master/data/2017-03-07-atom.png)
 
 As the screenshot shown above, we can see how the symbols like `==`, `!=`, `>=` are displayed with ligatures enabled.
 
 Not only _Atom_, but many coding tools and text editors are supporting ligatures nowadays, such as _IntelliJ_[^intellij] and _Emacs_. You can check your editors to see if it supports ligatures or not. Here is a screenshot that shows how to enable font ligatures in _IntelliJ_:
 
-![2017-03-08-intellij-ligature.png]({{ site.url }}/assets/2017-03-08-intellij-ligature.png)
+![2017-03-08-intellij-ligature.png](https://github.com/liweinan/blogpicbackup/blob/master/data/2017-03-08-intellij-ligature.png)
 
 Finally, I'd like to recommend an interesting article related with ligatures[^decline-and-fall-of-the-ligature] for reading.
 
