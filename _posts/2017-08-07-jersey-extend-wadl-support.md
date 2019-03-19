@@ -47,7 +47,7 @@ public class SampleWadlGeneratorConfig extends WadlGeneratorConfig {
 
 From above code we can see Jersey supports several extended WADL documents by different classes. For example, there are `WadlGeneratorGrammarsSupport`, `WadlGeneratorApplicationDoc` and `WadlGeneratorResourceDocSupport`, etc. They are all conforms to `WadlGenerator` interface. Here is the relative diagram:
 
-![/assets/2017-08-07-wadl-generator.png](/assets/2017-08-07-wadl-generator.png)
+![https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/2017-08-07-wadl-generator.png](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/2017-08-07-wadl-generator.png)
 
 From the above diagram, we can see the relationship of the `WadlGenerator` interface and its implementation classes. I want to focus on `WadlGeneratorGrammarsSupport` in this article, so I will check the `grammars` part of the WADL output in detail. I comment out other two parts in `SampleWadlGeneratorConfig`:
 
@@ -77,7 +77,7 @@ $ mvn clean package exec:java -Dmaven.test.skip=true
 
 And the server started like this:
 
-![/assets/2017-08-07-server-start.png](/assets/2017-08-07-server-start.png)
+![https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/2017-08-07-server-start.png](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/2017-08-07-server-start.png)
 
 Then I use this command to get the `application.wadl`:
 
@@ -295,7 +295,7 @@ private void attachExternalGrammar(
 
 In above code, I can see the generated `include` part is added into `grammars` section. Please note the above code is used to generate the `grammars` section in `/application.wadl` data output. It's not the function that generate the content of `/application.wadl/xsd0.xsd`. Here is the sequence diagram of the above method:
 
-![/assets/org.glassfish.jersey.server.wadl.internal.WadlApplicationContextImpl.attachExternalGrammar(Application, ApplicationDescription, URI).png](/assets/org.glassfish.jersey.server.wadl.internal.WadlApplicationContextImpl.attachExternalGrammar(Application, ApplicationDescription, URI).png)
+![https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/org.glassfish.jersey.server.wadl.internal.WadlApplicationContextImpl.attachExternalGrammar(Application, ApplicationDescription, URI).png](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/org.glassfish.jersey.server.wadl.internal.WadlApplicationContextImpl.attachExternalGrammar(Application, ApplicationDescription, URI).png)
 
 Here is the relative code deals with the grammars section:
 
@@ -324,7 +324,7 @@ export MAVEN_OPTS="-Xdebug -Xnoagent -Djava.compiler=NONE -Xrunjdwp:transport=dt
 
 And then I restart the server, and remote debug it in IntelliJ. Here is the callstack I got in IntelliJ:
 
-![/assets/2017-08-08-grammar-callstack.png](/assets/2017-08-08-grammar-callstack.png)
+![https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/2017-08-08-grammar-callstack.png](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/2017-08-08-grammar-callstack.png)
 
 From above screenshot, we can see the `applicationDescription` has the `getExternalMetadataKeys()` method, and `path` is fetched from it. The default path value is `xsd0.xsd`. This is the automatically generated grammar file by Jersey. Here is the code of `getExternalMetadataKeys()` method inside `ApplicationDescription` class:
 
@@ -345,15 +345,15 @@ private WadlGenerator.ExternalGrammarDefinition _externalGrammarDefiniton;
 
 From above we can see the `ExternalGrammarDefinition` is an inner class of `WadlGenerator`, and here is the class diagram of it:
 
-![/assets/2017-08-08-ExternalGrammarDefinition.png](/assets/2017-08-08-ExternalGrammarDefinition.png)
+![https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/2017-08-08-ExternalGrammarDefinition.png](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/2017-08-08-ExternalGrammarDefinition.png)
 
 From above diagram we can see the `ExternalGrammarDefinition` class has a map of `ExternalGrammar` and a list of `Resolver`. Here is the class diagram of these classes:
 
-![/assets/2017-08-08-ExternalGrammar.png](/assets/2017-08-08-ExternalGrammar.png)
+![https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/2017-08-08-ExternalGrammar.png](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/2017-08-08-ExternalGrammar.png)
 
 From above diagram, we can see `ExternalGrammar` contains `_content` with type of `byte[]`. The `ExternalGrammar` is used in `WadlResource`. Here is the class diagram of the `WadlResource`:
 
-![/assets/2017-08-09-WadlResource.png](/assets/2017-08-09-WadlResource.png)
+![https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/2017-08-09-WadlResource.png](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/2017-08-09-WadlResource.png)
 
 This is a JAX-RS resource class created by Jeresy to provide the `/application.wadl` resource. I'd like to check the `getWadl(...)` and `getExternalGrammar(...)` methods in the class. Here is the full code of the `WadlResource`:
 
@@ -527,15 +527,15 @@ public final class WadlResource {
 
 Here is the sequence diagram of the `getWadl(...)` method in `WadlResource`:
 
-![/assets/org.glassfish.jersey.server.wadl.internal.WadlResource.getWadl(UriInfo).png](/assets/org.glassfish.jersey.server.wadl.internal.WadlResource.getWadl(UriInfo).png)
+![https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/org.glassfish.jersey.server.wadl.internal.WadlResource.getWadl(UriInfo).png](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/org.glassfish.jersey.server.wadl.internal.WadlResource.getWadl(UriInfo).png)
 
 From the above sequence diagram, we can see the method will get `ApplicationDescription` from `WadlApplicationContext`, and then from `WadlApplicationContext` it will get the `ApplicationDescription`. Finally the `Application` will be fetched from `WadlApplicationDescription`. Now let's check the sequence diagram of the `getExternalGrammar(...)` method:
 
-![/assets/org.glassfish.jersey.server.wadl.internal.WadlResource.getExternalGrammar(UriInfo, String).png](/assets/org.glassfish.jersey.server.wadl.internal.WadlResource.getExternalGrammar(UriInfo, String).png)
+![https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/org.glassfish.jersey.server.wadl.internal.WadlResource.getExternalGrammar(UriInfo, String).png](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/org.glassfish.jersey.server.wadl.internal.WadlResource.getExternalGrammar(UriInfo, String).png)
 
 From the above sequence diagram, we can see the method will finally call the `getExternalGrammar(...)` method in `ApplicationDescription`. Here is the sequence diagram:
 
-![/assets/org.glassfish.jersey.server.wadl.internal.ApplicationDescription.getExternalGrammar(String).png)](/assets/org.glassfish.jersey.server.wadl.internal.ApplicationDescription.getExternalGrammar(String).png)
+![https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/org.glassfish.jersey.server.wadl.internal.ApplicationDescription.getExternalGrammar(String).png)](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/org.glassfish.jersey.server.wadl.internal.ApplicationDescription.getExternalGrammar(String).png)
 
 From above we can see the method will return the instance of `ExternalGrammar`. After learning the above WADL generation process, now let's check how does the default `xsd0.xsd` grammars get generated.
 
@@ -551,7 +551,7 @@ ApplicationDescription.ExternalGrammar externalMetadata = applicationDescription
 
 In above code, the `ApplicationDescription` is fetched from `WadlContenxt`, and in `ApplicationDescription` it contains `ExternalGrammar`. Finally, in `ExternalGrammar` it contains the generated WADL data. We can confirm this by setting a breakpoint in the `getApplication()` method of `WadlApplicationContextImpl` class, and here is the screenshot:
 
-![/assets/WadlApplicationContextImpl.png](/assets/WadlApplicationContextImpl.png)
+![https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/WadlApplicationContextImpl.png](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/WadlApplicationContextImpl.png)
 
 From the above screenshot, we can see the `_content` in `_externalGrammarDefiniton` of `WadlApplicationContextImpl` contains the generated WADL data related with `xsd0.xsd`, and this generation process happened in `getApplication()` method.
 
@@ -566,7 +566,7 @@ We can see it will call its `getWadlBuilder(...)` method to get an instance of `
 
 So the default grammars section is actually generated by `WadlBuilder` from resources. In below is the screenshot to see the running state of the `WadlBuilder.generate(...)` method called by `WadlApplicationContextImpl.getApplication(...)` method:
 
-![/assets/2017-08-10-generate.png](/assets/2017-08-10-generate.png)
+![https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/2017-08-10-generate.png](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/2017-08-10-generate.png)
 
 From the above screenshot, we can see the resources are passed into the method, and the builder will generate the WADL default grammars from it. So we can see the process to generate grammars is same with generating other parts of the WADL data, and it will just use WadlBuilder to do the job.
 
@@ -619,21 +619,21 @@ From the above code, we can see besides processing resources, it will call the `
 
 I set a breakpoint here and found that the class that implements the `WadlBuilder` interface fetched here is `WadlGeneratorJAXBGrammarGenerator`. Here is the class diagram of `WadlGeneratorJAXBGrammarGenerator`:
 
-![/assets/WadlGeneratorJAXBGrammarGenerator.png](/assets/WadlGeneratorJAXBGrammarGenerator.png)
+![https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/WadlGeneratorJAXBGrammarGenerator.png](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/WadlGeneratorJAXBGrammarGenerator.png)
 
 The purpose of calling the `createExternalGrammar()` method in `WadlGeneratorJAXBGrammarGenerator` is to fill the `WadlGenerator.ExternalGrammarDefinition`. After the method is called inside `WadlBuilder.generator()`, we can see the `_content` inside `ExternalGrammarDefinition` is filled. Here is the screenshot:
 
-![/assets/2017-08-10-content.png](/assets/2017-08-10-content.png)
+![https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/2017-08-10-content.png](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/2017-08-10-content.png)
 
 After above internal grammars generation process is done, the main work is almost done. It will attach the rest of metadata to the grammars section, and finally the filled `ApplicationDescription.ExternalGrammar` will be returned to `WadlResource`. Here is the screenshot:
 
-![/assets/2017-08-10-WadlResource.png](/assets/2017-08-10-WadlResource.png)
+![https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/2017-08-10-WadlResource.png](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/2017-08-10-WadlResource.png)
 
 From the above screenshot, we can see the `ApplicationDescription.ExternalGrammar` is finally returned to `WadlResource.getExternalGrammar(...)` method, and it will be returned to the caller of `/application.wadl/xsd0.xsd`.
 
 From the above learning, we can see the `getWadl(...)` method and the `getExternalGrammar(...)` method in `WadlResource` class are almost the same. They all rely on the underlying Jersey structures to generate WADL resources, but one return the whole WADL data and the other one just return the generated external grammar data. Here are is comparation result of the two methods:
 
-![/assets/2017-08-11-diff.png](/assets/2017-08-11-diff.png)
+![https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/2017-08-11-diff.png](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/2017-08-11-diff.png)
 
 In the next step, I'd like to analyze how the `xsd0.xsd` is related with the generated grammars. I set a breakpoint in the `WadlResource.getExternalGrammar(...)` method, and then I request with following command:
 
@@ -643,13 +643,13 @@ $ curl http://localhost:8080/extended-wadl-webapp/application.wadl/xsd1.xsd
 
 In above command I used `xsd1.xsd` in request URL to see if Jersey generate the path dynamically and if it will serve it. Here is the breakpoint screenshot from server side:
 
-![/assets/2017-08-11-xsd1.png](/assets/2017-08-11-xsd1.png)
+![https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/2017-08-11-xsd1.png](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/2017-08-11-xsd1.png)
 
 From above screenshot we can see the `xsd1.xsd` is passed into the method as `path` parameter. However inside `_externamGrammarDefinition` the `key` is still `xsd0.xsd`. From this we can see Jersey doesn't generate the URL dynamically, and it serves the `xsd0.xsd` statically.
 
 This process happens in `WadlGeneratorJAXBGrammarGenerator.buildModelAndSchemas(...)` method. Here is the screenshot inside the method:
 
-![/assets/2017-08-11-generate-xsd1.png](/assets/2017-08-11-generate-xsd1.png)
+![https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/2017-08-11-generate-xsd1.png](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/2017-08-11-generate-xsd1.png)
 
 From the above screenshot, we can see the filename generation process. Here is the full code of the `buildModelAndSchemas(...)` method:
 
@@ -807,7 +807,7 @@ public ExternalGrammarDefinition createExternalGrammar() {
 
 If we comment out `buildModelAndSchemas(...)` method like this:
 
-![/assets/2017-08-14-WadlGeneratorJAXBGrammarGenerator.png](/assets/2017-08-14-WadlGeneratorJAXBGrammarGenerator.png)
+![https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/2017-08-14-WadlGeneratorJAXBGrammarGenerator.png](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/2017-08-14-WadlGeneratorJAXBGrammarGenerator.png)
 
 And then recompile the `core-server` project. After compiling the above change and restart the example server, we can fetch the WADL data again:
 
@@ -856,7 +856,7 @@ public ExternalGrammarDefinition createExternalGrammar() {
 
 Here is the screenshot of the running status of the above method:
 
-![/assets/2017-08-15-createExternalGrammar.png](/assets/2017-08-15-createExternalGrammar.png)
+![https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/2017-08-15-createExternalGrammar.png](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/2017-08-15-createExternalGrammar.png)
 
 From the above screenshot, we can see the `resolver` class is an inner anonymous class inside the `WadlGeneratorJAXBGrammarGenerator` class. In addition, the `Resolver` interface is an inner interface inside `WadlGeneratorJAXBGrammarGenerator` class.
 
@@ -864,7 +864,7 @@ This resolver will be added into `previous`, which is an instance of `ExternalGr
 
 Now let's review the above sequence. Here is the screenshot of the stacktrace:
 
-![/assets/2018-08-18-stacktrace.png](/assets/2018-08-18-stacktrace.png)
+![https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/2018-08-18-stacktrace.png](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/2018-08-18-stacktrace.png)
 
 From the above screenshot, we can see how the process started from `WadlResource`, and here is the code:
 

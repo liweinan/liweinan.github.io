@@ -15,7 +15,7 @@ The article introduces the internal working scheme of the JVM `invokedynamic` in
 
 Here is the class diagram that shows the relationship of `MethodType`, `MethodHandle`, `MethodHandles`, `Lookup`, and `CallSite`:
 
-![/assets/jvm/relationship.png](/assets/jvm/relationship.png)
+![https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/jvm/relationship.png](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/jvm/relationship.png)
 
 The above diagram shows the relationship of these classes. The following code shows the usages of `MethodHandles`, `Lookup`, `MethodHandle` and `MethodType`:  
 

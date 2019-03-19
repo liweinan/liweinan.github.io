@@ -122,7 +122,7 @@ After changing the `suspend` setting to `suspend=y`, we can see the server is bl
 
 To troubleshoot the server itself, we need to get the source code of the Wildfly. We need to make sure the source code we are using has the same version with the Wildfly server we are running. In the Wildfly project download page, we can always download the server and its source code in same version. Here is the the screenshot from the Wildfly download page([http://wildfly.org/downloads/](http://wildfly.org/downloads/)):
 
-![/assets/2017-05-07/wildfly-download.png](/assets/2017-05-07/wildfly-download.png)
+![https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/2017-05-07/wildfly-download.png](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/2017-05-07/wildfly-download.png)
 
 From the above screenshot, we can see for each version of Wildfly, there is a `Full Distribution` download link and a `Source Code` download link. We can download both of them to make sure we have same version of source code and server binary. Another way is to compile the Wildfly server from source code cloned from Github([Fetching and compiling the Wildfly upstream source](http://wildflyinternals.io/2017/05/05/wildfly-src.html)).
 
@@ -136,7 +136,7 @@ wildfly-10.1.0.Final-src     wildfly-10.1.0.Final.zip
 
 I opened the above `wildfly-10.1.0.Final-src` in IntelliJ, and set some breakpoints in `org.jboss.as.connector.subsystems.datasources.JdbcDriverAdd` class. Here is the screenshot:
 
-![/assets/2017-05-07/jdbcadd.png](/assets/2017-05-07/jdbcadd.png)
+![https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/2017-05-07/jdbcadd.png](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/2017-05-07/jdbcadd.png)
 
 The above screenshot shows one of the breakpoints I set in the `org.jboss.as.connector.subsystems.datasources.JdbcDriverAdd` class of the Wildfly. This class will load the database driver configured in `standalone.xml` during server startup process. The `standalone.xml` is the configuration file of the standalone mode of the server. This file is in the following location of the server:
   
@@ -167,27 +167,27 @@ The above configuration defines a `ExampleDS` datasource, and it is backed by a 
 
 The above configuration defines the database driver to be used by the datasource. We don't have to understand the details now, and we just need to know Wildfly will load the database driver during its startup process, and the processing class is `org.jboss.as.connector.subsystems.datasources`. Now we can start the server with `--debug` option, and change the debug option in `standalone.sh` from `suspend=n` to `suspend=y` as we learned. Here is the server running with `--debug` option enabled and put in suspend mode during startup process:
  
-![/assets/2017-05-07/suspend.png](/assets/2017-05-07/suspend.png)
+![https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/2017-05-07/suspend.png](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/2017-05-07/suspend.png)
 
 From the above screenshot, we can see the server is suspended and
  waiting for the a debugger to connect to port `8787`. Now we can come to the IDE side and configure the remote debugger. In IntelliJ, I can open the `Edit Configuration` tab:
 
-![/assets/2017-05-07/edit.png](/assets/2017-05-07/edit.png)
+![https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/2017-05-07/edit.png](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/2017-05-07/edit.png)
 
 After clicking the `Edit Configuration` tab as shown in above screenshot, we will enter the `Run/Debug Configuration` window. In this window, we need to add a `Remote Debug` configuration to connect to the suspended Wildfly server. Here is the screenshot that shows how to configure it:
 
-![/assets/2017-05-07/remote.png](/assets/2017-05-07/remote.png)
+![https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/2017-05-07/remote.png](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/2017-05-07/remote.png)
 
 After clicking the `Remote` item as shown in above, we can start the remote debug configuration. Here is the screenshot to do so:
 
-![/assets/2017-05-07/port.png](/assets/2017-05-07/port.png)
+![https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/2017-05-07/port.png](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/2017-05-07/port.png)
 
 In above configuration, we only need to change the port to `8787`, because the server side is listening to this port for remote debugger to connect. After the configuration is done, we can click the `OK` button, and start to use it. Here is the screenshot:
 
-![/assets/2017-05-07/bug.png](/assets/2017-05-07/bug.png)
+![https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/2017-05-07/bug.png](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/2017-05-07/bug.png)
 
 As the screenshot shown above, we can click the bug icon to start the remote debugger, and this will trigger the server side to go on executing until reaching the breakpoint. Here is the screenshot to show the server startup process reached at the breakpoint: 
 
-![/assets/2017-05-07/jdbcstop.png](/assets/2017-05-07/jdbcstop.png)
+![https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/2017-05-07/jdbcstop.png](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/2017-05-07/jdbcstop.png)
 
 The above process shows us how to troubleshoot the Wildfly startup process. We will this method to analyze the Wildfly source code and see how it works in runtime. This article is a basis for the future topics I'd like to write.

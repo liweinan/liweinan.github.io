@@ -22,7 +22,7 @@ $ grep -C 2 'remote-naming' standalone.xml
 
 From the above configuration, we can see in basic standalone mode, the Wildfly naming subsystem will enable the '<remote-naming/>' by default. In source code, the `RemoteNamingServerService` will enable the remote naming service. Here is the class diagram of the `RemoteNamingServerService`:
 
-![/assets/naming/RemoteNamingServerService.png](/assets/naming/RemoteNamingServerService.png)
+![https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/naming/RemoteNamingServerService.png](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/naming/RemoteNamingServerService.png)
 
 From the above diagram, we can see the the `RemoteNamingServerService` contains the `remoteNamingService` and `namingStore`. We have learned the `namingStore` is the backend repository of the registered naming resources. On the other hand, the `remoteNamingService` is the class that provides naming service remote access ability.
 
@@ -49,19 +49,19 @@ So we should focus on checking the `RemoteNamingService` class provided by the `
 
 You need to clone the above repository to your local machine to check the source code. Here is the screenshot of the project in my IDE:
 
-![/assets/naming/remote-naming.png](/assets/naming/remote-naming.png)
+![https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/naming/remote-naming.png](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/naming/remote-naming.png)
 
 From the above screenshot, you can see the project structure of the `jboss-remote-naming` project.
 
 Now let's see the class diagram of the `RemoteNamingService` class:
 
-![/assets/naming/RemoteNamingService.png](/assets/naming/RemoteNamingService.png)
+![https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/naming/RemoteNamingService.png](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/naming/RemoteNamingService.png)
 
 From the above diagram, we can see the `RemoteNamingService` and its inner classes. We know the service loading process in Wildfly is asynchronous, so from above diagram, we can see `RemoteNamingService` will use `ChannelOpenListener` and `ChannelCloseHandler` to manage the service lifecycle. There is an additional `ClientVersionReceiver` inner class in the diagram, and we will check its usage later.
 
 The next step we can check the `start(...)` method of the `RemoteNamingService`. Here is the sequence diagram of the method:
 
-![/assets/naming/org.jboss.naming.remote.server.RemoteNamingService.start(Endpoint).png](/assets/naming/org.jboss.naming.remote.server.RemoteNamingService.start(Endpoint).png)
+![https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/naming/org.jboss.naming.remote.server.RemoteNamingService.start(Endpoint).png](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/naming/org.jboss.naming.remote.server.RemoteNamingService.start(Endpoint).png)
 
 From the above sequence diagram, we can see the `start(...)` method of `RemoteNamingService` is just to register the `ChannelOpenListener`. Now let's see the code of `ChannelOpenListener`:
 
@@ -109,25 +109,25 @@ public void handleMessage(Channel channel, MessageInputStream messageInputStream
 
 The above code shows that it will read the `namingHeader` from the received message via network, and determines the correct `RemoteNamingServer` to use. Actually there is only one version of `RemoteNamingServer` currently, and it's named `RemoteNamingServerV1`. Here is the class diagram of the `RemoteNamingServer` and its implementation:
 
-![/assets/naming/RemoteNamingServer.png](/assets/naming/RemoteNamingServer.png)
+![https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/naming/RemoteNamingServer.png](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/naming/RemoteNamingServer.png)
 
 From the above diagram, we can see `RemoteNamingServer` currently has one version of implementation, which is `RemoteNamingServerV1`. In addition, we can see the `RemoteNamingServerV1` contains `MessageReceiver` to deal with the incoming request.
 
 We can see the full package name of `RemoteNamingServerV1` is `org.jboss.naming.remote.protocol.v1`. In this package, it contains the current implementation of the remote naming server. In the package, it contains a `Protocol` class that implements the relative JNDI operations. Here is the screenshot of the class:
 
-![/assets/naming/Protocol.png](/assets/naming/Protocol.png)
+![https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/naming/Protocol.png](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/naming/Protocol.png)
 
 From the above screenshot, we can see the operations implemented by the class. Because the `Protocol` class is very big and it contains a thousand lines of code, so I won't explain its detail implementation here.
 
 Now let's check the `RemoteNamingStore` interface and its implementation `RemoteNamingStoreV1`. Here is the class diagram of them:
 
-![/assets/naming/RemoteNamingStore.png](/assets/naming/RemoteNamingStore.png)
+![https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/naming/RemoteNamingStore.png](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/naming/RemoteNamingStore.png)
 
 From the above diagram, we can see the `RemoteNamingStore` is used to store the naming resources provide the resources via JNDI operations.
 
 What's the relationship of the `RemoteNamingStore` interface and the `RemoteNamingServer` interface? To answer this question, we can check the `ProtocolCommand` interface. Here is the class diagram of the interface:
 
-![/assets/naming/ProtocolCommand.png](/assets/naming/ProtocolCommand.png)
+![https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/naming/ProtocolCommand.png](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/naming/ProtocolCommand.png)
 
 From the above diagram, we can see the `ProtocolCommand` defines two methods: one is `handleServerMessage(...)` and the other is `handleClientMessage(...)`.
 

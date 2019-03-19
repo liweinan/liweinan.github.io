@@ -41,13 +41,13 @@ In addition, the server will accept the `SCRAM_SHA_256` encryption method for da
  
 Now let's check the JBoss Remoting Protocol class. The JBoss Remoting Protocol is defined in the `org.jboss.remoting3.remote.Protocol` class, and it's well documented. You can check the class on Github: [Protocol.java](https://github.com/jboss-remoting/jboss-remoting/blob/master/src/main/java/org/jboss/remoting3/remote/Protocol.java). Here is the class diagram of the `Protocol` class:
 
-![/assets/remoting/Protocol.png](/assets/remoting/Protocol.png)
+![https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/remoting/Protocol.png](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/remoting/Protocol.png)
 
 From the above diagram, we can see the packet type and attributes defined by JBoss Remoting Protocol. We will check the detail later.
 
 After the above investigation, I started the test and capture the data packets transmitted between server and client. Because the communication between server and client happened on local machine, so I just need to capture the `lo` interface and filter out the data packets that are using the `Remoting` protocol. I have captured the whole process with Wireshark screenshots, and let's see them one by one. Here is the first screenshot:
 
-![/assets/remoting/lo_001.png](/assets/remoting/lo_001.png)
+![https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/remoting/lo_001.png](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/remoting/lo_001.png)
 
 From the above screenshot, we can see the first data packet is sent from server to the client, because the `Src Port` is `30123`, and the `Dst Port` is `36797`. We know that the server is set to listen on port `30123`, so we can understand this packet is sent from server to client.
 
@@ -66,7 +66,7 @@ From the above code, we can understand that the greeting message is sent from se
 
 Now let's see what the client responded to the server:
 
-![/assets/remoting/lo_002.png](/assets/remoting/lo_002.png)
+![https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/remoting/lo_002.png](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/remoting/lo_002.png)
 
 From the above screenshot, we can see the client responded to server with a `Capabilities` typed message. Here is the document in `Protocol` class for the type:
 
@@ -85,27 +85,27 @@ There are multiple fields in `Capability Parameters`. They are: `Protocol Versio
 
 Now let's see how does the server responded to the `capabilities` request from the client. Here is the screenshot: 
 
-![/assets/remoting/lo_003.png](/assets/remoting/lo_003.png)
+![https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/remoting/lo_003.png](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/remoting/lo_003.png)
 
 From the above screenshot, we can see the server returns many information back to the client, which includes the `Protocol Version` to be used, the `Endpoint Name` it provides, and the encryption algorithms it supports. If client accepts the server, it can start the authentication process by sending the username and password with the proper encryption algorithm. Here is the screenshot that client sent the authentication request to the server:  
 
-![/assets/remoting/lo_004.png](/assets/remoting/lo_004.png)
+![https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/remoting/lo_004.png](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/remoting/lo_004.png)
 
 From the above screenshot, we can see that the client sent `Auth Request` message to the server, and the encryption method it used is `SCRAM-SHA-256`. We can't see the username and password in the data packet because it's already encrypted. Let's see how does server responded to `Auth Request`: 
 
-![/assets/remoting/lo_005.png](/assets/remoting/lo_005.png)
+![https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/remoting/lo_005.png](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/remoting/lo_005.png)
 
 From the above screenshot we can see the server sent back an `Auth Challenge` message to client. We don't have to understand the detail of `Auth Challenge` message for now, and we can think it is an additional step adopted by the server to verify the client. Let's see how does client respond to it: 
 
-![/assets/remoting/lo_006.png](/assets/remoting/lo_006.png)
+![https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/remoting/lo_006.png](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/remoting/lo_006.png)
 
 We can see the client replied an `Auth Response` message to the server. And server will verify this message. If everything goes fine, it will reply an `Auth Complete` message to client: 
 
-![/assets/remoting/lo_007.png](/assets/remoting/lo_007.png)
+![https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/remoting/lo_007.png](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/remoting/lo_007.png)
 
 The above screenshot shows the authentication process is passed, and then client will start the real work with server. Here is the screenshot:
 
-![/assets/remoting/lo_008.png](/assets/remoting/lo_008.png)
+![https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/remoting/lo_008.png](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/remoting/lo_008.png)
 
 From the above screenshot, we can see the client sent an `Channel Open Request` to the server. Here is the document for the `Channel Open Request` in `Protocol` class:
 
@@ -131,7 +131,7 @@ From the above code, we can understand that the important information encapsulat
 
 Let's see how does the server responded to the client of the request: 
 
-![/assets/remoting/lo_009.png](/assets/remoting/lo_009.png)
+![https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/remoting/lo_009.png](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/remoting/lo_009.png)
 
 From the above screenshot, we can see the server responded an `Channel Open Ack` message to the client. Here is the document of the `Channel Open Ack` in the `Protocol` class:
 
@@ -150,7 +150,7 @@ The `Channel Open Ack` message is similar to the `Channel Open Request`, and con
 
 After the previous step has been done, the client can send the data to server. Here is the screenshot to show the action:
 
-![/assets/remoting/lo_010.png](/assets/remoting/lo_010.png)
+![https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/remoting/lo_010.png](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/remoting/lo_010.png)
 
 From the above screenshot, we can see the client sends a `Message Data` packet to the server. This is the real data sent by the client. Here is the document of `Message Data` in the `Protocol` class:
 
@@ -172,7 +172,7 @@ static final byte MESSAGE_DATA = 0x30;
 
 From the above code, we can understand the JBoss Remoting uses `channel ID` to identify the endpoints, and it uses the `message ID` to identify the messages. After the data is sent to the server side, let's see how does the server responded to the client:
 
-![/assets/remoting/lo_011.png](/assets/remoting/lo_011.png)
+![https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/remoting/lo_011.png](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/remoting/lo_011.png)
 
 From the above screenshot, we can see the server sent an `Message Async Close` packet back to the client. Here is the document of the `Message Async Close` data:
 
@@ -188,7 +188,7 @@ static final byte MESSAGE_CLOSE = 0x32;
 
 It means the server has received the data sent by the client, and the client side can close its request. Now client can go on sending other requests to the server, or close the connection to the server. In our test case, the client then requested to close the connection with the server. Here is the screenshot of the request:  
 
-![/assets/remoting/lo_012.png](/assets/remoting/lo_012.png)
+![https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/remoting/lo_012.png](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/remoting/lo_012.png)
 
 From the above screenshot, we can see the client sent a `Channel Shutdown Write` message to the server.
 
@@ -204,11 +204,11 @@ static final byte CHANNEL_SHUTDOWN_WRITE = 0x20;
 
 From the above code we can see the client will use the `CHANNEL_SHUTDOWN_WRITE` to tell server that the client request is done and the channel can be closed. Here is the reply from the server:
 
-![/assets/remoting/lo_013.png](/assets/remoting/lo_013.png)
+![https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/remoting/lo_013.png](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/remoting/lo_013.png)
 
 We can see the server sent a `Channel Shutdown Write` to the client too, but the `channel id` is different. This means both client and server will tell each other that their channel can be closed. Here is the last message sent from the client to the server:
 
-![/assets/remoting/lo_014.png](/assets/remoting/lo_014.png)
+![https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/remoting/lo_014.png](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/remoting/lo_014.png)
 
 The above screenshot shows the client sent a `Connection Close` message to the server, and the whole communication is over.
 

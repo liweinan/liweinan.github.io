@@ -54,11 +54,11 @@ This works because in the `IntegerMath` interface, it just contain one method, s
 
 In the IntelliJ IDE environment, it can detect the lambda expressions and display the link between the expression and the interface method. Here is the screenshot:
 
-![/assets/lambda/link.png](/assets/lambda/link.png)
+![https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/lambda/link.png](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/lambda/link.png)
 
 From the above screenshot, we can see the $\lambda$ symbol displayed at the left of the two lines of lambda expression symbols. If we click the symbol, it will navigate the code to the interface definition. Here is the screenshot:
 
-![/assets/lambda/interface.png](/assets/lambda/interface.png)
+![https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/lambda/interface.png](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/lambda/interface.png)
 
 After clicking the $\lambda$ symbol in `PlayWithLambda` class, it navigates to the `IntegerMath` interface method as shown above.
 
