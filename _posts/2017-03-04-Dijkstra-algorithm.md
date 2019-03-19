@@ -235,7 +235,7 @@ fin <- b <- start
 
 We can see how the path costs are updated in each iteration, and how the final path is calculated at last. Here is the class diagram:
 
-![Class Diagram](https://github.com/liweinan/blogpicbackup/blob/master/data/dig-class.png)
+![Class Diagram](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/dig-class.png)
 
 The `Graph` class is to store the structure _DAG_, of which the full name is _Directed Acyclic Graph_. The `Graph` contains a lot of _edges_, so the `Edge` class is to represent the structure.
 
@@ -329,7 +329,7 @@ else if (costs.get(to) == null)
 
 We need to check whether `costs` table contains the `to` node of the added edge, in case the weight value is overwrittee. This is important because the node connecting with start node may be part of multiple edges, and the edge that is not connecting with start node may overwrite the weight value of this node. Here is the diagram for example:
 
-![Graph](https://github.com/liweinan/blogpicbackup/blob/master/data/dij01.jpg)
+![Graph](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/dij01.jpg)
 
 As the diagram shown above,  _b_ is connected with both _start_ and _c_, so it belongs to two edges: _start -> b_ and _b -> c_. In this case, if we add edge _start -> b_ firstly, the cost of b will be 1 in `costs` table.
 
@@ -445,7 +445,7 @@ g.addEdge("b", "fin", 1);
 
 The above codes will create this graph:
 
-![Graph](https://github.com/liweinan/blogpicbackup/blob/master/data/dij02.jpg)
+![Graph](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/dij02.jpg)
 
 Then we execute the algorithm:
 
@@ -510,7 +510,7 @@ g.addEdge("b", "fin", 10);
 
 The graph becomes:
 
-![Graph](https://github.com/liweinan/blogpicbackup/blob/master/data/dij03.jpg)
+![Graph](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/dij03.jpg)
 
 We can see the weight of _start -> b_ and _b -> c_ have been increased. Now let's rerun the algorithm:
 

@@ -9,7 +9,7 @@ abstract: "In this article I'd like to show you how to write a module for Apache
 
 I'm using _Fedora Linux_, So I can use the _httpd_ and _httpd-devel_ provided by system:
 
-![img](https://github.com/liweinan/blogpicbackup/blob/master/data/httpd_module_01.jpg)
+![img](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/httpd_module_01.jpg)
 
 The reason to install _httpd-devel_ is that we need the header files relative to module development provided by it[^1]. Now let's write a simple module:
 
@@ -73,11 +73,11 @@ ap_rprintf(r, "Hello, martian!");
 
 As we have understood the meaning of this simple module, now we can compile it. _Apache HTTPD_ has provided a module compiling and installing tool for us called `apxs`:
 
-![img](https://github.com/liweinan/blogpicbackup/blob/master/data/httpd_module_02.jpg)
+![img](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/httpd_module_02.jpg)
 
 We can use it to compile our `foo_module`:
 
-![img](https://github.com/liweinan/blogpicbackup/blob/master/data/httpd_module_03.jpg)
+![img](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/httpd_module_03.jpg)
 
 As the snapshot shown above，we have used `apxs` to compile _foo_module.c_:
 

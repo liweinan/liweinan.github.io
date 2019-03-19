@@ -19,17 +19,17 @@ Here is a diagram copied from _Wikipedia_ that shows some typical _Material Desi
 
 [^ui]: [Some typical Material Design UI components](https://en.wikipedia.org/wiki/Material_Design#/media/File:Material_Design.svg)
 
-![Material Design](https://github.com/liweinan/blogpicbackup/blob/master/data/Material_Design.png)
+![Material Design](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/Material_Design.png)
 
 In _Atom_[^atom], there are relative themes and highlight syntaxs that conforms to the _Material Design Guideline_. Here is the screenshot about the themes:
 
 [^atom]: [Atom: A hackable text editor for the 21st Century](https://atom.io/)
 
-![2017-03-07-atom-theme.png](https://github.com/liweinan/blogpicbackup/blob/master/data/2017-03-07-atom-theme.png)
+![2017-03-07-atom-theme.png](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/2017-03-07-atom-theme.png)
 
 As the screenshot shown above, I have installed `atom-material-syntax` and `atom-material-ui` and enabled them in `UI Theme` and `Syntax Theme` settings. Here is a screenshot of the _Atom_ appearance after the above two themes are applied:
 
-![2017-03-07-atom-appearance.png](https://github.com/liweinan/blogpicbackup/blob/master/data/2017-03-07-atom-appearance.png)
+![2017-03-07-atom-appearance.png](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/2017-03-07-atom-appearance.png)
 
 Please note there are some dynamic behaviors that cannot be shown from above screenshot. In addition, I'd like to recommend you to install a font that supports ligatures. I have also written an article to explain the concept of _Typographic Ligature_[^ligatures].
 

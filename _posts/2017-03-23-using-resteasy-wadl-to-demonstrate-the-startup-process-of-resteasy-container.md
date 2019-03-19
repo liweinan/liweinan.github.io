@@ -48,7 +48,7 @@ public class ResteasyWadlGenerator {
 
 From the above implementation, we can see the `ResourceMethodRegistry` and `ResteasyProviderFactory` are fetched from `ResteasyDeployment`. These two classes are put into `ResteasyWadlServiceRegistry`, so the `ResourceMethodRegistry` and `ResteasyProviderFactory` must contain sufficient information about restful resources, or `ResteasyWadlServiceRegistry` will not get all the necessary information about the  resources. Now let's see the class diagram of `ResteasyWadlServiceRegistry` and the relative classes it contains:
 
-![2017-03-23-ResteasyWadlServiceRegistry.png](https://github.com/liweinan/blogpicbackup/blob/master/data/2017-03-23-ResteasyWadlServiceRegistry.png)
+![2017-03-23-ResteasyWadlServiceRegistry.png](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/2017-03-23-ResteasyWadlServiceRegistry.png)
 
 From the above diagram, we can see `ResteasyWadlServiceRegistry` contains `ResourceMethodRegistry` and `ResteasyProviderFactory`, and with these two classes, it can later fetch all the following classes it needs. Please note `ResteasyWadlServiceRegistry` stores two kinds of resources. The first kind is `resources`:
 
@@ -64,7 +64,7 @@ private List<ResteasyWadlServiceRegistry> locators;
 
 This one contains resource locators, because resource locators are actually nested resources, so they are a list of `ResteasyWadlServiceRegistry` itself. We can check the `scanRegistry()` method of `ResteasyWadlServiceRegistry` to see how it fetches, processes and stores the resources information:
 
-![2017-03-24-scanRegistry.png](https://github.com/liweinan/blogpicbackup/blob/master/data/2017-03-24-scanRegistry.png)
+![2017-03-24-scanRegistry.png](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/2017-03-24-scanRegistry.png)
 
 From the above sequence diagram we can see how `ResteasyWadlServiceRegistry` deals with two types of resources. If the resource type is `ResourceMethodInvoker`, then it will create `ResteasyWadlMethodMetaData` and `ResteasyWadlResourceMetaData` to store the resource classes and methods information. The name of this class is misleading, it should be called `ResourceClassAndMethodInvoker`, because it contains both resource class their methods information. Here is the relative code in `scanRegistry()` method:
 
@@ -98,11 +98,11 @@ locators.add(new ResteasyWadlServiceRegistry(this, locatorRegistry, providerFact
 
 Please note the constructor of `ResteasyWadlServiceRegistry` will call the `scanRegistry()` method, so here we have a recursive call of `scanRegistry()` for resource locators. This implementation reflects the fact that resource locator is a kind of nested resource. Now let's check the `ResteasyWadlResourceMetaData` and `ResteasyWadlMethodMetaData`:
 
-![ResteasyWadlMethodMetaData.png](https://github.com/liweinan/blogpicbackup/blob/master/data/ResteasyWadlMethodMetaData.png)
+![ResteasyWadlMethodMetaData.png](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/ResteasyWadlMethodMetaData.png)
 
 From the above diagram, we can see `ResteasyWadlResourceMetaData` has a list of `ResteasyWadlMethodMetaData`, and `ResteasyWadlMethodMetaData` contains the `ResourceMethodInvoker`, and the `ResourceMethodInvoker` is the implementation class to do the actual resource method invocations. Now we can check how `ResteasyWadlWriter` uses `ResteasyWadlResourceMetaData` and `ResteasyWadlMethodMetaData` to convert resource classes and methods to WADL data:
 
-![2017-03-24-processWadl.png](https://github.com/liweinan/blogpicbackup/blob/master/data/2017-03-24-processWadl.png)
+![2017-03-24-processWadl.png](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/2017-03-24-processWadl.png)
 
 From the above sequence diagram we can see how `resourceMetaDataEntry` and `methodMetaData` are used in `processWadl` method. Here is the relative code:
 

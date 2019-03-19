@@ -36,19 +36,19 @@ $ sudo dnf install NetworkManager-tui
 
 The above command will install the `NetworkManager-tui` and its dependencies. After the packages are installed, we can use the `nmtui` command to open the manager in the text interface like this:
 
-![2017-03-20-016.png](https://github.com/liweinan/blogpicbackup/blob/master/data/2017-03-20-016.png)
+![2017-03-20-016.png](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/2017-03-20-016.png)
 
 From the above screenshot, we can see the manager supports us to edit the connections, or to open or close a connection. We can select the `Activate a connection` in the menu, and then we will enter this page:
 
-![2017-03-20-019.png](https://github.com/liweinan/blogpicbackup/blob/master/data/2017-03-20-019.png)
+![2017-03-20-019.png](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/2017-03-20-019.png)
 
 As the screenshot shown above, it entered into the connection selection page. I selected my VPN connection and hit enter, then it asked me to enter my password to VPN:
 
-![2017-03-20-017.png](https://github.com/liweinan/blogpicbackup/blob/master/data/2017-03-20-017.png)
+![2017-03-20-017.png](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/2017-03-20-017.png)
 
 After I entered my password, the connection is activated like this:
 
-![2017-03-20-020.png](https://github.com/liweinan/blogpicbackup/blob/master/data/2017-03-20-020.png)
+![2017-03-20-020.png](https://raw.githubusercontent.com/liweinan/blogpicbackup/master/data/2017-03-20-020.png)
 
 From the above screenshot, we can see there is a `*` before the activated connection to show its active status. Until now, we have seen the basic usages of `nmtui` tool. Actually this curses-based[^curses] tool is a wrapper of a command line tool called `nmcli`. All your operations in `nmtui` interface will be converted to the command calls to `nmcli`. For example, here is the command to show all the active connections by using `nmcli` command:
 
