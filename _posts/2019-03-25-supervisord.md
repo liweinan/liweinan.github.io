@@ -31,7 +31,7 @@ $ supervisord -c /usr/local/etc/supervisord.ini
 
 ## supervisord.ini
 
-这个文件里的内容分为不同的sectinos，下面逐一讲解：
+这个文件里的内容分为不同的sections，下面逐一讲解：
 
 ```txt
 [unix_http_server]
