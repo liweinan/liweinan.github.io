@@ -44,7 +44,7 @@ gremlin> :remote connect tinkerpop.server conf/remote.yaml
 
 可以考虑使用这套数据：
 
-[GitHub - AndrewChau/learn-gremlin-jupyter-notebook: As a believer of learning through examples, I have decided to put my own examples of Gremlin queries inside Jupyter Notebooks for people to actually try out. The course is roughly based on this book (http://kelvinlawrence.net/book/Gremlin-Graph-Guide.pdf) by krlawrence but adapted into Python for execution inside a Jupyter Notebook.](https://github.com/AndrewChau/learn-gremlin-jupyter-notebook)
+* [GitHub - AndrewChau/learn-gremlin-jupyter-notebook](https://github.com/AndrewChau/learn-gremlin-jupyter-notebook)
 
 把这个项目clone到本地：
 
