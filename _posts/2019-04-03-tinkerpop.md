@@ -69,7 +69,7 @@ gremlin> :> g.V().count()
 ==>3666
 ```
 
-可以看到导入了`air-routes-latest.graphml`里面的`3666`条数据。
+可以看到导入了`air-routes-latest.graphml`里面的`3666`个「vertex」数据。其中`g.V()`代表`vertexes`，`g.E()`代表`edges`。这两个概念是图论里面的概念，分别代表`graph`的「点」和「边」。图数据库的理论基础就是图论，建议大家系统学习。
 
 这篇文章里，我们初步使用了`gremlin-server`和`gremlin-console`，并准备好了数据。下篇文章讲数据的查询，以及如何在`jupyter-notebook`里使用`gremlinpython`进行数据的查询和分析。
 
