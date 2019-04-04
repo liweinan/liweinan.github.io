@@ -55,6 +55,12 @@ sydneyVertexId = g.V().hasLabel('airport').has('code', 'SYD').id().next()
 
 可以看到，我们在`jupyter-book`里面调用了`gremlinpython`的api，完成了对`gremlin-server`当中数据的查询。这样的工作流比较直观方便。
 
+上面的notebook，我放在了这里：
+
+* [gremlin-notebooks/intro.ipynb at master · liweinan/gremlin-notebooks · GitHub](https://github.com/liweinan/gremlin-notebooks/blob/master/intro.ipynb)
+
+有兴趣的小伙伴可以看下。
+
 以上是对`gremlinpython`的一个简单介绍，更多的使用方法可以查看它的文档：
 
 * [http://tinkerpop.apache.org/docs/current/reference/#gremlin-python](http://tinkerpop.apache.org/docs/current/reference/#gremlin-python) 
