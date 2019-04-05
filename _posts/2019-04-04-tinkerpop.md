@@ -1,6 +1,6 @@
 ---
 title: tinkerpop的使用（中）
-abstract: 这是本系列文章的第二篇，介绍如何使用`jupyter-notebook`操作图数据库。
+abstract: 这是本系列文章的第二篇，介绍如何使用jupyter-notebook操作图数据库。
 ---
 
 ## {{ page.title }}
