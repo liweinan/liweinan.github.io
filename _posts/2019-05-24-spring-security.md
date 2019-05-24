@@ -25,7 +25,7 @@ abstract: 粗略过一遍spring-security的认证鉴权模型
 
 上面这个`DaoAuthenticationProvider`是基于数据库的。
 
-spring-security的认证核心是`userDetailService`（[Spring Security: Database-backed UserDetailsService | Baeldung](https://www.baeldung.com/spring-security-authentication-with-a-database)）。认证用的用户表很基础：
+spring-security的认证核心是`userDetailService`（[Spring Security: Database-backed UserDetailsService](https://www.baeldung.com/spring-security-authentication-with-a-database)）。认证用的用户表很基础：
 
 ![](https://raw.githubusercontent.com/liweinan/blogpic2019/master/data/may24/2D16EA20-873C-4715-8270-3ECC611F1E88.png)
 
