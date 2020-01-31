@@ -8,6 +8,6 @@ disqus:
 plugins:
   - jekyll-seo-tag
   - jekyll-paginate
-paginate: 20
+paginate: 50
 webmaster_verifications:
   baidu: H3WlhxyTrS
