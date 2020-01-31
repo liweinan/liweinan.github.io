@@ -1,1 +1,14 @@
-<ul>{% for post in site.posts %}<li><a href="{{ post.url }}">{{ post.title }}</a>. {{ post.date | date: '%B %d, %Y' }}.<p>{{ post.abstract }}</p></li>{% endfor %}</ul>
+---
+layout: default
+description: 阿男的小窝
+---
+
+<div class="postlist">
+    {% for post in paginator.posts %}
+    <div class="overview">
+        <div class="date">{{ post.date | date: "%b %d, %Y" }}</div>
+        <div class="detail"><a href="{{ site.url }}{{ post.url }}">{{ post.title }}</a></div>
+    </div>
+    {% endfor %}
+</div>
+{% include pagination.html %}

@@ -1,0 +1,28 @@
+{% include header.html %}
+<div class="container">
+    <div class="main">
+        <h2> {{ page.title }} </h2>
+        {{ content }}
+        {% if page.categories %}
+        <div class="post_footer">
+            <p>Published on {{ page.date | date: "%b %d, %Y" }}
+            <p>
+        </div>
+        {% endif %}
+        <ul class="prev_next">
+            {% if page.previous.url %}
+            <li>
+                <span>上一篇</span>
+                <a href="{{page.previous.url}}">{{page.previous.title}}</a>
+            </li>
+            {% endif %}
+            {% if page.next.url %}
+            <li>
+                <span>下一篇</span>
+                <a href="{{page.next.url}}">{{page.next.title}}</a>
+            </li>
+            {% endif %}
+        </ul>
+    </div>
+</div>
+{% include footer.html %}

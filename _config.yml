@@ -7,5 +7,7 @@ disqus:
 #theme: jekyll-theme-hacker
 plugins:
   - jekyll-seo-tag
+  - jekyll-paginate
+paginate: 9
 webmaster_verifications:
   baidu: H3WlhxyTrS
