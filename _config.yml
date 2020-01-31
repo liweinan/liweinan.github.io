@@ -1,7 +1,7 @@
 title: "阿男的小窝"
 author: "阿男"
 email: l.weinan@gmail.com
-google_analytics: UA-98502720-1
+#google_analytics: UA-98502720-1
 disqus:
    shortname: weinan-io
 #theme: jekyll-theme-hacker
