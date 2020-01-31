@@ -66,5 +66,5 @@ serverurl=unix:///usr/local/var/run/supervisor.sock ; use a unix:// URL  for a u
 上面的`supervisorctl`命令是`supervisord`提供的命令行管理工具。
 
 
-∎
+
 

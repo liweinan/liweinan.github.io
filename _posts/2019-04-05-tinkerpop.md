@@ -72,6 +72,6 @@ $ pipenv install gremlinpython
 
 有兴趣的小伙伴可以clone下来看看。
 
-∎
+
 
 

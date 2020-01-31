@@ -52,4 +52,4 @@ foo: stopped
 
 以上就是`supervisord`和`supervisorctl`的基本使用方法。
 
-∎
+

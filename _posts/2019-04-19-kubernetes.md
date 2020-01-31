@@ -60,5 +60,5 @@ kubernetes提供了一个在线的交互式的学习环境：
 * [https://medium.com/mayadata/kubernetes-label-selector-and-field-selector-81d6967bb2f](https://medium.com/mayadata/kubernetes-label-selector-and-field-selector-81d6967bb2f) 
 * [https://kubernetes.io/docs/tutorials/kubernetes-basics/expose/expose-intro/](https://kubernetes.io/docs/tutorials/kubernetes-basics/expose/expose-intro/) 
 
-∎
+
 

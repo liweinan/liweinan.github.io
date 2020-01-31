@@ -77,4 +77,4 @@ sydneyVertexId = g.V().hasLabel('airport').has('code', 'SYD').id().next()
 
 这篇文章介绍了`gremlinpython`和`jupyter-notebook`的联合使用，下一篇文章最后介绍下`gremlinpython`在`pycharm`当中的使用。
 
-∎
+

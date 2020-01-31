@@ -71,5 +71,5 @@ service会利用pod的label进行请求的分发和负载平衡，把请求分�
 
 以上是对services的进一步学习的记录。
 
-∎
+
 

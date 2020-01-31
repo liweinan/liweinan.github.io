@@ -73,4 +73,4 @@ gremlin> :> g.V().count()
 
 这篇文章里，我们初步使用了`gremlin-server`和`gremlin-console`，并准备好了数据。下篇文章讲数据的查询，以及如何在`jupyter-notebook`里使用`gremlinpython`进行数据的查询和分析。
 
-∎
+

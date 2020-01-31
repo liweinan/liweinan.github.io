@@ -90,4 +90,4 @@ $ curl localhost
 
 - [Communicate Between Containers in the Same Pod Using a Shared Volume - Kubernetes](https://kubernetes.io/docs/tasks/access-application-cluster/communicate-containers-same-pod-shared-volume/)
 
-∎
+

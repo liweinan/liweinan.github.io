@@ -66,6 +66,6 @@ $ supervisord -c /usr/local/etc/supervisord.ini
 
 以上是对`supervisor`的web管理端的介绍。
 
-∎
+
 
 

@@ -56,4 +56,4 @@ $ supervisord -c /usr/local/etc/supervisord.ini
 
 以上就是`supervisord`的配置说明。
 
-∎
+
