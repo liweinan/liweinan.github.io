@@ -1,0 +1,92 @@
+---
+title: Using Wireshark And jSSLKeyLog To Capture The Java SSL Network Packets.
+--- 
+
+Sometimes we need to use Wireshark to analyze the underlying network communication during project development. As SSL is currently the standard way during network communication, we need a way to let Wireshark can decrypt the packets to see the actual contents.
+
+The way to do this is to let the network communication client to export the master secret key after SSL certificate exchange. As the SSL/TLS standard defined, after the certificate exchanging and verification process is done, the communication channel will switch from RSA algorithm to symmetric encryption algorithm. The reason of this fallback is that the Public Key Encryption method is expensive(CPU-intensive) and not necessary during the whole communication process.
+
+The `client` means the program that initiates the communication. For example, we can use `curl` command to do a request to a website, then the `curl` command is the `client` side. And a Java program that do a request to a server is also a client. To capture the SSL communication between client and server, we need to ask the client to export the master key. This key is symmitric and it’s used for encryption/decryption during the whole communication process.
+
+There is a standard way to export the master key from client, and it’s called `sslkeylog`. For example, to ask the `curl` command to export the key log file, we can export the `SSLKEYLOGFILE` environment variable:
+
+```bash
+$ export SSLKEYLOGFILE=/tmp/sslkey.log
+```
+
+After exporting the above variable, curl will automatically export the master key into the specified log file: `sslkey.log`, and we can see the content of the file:
+
+![](https://raw.githubusercontent.com/liweinan/blogpic2021i/master/aug25/FCDB5021-F73F-4EBC-BC90-DA26AB7FF448.png)
+
+And each time curl establishes the SSL communication, the master key for the communication will be appended to the end of the file as shown above, and then Wireshark can load this file and see the decrypted content of the communication.
+
+To use the ssl key log file, we can import it into Wireshark:
+
+![](https://raw.githubusercontent.com/liweinan/blogpic2021i/master/aug25/20AFC8FF-D68D-4AB6-A397-2191025A0973.png)
+
+And the captured packet will be automatically decrypted with the key. Here is a screenshot of Wireshark packet analyses during the work on my project:
+
+![](https://raw.githubusercontent.com/liweinan/blogpic2021i/master/aug25/BC016AE8-15D2-4E1F-9C09-11DA71453D0F.png)
+
+As the screenshot shown above, we can see the HTTP message is decrypted, and in the filter we can see only `tls` packets are selected:
+
+![](https://raw.githubusercontent.com/liweinan/blogpic2021i/master/aug25/D24BBAC7-FFE9-4296-BEA9-5C810F616C10.png)
+
+If we don’t load the ssl key log file, then the HTTP message can’t be decrypted, and it will be only shown as encrypted message in Wireshark:
+
+![](https://raw.githubusercontent.com/liweinan/blogpic2021i/master/aug25/002C857D-94D4-4E7B-A8C3-D911B20F7FF7.png)
+
+Coming back to Java area, we can also use this ssl key file method to do the SSL channel message capture. We need to use a tool called `jSSLKeyLog`:
+
+- [jSSLKeyLog - Java Agent Library to log SSL session keys to a file for Wireshark](https://jsslkeylog.github.io/)
+
+This tool is run as a Java agent[^java-agent], and can be injected during a Java program running process. The purpose of the tool is to export the `sslkeylog` file, which is similar to the `SSLKEYLOGFILE` used by the `curl` command, and the Wireshark can use it to decrypt the SSL communication initiated by the Java program.
+
+To use it, we need to download it’s release zip from Github:
+
+- [Releases · jsslkeylog/jsslkeylog · GitHub](https://github.com/jsslkeylog/jsslkeylog/releases)
+
+After downloading it, extract to a directory. For example, I extracted to my `/tmp` directory:
+
+```bash
+$ ls /tmp/jSSLKeyLog.jar
+/tmp/jSSLKeyLog.jar
+$
+```
+
+Then we can pass the jar as an option during a Java program running process. For example, if I want to debug a test in IntelliJ, I can pass the above jar by the `javaagent` option. Here is the screenshot of my IntelliJ setting:
+
+![](https://raw.githubusercontent.com/liweinan/blogpic2021i/master/aug25/199131629809948_.pic_hd.jpg)
+
+From above screenshot, we can see that this option is passed to test:
+
+```bash
+-javaagent:/tmp/jSSLKeyLog.jar==/tmp/jssl-key.log
+```
+
+In above option, we use `jSSLKeyLog.jar` as the `javaagent`, and ask it to export the key file to `jssl-key.log`.
+
+The key file name is not relevant here, you can still export to a file called `sslkey.log` and the tool will append the key to the file.
+
+After setting the above option, we can start the test in IntelliJ and get the key file:
+
+![](https://raw.githubusercontent.com/liweinan/blogpic2021i/master/aug25/97AB5B43-24F0-48F1-BD4B-779B5F5A80D1.png)
+
+From the above screenshot we can see that the key is exported to the file, and the format of the file is same with the one generated by the `curl` command. In addition, because I run the test multiple times, so there are several keys appended to the file.
+
+Using the key file in Wireshark has no difference: Just load the above file into Wireshark as shown in the `curl` demonstration, and the communication will be decrypted in Wireshark.
+
+Combining with the Wireshark’s `follow` function, we can see the HTTP request, though it’s wrapped by the SSL communication channel:
+
+![](https://raw.githubusercontent.com/liweinan/blogpic2021i/master/aug25/3A088BB1-5EBF-4B4D-A110-7E306A2D9874.png)
+(Using the `follow` function to see HTTP request data flow)
+
+![](https://raw.githubusercontent.com/liweinan/blogpic2021i/master/aug25/0FBFF34E-4B01-43AA-8806-3D88D309F115.png)
+(Follow the HTTP request data flow)
+
+完毕.
+
+## References
+
+[^java-agent]: [Guide to Java Instrumentation](https://www.baeldung.com/java-instrumentation)
+
