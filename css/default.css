@@ -4,8 +4,7 @@ body {
     background-color: white;
     font-size: 100%;
     color: #222435;
-    /*white-space: pre-wrap;*/
-    word-wrap: break-word;
+    word-break: break-word;
 }
 
 div.main {
@@ -14,8 +13,7 @@ div.main {
     width: 700px;
     line-height: 150%;
     border: 1px solid LightGrey;
-    /*white-space: pre-wrap;*/
-    word-wrap: break-word;
+    word-break: break-word;
 }
 
 H1, H2, H3, H4 {
@@ -23,8 +21,7 @@ H1, H2, H3, H4 {
     width: 98%;
     line-height: 150%;
     color: #666666;
-    /*white-space: pre-wrap;*/
-    word-wrap: break-word;
+    word-break: break-word;
 }
 
 H1, H2 {
@@ -43,8 +40,7 @@ blockquote {
     margin: 0 0 0 0.25em;
     padding: 0 0 0 0.5em;
     border-left: 0.25em lightgrey solid;
-    /*white-space: pre-wrap;*/
-    word-wrap: break-word;
+    word-break: break-word;
 }
 
 pre {
@@ -56,8 +52,7 @@ pre {
     font-size: 1em;
     line-height: 100%;
     overflow: auto;
-    /*white-space: pre-wrap;*/
-    word-wrap: break-word;
+    word-break: break-word;
 }
 
 code {
@@ -68,10 +63,7 @@ code {
     background-color: #f8f8ff;
     margin: 0 2px;
     padding: 0px 5px;
-    word-wrap: break-word;
-    word-break: break-all;
-    /*white-space: pre-wrap;*/
-    word-wrap: break-word;
+    word-break: break-word;
 }
 
 pre code {
@@ -79,17 +71,14 @@ pre code {
     margin: 0;
     padding: 0;
     background-color: transparent;
-    word-wrap: normal;
-    /*white-space: pre-wrap;*/
-    word-wrap: break-word;
+    word-break: break-word;
 }
 
 a {
     text-decoration: none;
     padding: 1px;
     color: #204A87;
-    word-wrap: break-word;
-    word-break: break-all;
+    word-break: break-word;
 }
 
 a:hover {
@@ -97,8 +86,7 @@ a:hover {
 }
 
 div.tag_cloud a {
-    word-wrap: normal;
-    word-break: normal;
+    word-break: break-word;
 }
 
 div.nav a {
@@ -164,8 +152,7 @@ div.overview {
 
 div.detail {
     margin-left: 28%;
-    /*white-space: pre-wrap;*/
-    word-wrap: break-word;
+    word-break: break-word;
 }
 
 div.date {
