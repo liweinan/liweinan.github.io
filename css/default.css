@@ -4,6 +4,7 @@ body {
   background-color: white;
   font-size: 100%;
   color: #222435;
+  white-space: nowrap;
 }
 
 div.main {
@@ -12,6 +13,7 @@ div.main {
   width: 700px;
   line-height: 150%;
   border: 1px solid LightGrey;
+  white-space: nowrap;
 }
 
 H1, H2, H3, H4 {
@@ -19,6 +21,7 @@ H1, H2, H3, H4 {
   width: 98%;
   line-height: 150%;
   color: #666666;
+  white-space: nowrap;
 }
 
 H1, H2 {
