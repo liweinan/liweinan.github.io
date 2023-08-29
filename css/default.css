@@ -5,7 +5,7 @@ body {
     font-size: 100%;
     color: #222435;
     /*white-space: pre-wrap;*/
-    word-break: keep-all;
+    word-wrap: break-word;
 }
 
 div.main {
@@ -15,7 +15,7 @@ div.main {
     line-height: 150%;
     border: 1px solid LightGrey;
     /*white-space: pre-wrap;*/
-    word-break: keep-all;
+    word-wrap: break-word;
 }
 
 H1, H2, H3, H4 {
@@ -24,7 +24,7 @@ H1, H2, H3, H4 {
     line-height: 150%;
     color: #666666;
     /*white-space: pre-wrap;*/
-    word-break: keep-all;
+    word-wrap: break-word;
 }
 
 H1, H2 {
@@ -44,7 +44,7 @@ blockquote {
     padding: 0 0 0 0.5em;
     border-left: 0.25em lightgrey solid;
     /*white-space: pre-wrap;*/
-    word-break: keep-all;
+    word-wrap: break-word;
 }
 
 pre {
@@ -57,7 +57,7 @@ pre {
     line-height: 100%;
     overflow: auto;
     /*white-space: pre-wrap;*/
-    word-break: keep-all;
+    word-wrap: break-word;
 }
 
 code {
@@ -71,7 +71,7 @@ code {
     word-wrap: break-word;
     word-break: break-all;
     /*white-space: pre-wrap;*/
-    word-break: keep-all;
+    word-wrap: break-word;
 }
 
 pre code {
@@ -81,7 +81,7 @@ pre code {
     background-color: transparent;
     word-wrap: normal;
     /*white-space: pre-wrap;*/
-    word-break: keep-all;
+    word-wrap: break-word;
 }
 
 a {
@@ -165,7 +165,7 @@ div.overview {
 div.detail {
     margin-left: 28%;
     /*white-space: pre-wrap;*/
-    word-break: keep-all;
+    word-wrap: break-word;
 }
 
 div.date {
