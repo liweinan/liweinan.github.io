@@ -29,5 +29,10 @@ From the above we can see the actual docker sock file is in user's `.docker` dir
 
 After the above setup, the docker service can be accessed.
 
+Update 2023-09-17:
+
+In addition, these settings can be set:
+
+![](https://raw.githubusercontent.com/liweinan/blogpics2023/main/0917/image.png)
 
 
