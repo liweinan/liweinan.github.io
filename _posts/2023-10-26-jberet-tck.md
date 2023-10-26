@@ -39,10 +39,13 @@ weli@192:~/w/jberet_tck
 
 To do EE testing, it needs WildFly.
 
-The `jberet-tck-porting` project contains POMs that use JBeret as dependency that can be copied to `jakarta.batch.official.tck-2.1.1` project for testings.
+The `jberet-tck-porting`[^porting] project contains POMs that use JBeret as dependency that can be copied to `jakarta.batch.official.tck-2.1.1`[^tck] project for testings.
 
 In addition, it contains the JAR file that needs to be copied into WildFly for EE testings.
 
 The detail of test process it recorded in the comment of the above PR link. 
 
+## References
 
+[^porting]: [https://github.com/eclipse-ee4j/batch-tck](https://github.com/eclipse-ee4j/batch-tck)
+[^tck]: [https://github.com/eclipse-ee4j/batch-tck](https://github.com/eclipse-ee4j/batch-tck)
