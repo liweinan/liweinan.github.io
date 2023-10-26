@@ -47,5 +47,5 @@ The detail of test process it recorded in the comment of the above PR link.
 
 ## References
 
-[^porting]: [https://github.com/eclipse-ee4j/batch-tck](https://github.com/eclipse-ee4j/batch-tck)
+[^porting]: [https://github.com/jberet/jberet-tck-porting](https://github.com/jberet/jberet-tck-porting)
 [^tck]: [https://github.com/eclipse-ee4j/batch-tck](https://github.com/eclipse-ee4j/batch-tck)
