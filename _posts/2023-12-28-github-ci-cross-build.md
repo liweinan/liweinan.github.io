@@ -47,7 +47,7 @@ build:
   needs: wildfly-build
   steps:
     - uses: actions/checkout@v4
-    - uses: actions/download-artifact@v3
+    - uses: actions/download-artifact@v4
       with:
         name: wildfly-maven-repository
         path: .
@@ -60,7 +60,9 @@ You can see more usages of the feature here:
 
 - [https://github.com/resteasy/resteasy/blob/main/.github/workflows/wildfly-build.yml](https://github.com/resteasy/resteasy/blob/main/.github/workflows/wildfly-build.yml)
 
+Note: It needs `download-artifact` to be upgraded into `v4`:
 
+- [https://github.com/liweinan/cross-repo-ci-build/commit/937518fe864edf9b0889a6e64e55a3fff9301381](https://github.com/liweinan/cross-repo-ci-build/commit/937518fe864edf9b0889a6e64e55a3fff9301381)
 
 
 
