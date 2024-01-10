@@ -23,13 +23,20 @@ The core part is to configure the partitions in the job descriptor file:
 </partition>
 ```
 
-By default, the `threads` number and the `partitions` numbers are the same, but you can set the different numbers for them.
+By default, the `threads` number and the `partitions` numbers are the same, but you can set the different numbers for them. Please note you must define each partition in the descriptor file, or during runtime the job will throw exceptions. The partitions are running in separate threads, and they are running concurrently so the running order of partitions is random.
 
-Please note you must define each partition in the descriptor file, or during runtime the job will throw exceptions.
+The partition will provide two properties called `start` and `end`, and it can be used in the reader implementation to control how to read the data. The property can be injected into reader like this:
 
-The partitions are running in separate threads, and they are running concurrently so the running order of partitions is random.
+```xml
+<reader ref="partitionedChunkReader">
+    <properties>
+        <property name="start" value="#{partitionPlan['start']}"/>
+        <property name="end" value="#{partitionPlan['end']}"/>
+    </properties>
+</reader>
+```
 
-The partition will provide two properties called `start` and `end`, and it can be used in the reader implementation to control how to read the data. In the example, the `PartitionedChunkItemReader` class use the properties like this:
+As the configuration shown above, the values can be read by the `partitionPlan` property. In the example, the `PartitionedChunkItemReader` class use the properties like this:
 
 ```java
 public class PartitionedChunkItemReader extends AbstractItemReader {
