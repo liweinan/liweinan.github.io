@@ -1,5 +1,5 @@
 ---
-title: The Analysis of `AutowiredAnnotationBeanPostProcessor` in Springframework
+title: The Analysis of AutowiredAnnotationBeanPostProcessor in Springframework
 ---
 
 In Springframework, the `AutowiredAnnotationBeanPostProcessor` is used to deal with the `@Autowired` and the `@Inject` annotations and inject the beans. Here is the class diagram of `AutowiredAnnotationBeanPostProcessor`:
