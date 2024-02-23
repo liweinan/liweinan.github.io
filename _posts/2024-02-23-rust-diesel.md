@@ -1,5 +1,5 @@
 ---
-title: Using the customized struct to map the joined queries result with Rust Diesel
+title: Using the customized struct to map the SQL query result with Rust Diesel
 ---
 
 Sometimes we need to use Diesel[^diesel] to do raw SQL query and map the result to a customized struct. To show the usage of this scenario, I have provided an example here:
