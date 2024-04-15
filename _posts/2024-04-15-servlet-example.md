@@ -4,7 +4,7 @@ title: A Servlet Example
 
 Recently I have built a Servlet example here:
 
-- https://github.com/liweinan/servlet-example
+- [https://github.com/liweinan/servlet-example](https://github.com/liweinan/servlet-example)
 
 The example is quite self-explanatory here is the `FileUploadServlet` in the project:
 
