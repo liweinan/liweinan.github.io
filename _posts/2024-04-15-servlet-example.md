@@ -1,5 +1,5 @@
 ---
-title: A Servlet Example
+title: A Servlet Example Showing The Jakarta Spec Implementation in Apache Tomcat.
 ---
 
 Recently I have built a Servlet example here:
