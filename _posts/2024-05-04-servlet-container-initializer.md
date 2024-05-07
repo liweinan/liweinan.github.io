@@ -10,7 +10,7 @@ Here is the real usage of the interface in RESTEasy:
 
 - [https://github.com/resteasy/resteasy/blob/main/resteasy-servlet-initializer/src/main/java/org/jboss/resteasy/plugins/servlet/ResteasyServletInitializer.java](https://github.com/resteasy/resteasy/blob/main/resteasy-servlet-initializer/src/main/java/org/jboss/resteasy/plugins/servlet/ResteasyServletInitializer.java)
 
-Here is the class diagram of the Servlet APIs:
+Here is the class diagram of the Servlet APIs(which contains the interface `ServletContainerInitializer` at bottom of the diagram):
 
 ![](https://raw.githubusercontent.com/liweinan/blogpics2024/main/0507/servlet-api.jpg)
 
