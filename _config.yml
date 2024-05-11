@@ -4,4 +4,4 @@ email: l.weinan@gmail.com
 plugins:
   - jekyll-seo-tag
   - jekyll-paginate
-paginate: 10
+paginate: 20
