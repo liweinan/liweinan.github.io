@@ -58,7 +58,7 @@ The above `WFLY_VER` is fetched and injected in the CI task:
 
 ```yml
 - name: Run Rawhide Tests With Default WildFly
-  run: WFLY_VER=${{needs.wildfly-build.outputs.wildfly-version}} USE_BRANCH=${{ matrix.use_branch }} ./run-tck-rawhide.sh
+  run: WFLY_VER=$\{\{needs.wildfly-build.outputs.wildfly-version\}\} USE_BRANCH=$\{\{ matrix.use_branch \}\} ./run-tck-rawhide.sh
 ```
 
 The variable `needs.wildfly-build.outputs.wildfly-version` is produced by the `wildfly/wildfly/.github/workflows/shared-wildfly-build.yml`.
