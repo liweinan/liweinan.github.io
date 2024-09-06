@@ -33,7 +33,7 @@ The above are the goals defined in the plugin. And `verify` and `integration-tes
 
 I checked the source code of `maven-failsafe-plugin` and here is the source code related to the phase binding:
 
-- https://github.com/apache/maven-surefire/blob/master/maven-failsafe-plugin/src/main/java/org/apache/maven/plugin/failsafe/VerifyMojo.java#L52
+- [https://github.com/apache/maven-surefire/blob/master/maven-failsafe-plugin/src/main/java/org/apache/maven/plugin/failsafe/VerifyMojo.java#L52](https://github.com/apache/maven-surefire/blob/master/maven-failsafe-plugin/src/main/java/org/apache/maven/plugin/failsafe/VerifyMojo.java#L52)
 
 ```java
 @Mojo(name = "verify", defaultPhase = LifecyclePhase.VERIFY, requiresProject = true, threadSafe = true)
@@ -60,10 +60,14 @@ So this configuration can be removed:
 
 And the `mvn verify` still works with the failsafe plugin:
 
-- https://github.com/jberet/jberet-examples/pull/1
-- https://github.com/jberet/jberet-examples/actions/runs/10742863181/job/29796369058?pr=1#step:4:51346
+- [https://github.com/jberet/jberet-examples/pull/1](https://github.com/jberet/jberet-examples/pull/1)
+- [https://github.com/jberet/jberet-examples/actions/runs/10742863181/job/29796369058?pr=1#step:4:51346](https://github.com/jberet/jberet-examples/actions/runs/10742863181/job/29796369058?pr=1#step:4:51346)
 
-The other confusion I checked was the failsafe plugin doc: https://maven.apache.org/surefire/maven-failsafe-plugin/ there is a note about the usage:
+The other confusion is that from the failsafe plugin doc: 
+
+- [https://maven.apache.org/surefire/maven-failsafe-plugin/](https://maven.apache.org/surefire/maven-failsafe-plugin/)
+
+There is a note about the usage:
 
 > NOTE: when running integration tests, you should invoke Maven with the (shorter to type too)
 >
