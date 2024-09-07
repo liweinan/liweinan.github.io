@@ -8,3 +8,6 @@ I have upgrade the JUnit dependency to `5.11.0` in my own demo project, and here
 
 It needs some structure changes, and the details contain in the above PR.
 
+Update:
+
+- This setup also works: [remove the failsafe goal config which is unnecessary by liweinan · Pull Request \#1 · jberet/jberet-examples](https://github.com/jberet/jberet-examples/pull/1)
