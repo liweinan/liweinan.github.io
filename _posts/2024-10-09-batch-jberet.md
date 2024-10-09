@@ -4,7 +4,7 @@ title: The class diagram of the batch-jberet subsystem of WildFly
 
 Here is the class diagram of the `batch-jberet`[^batch-jberet] subsystem of WildFly:
 
-![](https://raw.githubusercontent.com/liweinan/blogpics2024/main/1009/batch-jberet.png)
+![](https://raw.githubusercontent.com/liweinan/blogpics2024/main/1009/batch-jberet.jpg)
 
 The above class diagram contains the classes that come from the JBeret Core Project[^jberet-core] and the Jakarta Batch Project[^jakarta-batch].
 
