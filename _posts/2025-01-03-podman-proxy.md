@@ -118,5 +118,5 @@ Writing manifest to image destination
 / #
 ```
 
-And this time the image can be pulled correctly.
+And this time the image can be pulled correctly and the container is run.
 
