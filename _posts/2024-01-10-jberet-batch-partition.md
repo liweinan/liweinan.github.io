@@ -42,7 +42,18 @@ As the configuration shown above, the values can be read by the `partitionPlan` 
 public class PartitionedChunkItemReader extends AbstractItemReader {
     private Integer[] tokens;
     private Integer count;
-    ...
+
+    @Inject
+    JobContext jobContext;
+    
+    @Inject
+    @BatchProperty(name = "start")
+    private String start;
+    
+    @Inject
+    @BatchProperty(name = "end")
+    private String end;
+    
     @Override
     public void open(Serializable checkpoint) throws Exception {
         System.out.println("START -> " + start);
@@ -55,7 +66,6 @@ public class PartitionedChunkItemReader extends AbstractItemReader {
         }
 
     }
-
 }
 ```
 
