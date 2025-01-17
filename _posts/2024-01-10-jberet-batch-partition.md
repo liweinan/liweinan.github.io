@@ -69,7 +69,7 @@ public class PartitionedChunkItemReader extends AbstractItemReader {
 }
 ```
 
-As the code shown above, the reader class uses the `start` property to split the data into two parts. The the different partitions will get the different data segment to process.
+As the code shown above, the reader class uses the `start` property to split the data into two parts. The different partitions will get the different data segment to process.
 
 Here is the running result of the testing method `givenPartition_thenBatch_completesWithSuccess`:
 
