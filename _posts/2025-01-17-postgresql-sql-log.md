@@ -45,7 +45,7 @@ server started
 
 Run some examples that will cause SQL operations and look at the generated logs:
 
-```properties
+```bash
 ❯ tail /opt/homebrew/var/postgresql@14/logs/postgresql-2025-01-13_000000.log                                                                                                                                         22:53:17
 2025-01-13 23:52:15.882 CST [9665] LOG:  execute <unnamed>: UPDATE STEP_EXECUTION SET ENDTIME=$1, BATCHSTATUS=$2, EXITSTATUS=$3, EXECUTIONEXCEPTION=$4, PERSISTENTUSERDATA=$5, READCOUNT=$6, WRITECOUNT=$7, COMMITCOUNT=$8, ROLLBACKCOUNT=$9, READSKIPCOUNT=$10, PROCESSSKIPCOUNT=$11, FILTERCOUNT=$12, WRITESKIPCOUNT=$13, READERCHECKPOINTINFO=$14, WRITERCHECKPOINTINFO=$15 WHERE STEPEXECUTIONID=$16
 2025-01-13 23:52:15.882 CST [9665] DETAIL:  parameters: $1 = '2025-01-13 23:52:15.875+08', $2 = 'COMPLETED', $3 = 'prepurge process', $4 = NULL, $5 = NULL, $6 = '0', $7 = '0', $8 = '0', $9 = '0', $10 = '0', $11 = '0', $12 = '0', $13 = '0', $14 = NULL, $15 = NULL, $16 = '19'
