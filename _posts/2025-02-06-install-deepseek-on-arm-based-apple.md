@@ -69,5 +69,12 @@ Then we can ask question by using the Chatbox UI:
 
 Enjoy :D
 
+## References
 
+The question used for asking AI:
 
+- [国产大模型最好的新年礼物，深度推理模型 GLM-Zero 全面测评](https://zhuanlan.zhihu.com/p/18144123256)
+
+Fully open reproduction of `DeepSeek-R1`:
+
+- [https://github.com/huggingface/open-r1](https://github.com/huggingface/open-r1)
