@@ -2,6 +2,8 @@
 title: Enable SSH login on Ubuntu
 ---
 
+![](https://raw.githubusercontent.com/liweinan/blogpics2025/main/0329/01.jpg)
+
 I followed DeepSeek’s instruction to enable SSH login on Ubuntu:
 
 - [Enable SSH login on Ubuntu](https://github.com/liweinan/deepseek-answers/blob/main/enable-ssh-login-in-ubuntu.md)
