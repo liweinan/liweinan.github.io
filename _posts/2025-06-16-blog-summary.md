@@ -14,68 +14,68 @@ Most Active Years: 2018 (135 posts), 2020 (98 posts), 2019 (94 posts)
 
 ### 1. Java Enterprise & Middleware (2017-2024)
 - **WildFly & JBoss**
-  - [Build WildFly from Source (2024)](2024-06-15-build-wildfly.md) - Detailed guide on building WildFly from source code
-  - [WildFly Kubernetes Integration (2023)](2023-06-07-wildfly-k8s.md) - Deploying WildFly on Kubernetes
-  - [WildFly Source Code Analysis (2017)](2017-05-05-wildfly-src.md) - Deep dive into WildFly's architecture
+  - [Build WildFly from Source (2024)](/2024/06/15/build-wildfly.html) - Detailed guide on building WildFly from source code
+  - [WildFly Kubernetes Integration (2023)](/2023/06/07/wildfly-k8s.html) - Deploying WildFly on Kubernetes
+  - [WildFly Source Code Analysis (2017)](/2017/05/05/wildfly-src.html) - Deep dive into WildFly's architecture
 
 - **Spring Framework**
-  - [Spring Bean Lifecycle (2024)](2024-02-17-spring-beans.md) - Comprehensive analysis of Spring bean creation process
-  - [Spring Security Integration (2019)](2019-05-24-spring-security.md) - Security implementation in Spring applications
+  - [Spring Bean Lifecycle (2024)](/2024/02/17/spring-beans.html) - Comprehensive analysis of Spring bean creation process
+  - [Spring Security Integration (2019)](/2019/05/24/spring-security.html) - Security implementation in Spring applications
 
 ### 2. Cloud & Containerization (2018-2024)
 - **Docker & Containerization**
-  - [Docker on macOS (2023)](2023-09-15-docker-macos.md) - Docker setup and optimization for macOS
-  - [Docker Networking (2018)](2018-01-04-docker.md) - Container networking concepts and practices
+  - [Docker on macOS (2023)](/2023/09/15/docker-macos.html) - Docker setup and optimization for macOS
+  - [Docker Networking (2018)](/2018/01/04/docker.html) - Container networking concepts and practices
 
 - **Kubernetes & Cloud Native**
-  - [Kubernetes Deployment (2023)](2023-06-23-jkube.md) - Deploying applications to Kubernetes
-  - [Minikube Setup (2023)](2023-08-27-minikube.md) - Local Kubernetes development environment
+  - [Kubernetes Deployment (2023)](/2023/06/23/jkube.html) - Deploying applications to Kubernetes
+  - [Minikube Setup (2023)](/2023/08/27/minikube.html) - Local Kubernetes development environment
 
 ### 3. Development Tools & Practices (2017-2025)
 - **Build Tools**
-  - [Maven Plugin Development (2024)](2024-09-29-maven-plugin-info.md) - Creating and using Maven plugins
-  - [Gradle Configuration (2018)](2018-01-01-gradle.md) - Advanced Gradle build configurations
+  - [Maven Plugin Development (2024)](/2024/09/29/maven-plugin-info.html) - Creating and using Maven plugins
+  - [Gradle Configuration (2018)](/2018/01/01/gradle.html) - Advanced Gradle build configurations
 
 - **Version Control & CI/CD**
-  - [GitHub Actions (2023)](2023-12-28-github-ci-cross-build.md) - Cross-platform build automation
-  - [Git Best Practices (2019)](2019-11-14-git.md) - Advanced Git workflows and techniques
+  - [GitHub Actions (2023)](/2023/12/28/github-ci-cross-build.html) - Cross-platform build automation
+  - [Git Best Practices (2019)](/2019/11/14/git.html) - Advanced Git workflows and techniques
 
 ### 4. Programming Languages & Frameworks (2017-2025)
 - **Java & JVM**
-  - [JDBC Implementation Series (2017)](2017-05-11-jdbc-part4.md) - Deep dive into JDBC internals
-  - [Java Concurrency (2017)](2017-12-22-concurrency.md) - Advanced concurrency patterns
+  - [JDBC Implementation Series (2017)](/2017/05/11/jdbc-part4.html) - Deep dive into JDBC internals
+  - [Java Concurrency (2017)](/2017/12/22/concurrency.html) - Advanced concurrency patterns
 
 - **Web Development**
-  - [RESTEasy Implementation (2017)](2017-08-07-jersey-extend-wadl-support.md) - REST API development with RESTEasy
-  - [Vue.js Integration (2020)](2020-07-23-vue.md) - Modern frontend development
+  - [RESTEasy Implementation (2017)](/2017/08/07/jersey-extend-wadl-support.html) - REST API development with RESTEasy
+  - [Vue.js Integration (2020)](/2020/07/23/vue.html) - Modern frontend development
 
 ### 5. System & DevOps (2017-2025)
 - **System Administration**
-  - [Linux Driver Development (2017)](2017-12-13-linux-driver.md) - Kernel module development
-  - [System Monitoring (2019)](2019-03-26-supervisord.md) - Process management and monitoring
+  - [Linux Driver Development (2017)](/2017/12/13/linux-driver.html) - Kernel module development
+  - [System Monitoring (2019)](/2019/03/26/supervisord.html) - Process management and monitoring
 
 - **Networking & Security**
-  - [SSL/TLS Configuration (2020)](2020-02-17-ssl.md) - Security best practices
-  - [Network Analysis (2023)](2023-06-20-wireshark.md) - Network troubleshooting tools
+  - [SSL/TLS Configuration (2020)](/2020/02/17/ssl.html) - Security best practices
+  - [Network Analysis (2023)](/2023/06/20/wireshark.html) - Network troubleshooting tools
 
 ### 6. AI & Machine Learning (2021-2025)
 - **Machine Learning**
-  - [TensorFlow on Mac (2025)](2025-02-17-tensor-for-mac.md) - ML development environment setup
-  - [LangChain Integration (2025)](2025-02-20-langchain-deepseek.md) - AI application development
+  - [TensorFlow on Mac (2025)](/2025/02/17/tensor-for-mac.html) - ML development environment setup
+  - [LangChain Integration (2025)](/2025/02/20/langchain-deepseek.html) - AI application development
 
 ## Notable Series
 
 1. **JDBC Implementation Series (2017)**
    - Part 1-8: Comprehensive coverage of JDBC internals
-   - Key articles: [Part 4](2017-05-11-jdbc-part4.md), [Part 8](2017-05-28-jdbc-part8.md)
+   - Key articles: [Part 4](/2017/05/11/jdbc-part4.html), [Part 8](/2017/05/28/jdbc-part8.html)
 
 2. **RESTEasy & Jersey Comparison (2017)**
    - Detailed analysis of JAX-RS implementations
-   - Key article: [Extended WADL Support](2017-08-07-jersey-extend-wadl-support.md)
+   - Key article: [Extended WADL Support](/2017/08/07/jersey-extend-wadl-support.html)
 
 3. **Spring Framework Deep Dive (2024)**
    - Bean lifecycle and dependency injection
-   - Key article: [Spring Beans](2024-02-17-spring-beans.md)
+   - Key article: [Spring Beans](/2024/02/17/spring-beans.html)
 
 ## Evolution of Topics
 
