@@ -1,4 +1,6 @@
-# OpenShift Disconnected Cluster安装步骤与实践
+---
+title: OpenShift Disconnected Cluster安装步骤与实践
+---
 
 本文总结OpenShift断连集群（disconnected cluster，无法直接访问公网的集群）在AWS上的安装步骤，适合有OpenShift或Kubernetes基础的读者。
 
