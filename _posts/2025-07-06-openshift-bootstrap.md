@@ -5,7 +5,7 @@ title: OpenShift Disconnected Cluster安装步骤与实践
 本文总结OpenShift断连集群（disconnected cluster，无法直接访问公网的集群）在AWS上的安装步骤，适合有OpenShift或Kubernetes基础的读者。
 
 1. **配置VPC以支持断连集群**  
-   public和private subnet通过NAT Gateway隔离，确保安全性。手工创建IAM用户以分配最小权限（学习总结：[https://github.com/liweinan/deepseek-answers/blob/main/files/oc-disconnected-cluster.md#iam-configuration(https://github.com/liweinan/deepseek-answers/blob/main/files/oc-disconnected-cluster.md#iam-configuration)）。
+   public和private subnet通过NAT Gateway隔离，确保安全性。手工创建IAM用户以分配最小权限（学习总结：[https://github.com/liweinan/deepseek-answers/blob/main/files/oc-disconnected-cluster.md#iam-configuration](https://github.com/liweinan/deepseek-answers/blob/main/files/oc-disconnected-cluster.md#iam-configuration)）。
 
 2. **创建VPC endpoints以访问AWS服务**  
    VPC需创建endpoints（如S3、EC2 API）以确保bootstrap节点在private subnet中访问AWS服务，使用CloudFormation模板自动化配置（模板示例：[https://github.com/liweinan/ocp-aws-vpc-ipi-examples/pull/1/files#diff-24a44acdcecfb902f56d79c8bcf9580e288b96ee0c092d2508e114200d74c7d3R10](https://github.com/liweinan/ocp-aws-vpc-ipi-examples/pull/1/files#diff-24a44acdcecfb902f56d79c8bcf9580e288b96ee0c092d2508e114200d74c7d3R10)）。
