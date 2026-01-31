@@ -1,4 +1,4 @@
-﻿/* modified from http://www.yinwang.org/main.css */
+/* modified from http://www.yinwang.org/main.css */
 body {
     font-family: "lucida grande", "lucida sans unicode", lucida, helvetica, "Hiragino Sans GB", "Microsoft YaHei", "WenQuanYi Micro Hei", sans-serif;
     background-color: white;
@@ -16,13 +16,20 @@ div.main {
     word-break: break-word;
 }
 
-H1, H2, H3, H4 {
+H1, H2, H3, H4, H5, H6 {
     font-family: "Palatino Linotype", "Book Antiqua", Palatino, Helvetica, STKaiti, SimSun, serif;
     width: 98%;
     line-height: 150%;
     color: #666666;
     word-break: break-word;
 }
+
+H1 { font-size: 1.6em; }
+H2 { font-size: 1.45em; }
+H3 { font-size: 1.25em; }
+H4 { font-size: 1.12em; }
+H5 { font-size: 1.05em; }
+H6 { font-size: 1em; }
 
 H1, H2 {
     margin-bottom: 1.67em;
@@ -34,6 +41,12 @@ H3, H4 {
     margin-top: 2.14em;
     margin-bottom: 1.5em;
     border-bottom: 1px LightGrey solid;
+}
+
+H5, H6 {
+    margin-top: 1.4em;
+    margin-bottom: 0.75em;
+    font-weight: 600;
 }
 
 blockquote {

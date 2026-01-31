@@ -20,6 +20,13 @@ H3, H4 {
   color: blue;
 }
 
+H5, H6 {
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+  font-size: 1em;
+  font-weight: 600;
+}
+
 div.nav {
   width: 100%;
   padding: 0 0 0 0;
