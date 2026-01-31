@@ -1,5 +1,5 @@
 ---
-title: One Year of AI-Assisted Programming: Insights, Practices, and Reflections
+title: "One Year of AI-Assisted Programming: Insights, Practices, and Reflections"
 ---
 
 **Abstract:** Over the past year, my journey with AI in programming has evolved from viewing it as a novel tool to deeply integrating it into my daily development workflow. This report systematically summarizes the key insights gained, explains how AI truly augments development capabilities, and clarifies the current boundaries between human and AI roles. The core conclusion is: **personal expertise remains the foundation for unlocking AI's value; AI is a powerful force multiplier, not a substitute for wisdom; and adapting to a new, high-intensity, iterative workflow is crucial for maximizing productivity.**
