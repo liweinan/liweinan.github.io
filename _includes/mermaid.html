@@ -1,10 +1,26 @@
 <script type="module">
   import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+
   mermaid.initialize({
-    startOnLoad: true,
+    startOnLoad: false,
     theme: 'default',
     themeVariables: {
       fontSize: '14px'
     }
+  });
+
+  // Convert Jekyll-rendered code blocks to mermaid divs
+  document.addEventListener('DOMContentLoaded', function() {
+    const codeBlocks = document.querySelectorAll('code.language-mermaid');
+    codeBlocks.forEach((codeBlock, index) => {
+      const pre = codeBlock.parentElement;
+      const mermaidDiv = document.createElement('div');
+      mermaidDiv.className = 'mermaid';
+      mermaidDiv.textContent = codeBlock.textContent;
+      pre.replaceWith(mermaidDiv);
+    });
+
+    // Render all mermaid diagrams
+    mermaid.run();
   });
 </script>
