@@ -1,3 +1,110 @@
+<style>
+/* Mermaid diagram container */
+.mermaid-container {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+  transition: transform 0.2s;
+  max-width: 100%;
+}
+
+.mermaid-container:hover {
+  opacity: 0.9;
+}
+
+/* Modal overlay */
+.mermaid-modal {
+  display: none;
+  position: fixed;
+  z-index: 9999;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.9);
+  animation: fadeIn 0.3s;
+}
+
+.mermaid-modal.active {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Modal content */
+.mermaid-modal-content {
+  position: relative;
+  max-width: 95%;
+  max-height: 95%;
+  overflow: auto;
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.mermaid-modal-diagram {
+  transform-origin: center center;
+  transition: transform 0.2s ease;
+}
+
+/* Control buttons */
+.mermaid-controls {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  gap: 8px;
+  z-index: 10000;
+}
+
+.mermaid-btn {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.2s;
+  color: #333;
+  font-weight: 500;
+}
+
+.mermaid-btn:hover {
+  background: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Close button */
+.mermaid-close {
+  background: #f44336;
+  color: white;
+  border: none;
+}
+
+.mermaid-close:hover {
+  background: #d32f2f;
+}
+
+/* Zoom indicator */
+.mermaid-zoom-level {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 14px;
+  z-index: 10000;
+}
+</style>
+
 <script type="module">
   import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
 
@@ -9,18 +116,130 @@
     }
   });
 
+  let currentZoom = 1;
+  let currentModal = null;
+
+  // Create modal HTML
+  function createModal() {
+    const modal = document.createElement('div');
+    modal.className = 'mermaid-modal';
+    modal.innerHTML = `
+      <div class="mermaid-controls">
+        <button class="mermaid-btn zoom-in">放大 +</button>
+        <button class="mermaid-btn zoom-out">缩小 -</button>
+        <button class="mermaid-btn zoom-reset">重置</button>
+        <button class="mermaid-btn mermaid-close">关闭 ✕</button>
+      </div>
+      <div class="mermaid-modal-content">
+        <div class="mermaid-modal-diagram"></div>
+      </div>
+      <div class="mermaid-zoom-level">100%</div>
+    `;
+    document.body.appendChild(modal);
+    return modal;
+  }
+
+  // Show modal with diagram
+  function showModal(diagramContent) {
+    if (!currentModal) {
+      currentModal = createModal();
+      setupModalEvents();
+    }
+
+    const modalDiagram = currentModal.querySelector('.mermaid-modal-diagram');
+    modalDiagram.innerHTML = diagramContent;
+    currentModal.classList.add('active');
+    currentZoom = 1;
+    updateZoom();
+    document.body.style.overflow = 'hidden';
+  }
+
+  // Hide modal
+  function hideModal() {
+    if (currentModal) {
+      currentModal.classList.remove('active');
+      document.body.style.overflow = '';
+    }
+  }
+
+  // Update zoom level
+  function updateZoom() {
+    if (!currentModal) return;
+    const diagram = currentModal.querySelector('.mermaid-modal-diagram');
+    const zoomLevel = currentModal.querySelector('.mermaid-zoom-level');
+    diagram.style.transform = `scale(${currentZoom})`;
+    zoomLevel.textContent = `${Math.round(currentZoom * 100)}%`;
+  }
+
+  // Setup modal event listeners
+  function setupModalEvents() {
+    if (!currentModal) return;
+
+    // Close button
+    currentModal.querySelector('.mermaid-close').addEventListener('click', hideModal);
+
+    // Zoom buttons
+    currentModal.querySelector('.zoom-in').addEventListener('click', () => {
+      currentZoom = Math.min(currentZoom + 0.25, 3);
+      updateZoom();
+    });
+
+    currentModal.querySelector('.zoom-out').addEventListener('click', () => {
+      currentZoom = Math.max(currentZoom - 0.25, 0.5);
+      updateZoom();
+    });
+
+    currentModal.querySelector('.zoom-reset').addEventListener('click', () => {
+      currentZoom = 1;
+      updateZoom();
+    });
+
+    // Close on background click
+    currentModal.addEventListener('click', (e) => {
+      if (e.target === currentModal) {
+        hideModal();
+      }
+    });
+
+    // Close on ESC key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && currentModal.classList.contains('active')) {
+        hideModal();
+      }
+    });
+  }
+
   // Convert Jekyll-rendered code blocks to mermaid divs
-  document.addEventListener('DOMContentLoaded', function() {
+  document.addEventListener('DOMContentLoaded', async function() {
     const codeBlocks = document.querySelectorAll('code.language-mermaid');
-    codeBlocks.forEach((codeBlock, index) => {
+
+    for (const codeBlock of codeBlocks) {
       const pre = codeBlock.parentElement;
+      const container = document.createElement('div');
+      container.className = 'mermaid-container';
+
       const mermaidDiv = document.createElement('div');
       mermaidDiv.className = 'mermaid';
       mermaidDiv.textContent = codeBlock.textContent;
-      pre.replaceWith(mermaidDiv);
-    });
+
+      container.appendChild(mermaidDiv);
+      pre.replaceWith(container);
+    }
 
     // Render all mermaid diagrams
-    mermaid.run();
+    await mermaid.run();
+
+    // Add click handlers to rendered diagrams
+    document.querySelectorAll('.mermaid-container').forEach(container => {
+      container.addEventListener('click', function() {
+        const diagram = this.querySelector('.mermaid');
+        if (diagram) {
+          showModal(diagram.innerHTML);
+        }
+      });
+
+      // Add visual hint
+      container.title = '点击查看大图';
+    });
   });
 </script>
