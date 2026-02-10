@@ -2,14 +2,22 @@
 /* Mermaid diagram container */
 .mermaid-container {
   position: relative;
-  display: inline-block;
+  display: block;
   cursor: pointer;
-  transition: transform 0.2s;
+  transition: opacity 0.2s;
   max-width: 100%;
+  margin: 20px 0;
+  overflow-x: auto;
 }
 
 .mermaid-container:hover {
-  opacity: 0.9;
+  opacity: 0.8;
+}
+
+.mermaid-container svg {
+  max-width: 100%;
+  height: auto;
+  display: block;
 }
 
 /* Modal overlay */
@@ -51,6 +59,12 @@
 .mermaid-modal-diagram {
   transform-origin: center center;
   transition: transform 0.2s ease;
+  display: inline-block;
+}
+
+.mermaid-modal-diagram svg {
+  max-width: 100%;
+  height: auto;
 }
 
 /* Control buttons */
@@ -111,6 +125,8 @@
   mermaid.initialize({
     startOnLoad: false,
     theme: 'default',
+    securityLevel: 'loose',
+    htmlLabels: true,
     themeVariables: {
       fontSize: '14px'
     }
@@ -227,19 +243,42 @@
     }
 
     // Render all mermaid diagrams
-    await mermaid.run();
+    try {
+      await mermaid.run({
+        querySelector: '.mermaid'
+      });
+      console.log('Mermaid diagrams rendered successfully');
+    } catch (error) {
+      console.error('Mermaid rendering error:', error);
+    }
 
     // Add click handlers to rendered diagrams
-    document.querySelectorAll('.mermaid-container').forEach(container => {
-      container.addEventListener('click', function() {
-        const diagram = this.querySelector('.mermaid');
-        if (diagram) {
-          showModal(diagram.innerHTML);
-        }
+    document.querySelectorAll('.mermaid-container').forEach((container, index) => {
+      // Find the rendered SVG inside the container
+      const svg = container.querySelector('svg');
+      if (!svg) {
+        console.warn(`No SVG found in container ${index}`);
+        return;
+      }
+
+      // Make the container clickable
+      container.style.cursor = 'pointer';
+      container.title = '点击查看大图';
+
+      container.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        // Clone the SVG for the modal
+        const svgClone = svg.cloneNode(true);
+        const tempDiv = document.createElement('div');
+        tempDiv.appendChild(svgClone);
+
+        console.log('Opening modal for diagram', index);
+        showModal(tempDiv.innerHTML);
       });
 
-      // Add visual hint
-      container.title = '点击查看大图';
+      console.log(`Click handler added to diagram ${index}`);
     });
   });
 </script>
