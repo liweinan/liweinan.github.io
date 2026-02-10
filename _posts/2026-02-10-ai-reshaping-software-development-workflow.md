@@ -117,10 +117,10 @@ flowchart TD
 
         B3 --> B4[AI Writes Code & Submits PR]
 
-        subgraph B5 [Pre-Merge Quality Gates<br>Pre-Merge Validation]
+        subgraph B5 [Pre-Merge Quality Gates<br/>Pre-Merge Validation]
             direction LR
-            B5a[⏱️ Automated Unit Tests] --> B5b[🔍 Code Quality Scan<br>SonarQube etc]
-            B5b --> B5c[🛡️ Security Scan<br>SAST/SCA]
+            B5a[⏱️ Automated Unit Tests] --> B5b[🔍 Code Quality Scan<br/>SonarQube etc]
+            B5b --> B5c[🛡️ Security Scan<br/>SAST/SCA]
             B5c --> B5d[✅ Basic Integration Tests]
         end
 
@@ -134,7 +134,7 @@ flowchart TD
 
         B7 --> B10[Post-Merge Auto-Trigger]
 
-        subgraph B11 [Post-Merge Validation<br>Post-Merge Verification & Delivery]
+        subgraph B11 [Post-Merge Validation<br/>Post-Merge Verification & Delivery]
             direction LR
             B11a[🚀 Auto-Deploy to Test Env] --> B11b[🧪 Automated E2E Tests]
             B11b --> B11c[📊 Performance Testing]
@@ -143,24 +143,24 @@ flowchart TD
 
         B10 --> B11
         B11 --> B12[Auto-Generate Test Report]
-        B12 --> B13[Notify Stakeholders<br>Ready for Production]
+        B12 --> B13[Notify Stakeholders<br/>Ready for Production]
     end
 
     subgraph C [Key Role & Process Changes]
-        C1["Pre-Merge Gatekeeper"<br>Reviewers ensure code quality baseline]
-        C2["Post-Merge Validator"<br>Verify system integration & behavior]
-        C3["Human Responsibilities Focus"<br>Design/Decision/Exception Handling]
+        C1[Pre-Merge Gatekeeper<br/>Reviewers ensure code quality baseline]
+        C2[Post-Merge Validator<br/>Verify system integration & behavior]
+        C3[Human Responsibilities Focus<br/>Design/Decision/Exception Handling]
 
-        C1 -- "Quality Defense Forward" --> C2
-        C3 -- "Supervise Both Ends" --> C1
-        C3 -- "Focus on Results" --> C2
+        C1 -- Quality Defense Forward --> C2
+        C3 -- Supervise Both Ends --> C1
+        C3 -- Focus on Results --> C2
     end
 
-    A -- "Workflow Intelligence Restructuring" --> B
-    A3 -. "Manual Coding Reduced" .-> B3
-    B5 -. "Requires: Precise Prompts & Context" .-> B2
-    B6 -. "Core Human Decision Point" .-> C3
-    B12 -. "Increased Automation Level" .-> C2
+    A -- Workflow Intelligence Restructuring --> B
+    A3 -. Manual Coding Reduced .-> B3
+    B5 -. Requires: Precise Prompts & Context .-> B2
+    B6 -. Core Human Decision Point .-> C3
+    B12 -. Increased Automation Level .-> C2
 ```
 
 ---
@@ -276,10 +276,10 @@ flowchart TD
 
         B3 --> B4[AI编写代码并提交PR]
 
-        subgraph B5 [Pre-Merge质量门禁<br>合并前验证]
+        subgraph B5 [Pre-Merge质量门禁<br/>合并前验证]
             direction LR
-            B5a[⏱️ 自动化单元测试] --> B5b[🔍 代码质量扫描<br>SonarQube等]
-            B5b --> B5c[🛡️ 安全扫描<br>SAST/SCA]
+            B5a[⏱️ 自动化单元测试] --> B5b[🔍 代码质量扫描<br/>SonarQube等]
+            B5b --> B5c[🛡️ 安全扫描<br/>SAST/SCA]
             B5c --> B5d[✅ 基础集成测试]
         end
 
@@ -293,7 +293,7 @@ flowchart TD
 
         B7 --> B10[Post-Merge自动触发]
 
-        subgraph B11 [Post-Merge验证<br>合并后验证与交付]
+        subgraph B11 [Post-Merge验证<br/>合并后验证与交付]
             direction LR
             B11a[🚀 自动部署至测试环境] --> B11b[🧪 自动化端到端测试]
             B11b --> B11c[📊 性能测试]
@@ -302,24 +302,24 @@ flowchart TD
 
         B10 --> B11
         B11 --> B12[自动生成综合测试报告]
-        B12 --> B13[通知相关人员<br>部署就绪可上线]
+        B12 --> B13[通知相关人员<br/>部署就绪可上线]
     end
 
     subgraph C [角色与流程关键变化]
-        C1["Pre-Merge Gatekeeper"<br>审核者确保代码质量底线]
-        C2["Post-Merge Validator"<br>验证系统集成与行为]
-        C3["人类职责聚焦"<br>设计/决策/异常处理]
+        C1[Pre-Merge Gatekeeper<br/>审核者确保代码质量底线]
+        C2[Post-Merge Validator<br/>验证系统集成与行为]
+        C3[人类职责聚焦<br/>设计/决策/异常处理]
 
-        C1 -- "质量防线前移" --> C2
-        C3 -- "监督两端" --> C1
-        C3 -- "关注结果" --> C2
+        C1 -- 质量防线前移 --> C2
+        C3 -- 监督两端 --> C1
+        C3 -- 关注结果 --> C2
     end
 
-    A -- "工作流智能化重构" --> B
-    A3 -. "手动编码减少" .-> B3
-    B5 -. "要求：精准Prompt与上下文" .-> B2
-    B6 -. "核心人工决策点" .-> C3
-    B12 -. "自动化程度提升" .-> C2
+    A -- 工作流智能化重构 --> B
+    A3 -. 手动编码减少 .-> B3
+    B5 -. 要求：精准Prompt与上下文 .-> B2
+    B6 -. 核心人工决策点 .-> C3
+    B12 -. 自动化程度提升 .-> C2
 ```
 
 ---
