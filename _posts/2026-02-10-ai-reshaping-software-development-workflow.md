@@ -101,8 +101,8 @@ As we advance along the path of AI-augmented development, maintaining human agen
 
 ```mermaid
 flowchart TD
-    subgraph A [Traditional Workflow (Comparison)]
-        A1[Requirements Analysis] --> A2[Design & Planning]
+    subgraph A [Traditional Workflow Comparison]
+        A1[Requirements Analysis] --> A2[Design and Planning]
         A2 --> A3[Manual Coding]
         A3 --> A4[Manual Testing]
         A4 --> A5[Code Review]
@@ -112,10 +112,10 @@ flowchart TD
 
     subgraph B [AI-Enhanced Modern Workflow]
         direction TB
-        B1[Deep Requirements Analysis & Decomposition] --> B2[Write Precise Issue/Prompt]
+        B1[Deep Requirements Analysis and Decomposition] --> B2[Write Precise Issue/Prompt]
         B2 --> B3{AI Agent Execution}
 
-        B3 --> B4[AI Writes Code & Submits PR]
+        B3 --> B4[AI Writes Code and Submits PR]
 
         subgraph B5 [Pre-Merge Quality Gates<br/>Pre-Merge Validation]
             direction LR
@@ -158,7 +158,7 @@ flowchart TD
 
     A -- Workflow Intelligence Restructuring --> B
     A3 -. Manual Coding Reduced .-> B3
-    B5 -. Requires: Precise Prompts & Context .-> B2
+    B5 -. Requires Precise Prompts and Context .-> B2
     B6 -. Core Human Decision Point .-> C3
     B12 -. Increased Automation Level .-> C2
 ```
