@@ -100,9 +100,6 @@ As we advance along the path of AI-augmented development, maintaining human agen
 #### **Modern Software Development Workflow Enhanced by AI**
 
 ```mermaid
----
-title: AI-Enhanced Modern Software Development Workflow (with Clear Quality Gate Distinction)
----
 flowchart TD
     subgraph A [Traditional Workflow (Comparison)]
         A1[Requirements Analysis] --> A2[Design & Planning]
@@ -262,9 +259,6 @@ AI对世界的理解是否与人类的理解和目标一致？当前的AI系统�
 #### **AI增强的现代软件研发工作流**
 
 ```mermaid
----
-title: AI增强的现代软件研发工作流（含明确的质量门禁区分）
----
 flowchart TD
     subgraph A [传统工作流（对比）]
         A1[需求分析] --> A2[设计与规划]
