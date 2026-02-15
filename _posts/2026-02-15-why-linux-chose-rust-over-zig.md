@@ -238,6 +238,13 @@ Linux内核选择Rust而非Zig，是在那个时间点上，对**安全性、成
 
 而Zig虽然没有进入内核核心，但也凭借其在**资源效率和C互操作性**上的优势，在Linux生态的外围找到了用武之地。两种语言都在推动系统编程的发展，只是选择了不同的路径。
 
+### 延伸阅读
+
+- [The Linux Kernel - Rust Documentation](https://docs.kernel.org/rust/index.html) - Linux内核官方Rust文档
+- [Rust Kernel Policy](https://rust-for-linux.com/rust-kernel-policy) - Rust在Linux内核中的集成政策
+- [An Empirical Study of Rust-for-Linux](https://www.usenix.org/system/files/atc24-li-hongyu.pdf) - USENIX ATC 2024论文，对Rust-for-Linux的实证研究
+- [Rusty Linux: Advances in Rust for Linux Kernel Development](https://arxiv.org/html/2407.18431v1) - arXiv论文，深入分析Rust在Linux内核开发中的进展
+
 ## 参考资料
 
 [^1]: [Rust for Linux](https://rust-for-linux.com/) - Rust for Linux项目官方网站
@@ -260,9 +267,3 @@ Linux内核选择Rust而非Zig，是在那个时间点上，对**安全性、成
 
 [^10]: [How Rust's Debut in the Linux Kernel is Shoring Up System Stability](https://www.linuxjournal.com/content/how-rusts-debut-linux-kernel-shoring-system-stability) - Linux Journal关于Rust如何提升内核稳定性
 
-### 延伸阅读
-
-- [The Linux Kernel - Rust Documentation](https://docs.kernel.org/rust/index.html) - Linux内核官方Rust文档
-- [Rust Kernel Policy](https://rust-for-linux.com/rust-kernel-policy) - Rust在Linux内核中的集成政策
-- [An Empirical Study of Rust-for-Linux](https://www.usenix.org/system/files/atc24-li-hongyu.pdf) - USENIX ATC 2024论文，对Rust-for-Linux的实证研究
-- [Rusty Linux: Advances in Rust for Linux Kernel Development](https://arxiv.org/html/2407.18431v1) - arXiv论文，深入分析Rust在Linux内核开发中的进展
