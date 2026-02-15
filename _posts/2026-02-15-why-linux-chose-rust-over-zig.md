@@ -41,27 +41,51 @@ Rust和Zig的设计哲学存在本质差异，这决定了它们与内核需求�
 
 Linus Torvalds对此有过非常明确的表态。早在2004年，他就在Linux内核邮件列表中指出[^14]：
 
-> "写内核代码用C++是一个**非常愚蠢的想法**（BLOODY STUPID IDEA）。事实上，C++编译器是不可信的...C++的整个异常处理机制从根本上就是有问题的，**对内核来说尤其如此**。"
+> "写内核代码用C++是一个**非常愚蠢的想法**（BLOODY STUPID IDEA）。"
+>
+> *"It sucks. Trust me - writing kernel code in C++ is a BLOODY STUPID IDEA."*
+>
+> "事实上，C++编译器是不可信的...C++的整个异常处理机制从根本上就是有问题的，**对内核来说尤其如此**。"
+>
+> *"The whole C++ exception handling thing is fundamentally broken. It's _especially_ broken for kernels."*
 
 2007年，在Git邮件列表上，Linus更系统地阐述了反对C++的理由[^15]：
 
 **1. 异常处理机制不适合内核**
 
-Linus早在2004年就指出："C++的整个异常处理机制从根本上就是有问题的，对内核来说尤其如此。"[^14] C++的异常处理会引入非局部控制流跳转，这在需要绝对确定性的内核代码中是不可接受的。C语言的错误返回值机制虽然繁琐，但路径清晰、透明可控。
+C++的异常处理会引入非局部控制流跳转，这在需要绝对确定性的内核代码中是不可接受的。C语言的错误返回值机制虽然繁琐，但路径清晰、透明可控。Linus早在2004年就明确指出[^14]：
+
+> *"The whole C++ exception handling thing is fundamentally broken. It's _especially_ broken for kernels."*
+>
+> "C++的整个异常处理机制从根本上就是有问题的，对内核来说尤其如此。"
 
 学术研究也印证了这一问题。2019年爱丁堡大学的研究表明，即使采用优化后的实现，C++异常处理在嵌入式系统中仍然存在显著的代码体积和运行时开销[^16]。2025年St Andrews大学的最新研究指出，C++异常在用户态/内核态边界的传播需要特殊的ABI支持，增加了系统复杂性[^17]。
 
 **2. 隐式内存分配是大忌**
 
-Linus指出："任何喜欢在背后隐藏内存分配等操作的编译器或语言，都不是内核开发的好选择。"[^14]内核需要对每一个字节的内存分配有完全的控制权。
+内核需要对每一个字节的内存分配有完全的控制权。Linus在2004年明确指出[^14]：
+
+> *"Any compiler or language that likes to hide things like memory allocations behind your back just isn't a good choice for a kernel."*
+>
+> "任何喜欢在背后隐藏内存分配等操作的编译器或语言，都不是内核开发的好选择。"
 
 **3. 抽象导致的效率问题**
 
-> "C++导致真正糟糕的设计选择。你不可避免地会开始使用STL和Boost等'优雅的'库特性...两年后你会发现某些抽象效率不高，但现在你所有的代码都依赖于它，除非重写应用，否则无法修复。"[^15]
+Linus在2007年指出[^15]：
+
+> *"C++ leads to really really bad design choices. You invariably start using the 'nice' library features of the language like STL and Boost and other total and utter crap, that may 'help' you program, but causes... inefficient abstracted programming models where two years down the road you notice that some abstraction wasn't very efficient, but now all your code depends on all the nice object models around it, and you cannot fix it without rewriting your app."*
+>
+> "C++导致真正糟糕的设计选择。你不可避免地会开始使用STL和Boost等'优雅的'库特性...这会导致低效的抽象编程模型，两年后你会发现某些抽象效率不高，但现在你所有的代码都依赖于这些精美的对象模型，除非重写应用，否则无法修复。"
 
 **4. C语言足以实现面向对象**
 
-Linus认为："你可以用C编写面向对象的代码（对文件系统等很有用），而不需要C++中的那些垃圾。"[^14]Linux内核用C语言的结构体和函数指针实现了充分的面向对象设计。
+Linus在2004年指出[^14]：
+
+> *"You can write object-oriented code (useful for filesystems etc) in C, _without_ the crap that is C++."*
+>
+> "你可以用C编写面向对象的代码（对文件系统等很有用），而不需要C++中的那些垃圾。"
+
+Linux内核用C语言的结构体和函数指针实现了充分的面向对象设计。
 
 这些观点揭示了Linux内核对于编程语言的核心要求：**透明性、可控性和确定性**。C++虽然功能强大，但其隐式行为和复杂的抽象机制与内核开发的哲学背道而驰。
 
