@@ -3,8 +3,6 @@ title: "为什么Linux内核选择了Rust而不是Zig？"
 abstract: "当Linux内核在2022年宣布支持Rust作为第二语言时，系统编程社区引发了热烈的讨论。本文深入分析了Linux内核选择Rust而非Zig的核心原因，包括时机、语言特性差异、社区生态等多个维度，并探讨了两种语言在系统编程领域的不同定位。"
 ---
 
-# {{ page.title }}
-
 {{ page.abstract }}
 
 ## 引言
