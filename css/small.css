@@ -4,6 +4,17 @@ div.main {
   border: none;
 }
 
+/* Site header for mobile */
+div.site-header {
+  padding: 0.5em 0;
+  margin-bottom: 1em;
+}
+
+a.site-title {
+  font-size: 1.2em;
+  padding: 0.3em 0.5em;
+}
+
 H1, H2 {
   margin-bottom: 1.25em;
   padding: 0;

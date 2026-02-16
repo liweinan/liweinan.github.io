@@ -624,8 +624,6 @@ Whether the kernel driver is C or Rust, **this code works identically**.
 
 **Rust's advantage**: Better compile-time verification of ABI compatibility through `#[repr(C)]`, size assertions, and type safety, reducing accidental ABI breaks.
 
----
-
 ## References
 
 [^1]: [Linux Kernel Stable API Nonsense](https://www.kernel.org/doc/Documentation/process/stable-api-nonsense.rst) - Greg Kroah-Hartman's explanation of why internal kernel API is unstable

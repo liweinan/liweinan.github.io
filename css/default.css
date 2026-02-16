@@ -16,6 +16,31 @@ div.main {
     word-break: break-word;
 }
 
+/* Site header - home link */
+div.site-header {
+    text-align: center;
+    padding: 0.5em 0 1em 0;
+    border-bottom: 2px solid #e0e0e0;
+    margin-bottom: 1.5em;
+}
+
+a.site-title {
+    font-family: "Palatino Linotype", "Book Antiqua", Palatino, Helvetica, STKaiti, SimSun, serif;
+    font-size: 1.5em;
+    font-weight: 600;
+    color: #555;
+    text-decoration: none;
+    padding: 0.3em 0.8em;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+a.site-title:hover {
+    background-color: #f0f0f0;
+    color: #204A87;
+    text-decoration: none;
+}
+
 H1, H2, H3, H4, H5, H6 {
     font-family: "Palatino Linotype", "Book Antiqua", Palatino, Helvetica, STKaiti, SimSun, serif;
     width: 98%;
