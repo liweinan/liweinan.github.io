@@ -540,6 +540,8 @@ The question isn't whether Rust belongs in the kernel - **it's already there**. 
 
 For those skeptical of Rust, the challenge is simple: **propose a better alternative that provides compile-time memory safety without runtime overhead**. Until then, the kernel will continue its gradual, measured adoption of Rust - one safe abstraction at a time.
 
+**About the analysis**: This article is based on direct examination of the Linux kernel source code at `/Users/weli/works/linux` (Linux 6.x), including automated scanning of 338 Rust files and manual code review of key subsystems. All code examples are from actual kernel source, not simplified demonstrations.
+
 ## References
 
 [^1]: [Rust for Linux](https://rust-for-linux.com/) - Official project website
@@ -556,6 +558,3 @@ For those skeptical of Rust, the challenge is simple: **propose a better alterna
 
 [^14]: [Re: Compiling C++ kernel module](https://harmful.cat-v.org/software/c++/linus) - Linus Torvalds on C++ in kernel (2004)
 
----
-
-**About the analysis**: This article is based on direct examination of the Linux kernel source code at `/Users/weli/works/linux` (Linux 6.x), including automated scanning of 338 Rust files and manual code review of key subsystems. All code examples are from actual kernel source, not simplified demonstrations.
