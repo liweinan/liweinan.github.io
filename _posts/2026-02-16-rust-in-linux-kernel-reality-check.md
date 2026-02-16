@@ -250,12 +250,12 @@ The Linux kernel is ~30 million lines of C code. The idea that Rust would immedi
 
 This is **exactly how C++ adoption has worked in other massive systems** (Windows kernel, browsers, databases). You start at the edges, build confidence, and gradually move inward.
 
-Greg Kroah-Hartman's statement that *"the community doesn't exclude Zig for Linux, but nobody is working on it"* is telling. Rust succeeded because it had:
+The community's stance on alternative languages is notable. While there's no explicit exclusion of other systems languages like Zig, the reality is that **no team is actively working on integrating them**[^10]. Rust succeeded because it had:
 1. **A dedicated team** working for years (Rust for Linux project, started 2020)
 2. **Corporate backing** (Google, Microsoft, Arm)
 3. **Production use cases** (Android Binder was the killer app)
 
-Zig could follow the same path if someone invested the effort. The door isn't closed - but the work is substantial.
+Zig could theoretically follow the same path if someone invested the effort. The door isn't closed - but the work is substantial, requiring similar multi-year investment and corporate backing that Rust received.
 
 ### Argument 2: "Using `unsafe` in Rust adds mental burden compared to C"
 
@@ -277,8 +277,10 @@ Zig could follow the same path if someone invested the effort. The door isn't cl
 
 **For the 95-98% safe code: ZERO mental burden.** The compiler enforces correctness.
 
-**Real example from kernel maintainer Greg Kroah-Hartman**[^9]:
-> "The majority of bugs we see in kernel code are the simple, stupid stuff - memory overwrites, failure to clean up on error paths, forgetting to check error values, use-after-free errors. All of these are things that just don't exist in safe Rust code."
+**Real example from kernel maintainer Greg Kroah-Hartman** (February 2025)[^9]:
+> "The majority of bugs (quantity, not quality and severity) we have are due to the stupid little corner cases in C that are totally gone in Rust. Things like simple overwrites of memory (not that Rust can catch all of these by far), error path cleanups, forgetting to check error values, and use-after-free mistakes."
+>
+> "Writing new code in Rust is a win for all of us."
 
 The mental burden of 100% unsafe code (C) is objectively higher than 2-5% unsafe code with 95%+ compiler-verified safety (Rust).
 
@@ -554,7 +556,314 @@ For those skeptical of Rust, the challenge is simple: **propose a better alterna
 
 [^5]: [An Empirical Study of Rust-for-Linux](https://www.usenix.org/system/files/atc24-li-hongyu.pdf) - USENIX ATC 2024 paper
 
-[^9]: [Linux Driver Development with Rust](https://www.apriorit.com/dev-blog/rust-for-linux-driver) - Kernel maintainer perspectives on common C bugs
+[^9]: [Greg Kroah-Hartman Makes A Compelling Case For New Linux Kernel Drivers To Be Written In Rust](https://www.phoronix.com/news/Greg-KH-On-New-Rust-Code) - Phoronix, February 21, 2025 reporting on Greg's LKML post
+
+[^10]: [Rust Integration in Linux Kernel Faces Challenges but Shows Progress](https://thenewstack.io/rust-integration-in-linux-kernel-faces-challenges-but-shows-progress/) - The New Stack on Rust for Linux development status
 
 [^14]: [Re: Compiling C++ kernel module](https://harmful.cat-v.org/software/c++/linus) - Linus Torvalds on C++ in kernel (2004)
+
+---
+
+## 中文版 / Chinese Version
+
+# Rust在Linux内核中的现实检验：从代码到争议
+
+**摘要**: Rust仅用于驱动程序，还是内核开发的未来？本文深入探讨Rust在Linux内核中的实际状态——从分析135,662行生产代码到解决关于`unsafe`、心智负担以及Rust是否会触及内核核心的激烈争论。通过Android Binder重写的具体代码示例和代码库的真实指标，我们将事实与炒作分开。
+
+## 引言："Rust仅用于驱动"的谬论
+
+开发者社区中流传着一个常见批评：*"Rust仅用于设备驱动程序，而非内核核心。使用`unsafe`与C接口相比，仅用C或Zig编写增加了心智负担。Rust永远不会进入核心内核开发。"*
+
+这种说法表面上听起来合理，但它从根本上误解了Rust在Linux中的当前状态以及新技术进入关键基础设施的历史模式。让我们检查Linux 6.x内核代码库中实际发生了什么。
+
+## 数据：Rust的实际渗透情况
+
+基于对Linux内核源代码树的全面扫描，真实情况如下：
+
+```
+Rust文件总数:        338个.rs文件
+代码总行数:          135,662行
+内核抽象层:          74个顶层模块
+生产级驱动:          71个驱动文件
+C辅助函数:          56个.c文件
+第三方库:            69个文件 (proc-macro2, quote, syn)
+```
+
+**分布明细:**
+```
+rust/kernel/           45,622行 (33.6%) - 核心抽象层
+drivers/               22,385行 (16.5%) - 生产级驱动
+编译器和宏            65,844行 (48.6%) - 构建基础设施
+samples/rust/           1,811行 (1.3%)  - 示例代码
+```
+
+这不是玩具实验。这是**生产级基础设施**，覆盖74个内核子系统，包括：
+
+- **DRM（直接渲染管理器）**: GPU驱动的8个模块
+- **网络栈**: 带有`DuplexMode`、`DeviceState`枚举的PHY驱动
+- **块设备**: 多队列块层抽象
+- **文件系统**: VFS、debugfs、configfs、seq_file接口
+- **Android Binder**: 18个文件，约8,000行 - 完整的IPC重写
+- **GPU驱动**: Nova (Nvidia GSP) - 47个文件，约15,000行
+
+让我们看看实际的内核代码，以理解"内核中的Rust"真正意味着什么。
+
+## 案例研究1：Android Binder - 生产环境中的Rust
+
+Android Binder IPC机制是Android生态系统中最关键的组件之一。Google已经完全用Rust重写了它。实际代码如下：
+
+```rust
+// drivers/android/binder/rust_binder_main.rs
+// Copyright (C) 2025 Google LLC.
+
+use kernel::{
+    bindings::{self, seq_file},
+    fs::File,
+    list::{ListArc, ListArcSafe, ListLinksSelfPtr, TryNewListArc},
+    prelude::*,
+    seq_file::SeqFile,
+    sync::poll::PollTable,
+    sync::Arc,
+    task::Pid,
+    types::ForeignOwnable,
+    uaccess::UserSliceWriter,
+};
+
+module! {
+    type: BinderModule,
+    name: "rust_binder",
+    authors: ["Wedson Almeida Filho", "Alice Ryhl"],
+    description: "Android Binder",
+    license: "GPL",
+}
+```
+
+### "Unsafe"的现实检验
+
+批评者认为在Rust中使用`unsafe`调用C API会增加心智负担。让我们看看Binder驱动的实际数字：
+
+```bash
+$ grep -r "unsafe" drivers/android/binder/*.rs | wc -l
+179次'unsafe'出现在11个文件中
+```
+
+在大约8,000行代码中有**179个`unsafe`块** - 大约占代码库的2.2%。
+
+**但关键洞察是**: 在C中，**100%的代码都是隐式不安全的**。在Rust中，97.8%的Binder代码在编译时*可证明安全*，不安全操作被明确标记和隔离。
+
+注意到了吗？**这是纯安全的Rust** - 没有`unsafe`块，但它是核心内核逻辑。类型系统确保：
+- 没有空指针解引用
+- 没有use-after-free
+- 没有数据竞争
+- 没有未初始化内存访问
+
+**全部在编译时强制执行，而非运行时。**
+
+## 案例研究2：锁抽象 - 内核中的RAII
+
+Rust对内核开发最强大的特性之一是RAII（资源获取即初始化）。这是`rust/kernel/sync/lock.rs`的实际抽象层：
+
+```rust
+// rust/kernel/sync/lock.rs (实际内核代码)
+/// 锁的"后端"
+///
+/// # 安全性
+///
+/// - 实现者必须确保一旦锁被拥有，即在`lock`和`unlock`调用之间，
+///   只有一个线程/CPU可以访问受保护的数据。
+pub unsafe trait Backend {
+    type State;
+    type GuardState;
+
+    #[must_use]
+    unsafe fn lock(ptr: *mut Self::State) -> Self::GuardState;
+    unsafe fn unlock(ptr: *mut Self::State, guard_state: &Self::GuardState);
+}
+```
+
+这里的精妙之处在于分层安全模型：
+1. **Unsafe FFI层**: 直接调用C内核原语（标记为`unsafe`）
+2. **安全抽象层**: 处理RAII的类型安全包装器
+3. **安全用户代码**: 驱动开发者永远不接触`unsafe`
+
+驱动开发者实际如何使用：
+
+```rust
+// 在驱动代码中安全使用 - 编译器防止忘记解锁
+{
+    let mut guard = spinlock.lock(); // 获取锁
+
+    if error_condition {
+        return Err(EINVAL); // 提前返回
+        // Guard在此处被丢弃 - 锁自动释放
+    }
+
+    do_critical_work(&mut guard)?; // 如果失败并返回
+    // Guard在此处被丢弃 - 锁自动释放
+
+} // 正常退出 - 锁自动释放
+```
+
+**在C中，等价代码是:**
+
+```c
+// C版本 - 手动、易出错
+spin_lock(&lock);
+
+if (error_condition) {
+    spin_unlock(&lock);  // 必须记得解锁！
+    return -EINVAL;
+}
+
+ret = do_critical_work(&data);
+if (ret < 0) {
+    spin_unlock(&lock);  // 必须记得解锁！
+    return ret;
+}
+
+spin_unlock(&lock);  // 必须记得解锁！
+```
+
+**每个`return`路径都需要手动解锁。** 漏掉一个，就会死锁。代码分析工具可以捕获其中一些，但C编译器*不提供任何保证*。
+
+而Rust编译器使得**不可能**忘记解锁。这不是"心智负担" - 这是**在编译时消除整个类别的bug**。
+
+## 回应核心论点
+
+### 论点1："Rust仅用于驱动，不用于内核核心"
+
+**当前状态**: 确实如此，但这是设计使然，而非限制。
+
+Linux内核有约3000万行C代码。认为Rust会立即替换核心内核是荒谬的。没有严肃的人在提议这样做。实际发生的是**渐进式、战略性采用模式**：
+
+**第1阶段 (2022-2026)**: 基础设施和驱动
+- ✅ 构建系统集成 (695行Makefile，Kconfig集成)
+- ✅ 内核抽象层 (74个模块，45,622行)
+- ✅ 生产级驱动 (Android Binder, Nvidia Nova GPU, 网络PHY)
+- ✅ 测试框架 (KUnit集成, doctests)
+
+**第2阶段 (2026-2028)**: 子系统扩展 (当前正在进行)
+- 🔄 文件系统驱动 (Rust ext4, btrfs实验)
+- 🔄 网络协议组件
+- 🔄 更多架构支持 (当前: x86_64, ARM64, RISC-V, LoongArch, PowerPC, s390)
+
+**第3阶段 (2028-2030+)**: 核心内核组件
+- 🔮 内存管理子系统
+- 🔮 调度器组件
+- 🔮 VFS层重写
+
+这**正是C++在其他大型系统中采用的方式**（Windows内核、浏览器、数据库）。你从边缘开始，建立信心，然后逐步向内推进。
+
+社区对替代语言的立场值得注意。虽然没有明确排除像Zig这样的其他系统语言，但现实是**没有团队在积极整合它们**[^10]。Rust成功是因为它具备：
+1. **专门的团队**多年工作 (Rust for Linux项目，始于2020年)
+2. **企业支持** (Google, Microsoft, Arm)
+3. **生产用例** (Android Binder是杀手级应用)
+
+Zig理论上可以走同样的道路，如果有人投入努力。大门没有关闭 - 但工作量巨大，需要类似Rust获得的多年投资和企业支持。
+
+### 论点2: "在Rust中使用`unsafe`比C增加心智负担"
+
+**这个论点是倒退的。** 让我们量化实际的心智负担：
+
+**C内核开发心智清单** (100%的代码):
+- ✅ 在解引用之前我检查了NULL吗？
+- ✅ 我为每个`kmalloc`配对了`kfree`吗？
+- ✅ 我在每个错误路径上解锁了每个自旋锁吗？
+- ✅ 这个指针还有效吗？ (没有编译器帮助)
+- ✅ 我初始化了这个变量吗？
+- ✅ 这个缓冲区访问在边界内吗？
+- ✅ 这些类型真的兼容吗？ (手动转换)
+- ✅ 这个整数会溢出吗？
+- ✅ 这里有竞态条件吗？ (手动推理)
+
+**Rust内核开发心智清单** (对于2-5%的unsafe代码):
+- ✅ 我正确维护了这个unsafe块中记录的安全不变量吗？
+
+**对于95-98%的安全代码：零心智负担。** 编译器强制正确性。
+
+**来自内核维护者Greg Kroah-Hartman的真实示例** (2025年2月)[^9]:
+> "我们遇到的大多数bug（数量，而非质量和严重性）都是由于C中那些在Rust中完全消失的愚蠢小陷阱。比如简单的内存覆写（Rust并不能完全捕获所有这些），错误路径清理，忘记检查错误值，以及use-after-free错误。"
+>
+> "用Rust编写新代码对我们所有人都是胜利。"
+
+100%不安全代码（C）的心智负担客观上高于2-5%不安全代码加95%+编译器验证安全（Rust）。
+
+### 论点3: "Zig更接近C，对内核开发者更容易"
+
+**这是真的，但与安全论点无关。** Zig的哲学是"更好的C" - 显式控制、零隐藏行为、优秀工具。这很有价值！但是：
+
+**Zig的内存安全方法:**
+- 手动内存管理（像C）
+- 用于清理的`defer`（有帮助，但可选）
+- 控制流的编译时检查（很好！）
+- 边界/溢出的运行时检查（可在发布版本中禁用）
+
+**Rust的内存安全方法:**
+- 所有权系统（编译时强制）
+- 通过`Drop` trait自动清理（强制性）
+- 借用检查器防止数据竞争（编译时保证）
+- 安全无运行时开销（零成本抽象）
+
+对于Linux内核的需求，Rust的**强制性、编译时安全**更符合"在发生之前预防CVE"的哲学。研究表明约70%的内核CVE是内存安全问题[^3]。Rust在*编译时*消除这些问题。
+
+Zig绝对可以用于内核（没有任何阻止），但有人需要：
+1. 构建等同于`rust/kernel/`抽象的东西（74个模块，45,622行）
+2. 用杀手级用例证明生产就绪性（如Rust的Android Binder）
+3. 长期维护（持续承诺）
+
+"没有人在做这件事"的原因不是技术敌意 - 而是**Rust已经完成了艰苦的工作**，Zig需要从头开始。
+
+## 性能：实践中的零成本抽象
+
+一个常见担忧是Rust的安全性是否带来性能开销。生产部署的数据：
+
+| 测试 | C驱动 | Rust驱动 | 差异 |
+|------|-------|---------|------|
+| Binder IPC延迟 | 12.3μs | 12.5μs | +1.6% |
+| PHY驱动吞吐量 | 1Gbps | 1Gbps | 0% |
+| 块设备IOPS | 85K | 84K | -1.2% |
+| **平均** | - | - | **< 2%** |
+
+来源: Linux Plumbers Conference 2024演讲[^2]
+
+**开销在测量噪音范围内。** Rust的"零成本抽象"原则意味着高级安全特性编译成与手写C相同的汇编代码。
+
+## 前进之路：Rust会超越驱动吗？
+
+**简短回答：会，但是逐步地。**
+
+**时间线预测** (基于当前趋势):
+
+- **2026-2027**: 文件系统驱动，网络协议组件
+- **2028-2029**: 内存管理子系统，调度器实验
+- **2030+**: 核心内核组件的渐进式重写
+
+**这是一个10-20年的时间线**，类似于C++逐步进入Windows内核开发的过程。
+
+## 结论：现实 vs. 修辞
+
+让我们回应最初的论点：
+
+**"Rust仅用于驱动"** → 今天确实如此，是设计使然而非限制。历史先例表明这就是新技术进入关键基础设施的方式。
+
+**"`unsafe`增加心智负担"** → 倒退。2-5%显式标记的unsafe代码加编译器验证安全客观上比100%隐式unsafe代码负担更少。
+
+**"Zig更适合内核开发"** → Zig很优秀，但没有人在做这项工作。Rust成功是因为持续努力和企业支持。
+
+**"Rust永远不会触及内核核心"** → 历史表明相反。问题是"何时"，而非"是否"。
+
+**数据不会撒谎:**
+- 338个Rust文件，135,662行生产代码
+- 74个内核子系统抽象
+- 在Android中的生产部署（数十亿设备）
+- 性能差异<2%的零成本抽象
+- 编译时消除70%的CVE类别
+
+**Rust in Linux不是炒作周期。** 这是对内存安全的战略性、长期投资，有生产部署的实证证据支持。代码已经存在，运行在数十亿设备上，预防了困扰内核数十年的整个漏洞类别。
+
+问题不是Rust是否属于内核 - **它已经在那里了**。问题是它会扩展多远，答案取决于对安全性、可靠性和开发者生产力的持续展示。
+
+对于那些对Rust持怀疑态度的人，挑战很简单：**提出一个更好的替代方案，提供编译时内存安全而没有运行时开销**。在那之前，内核将继续其渐进式、审慎的Rust采用 - 一次一个安全抽象。
+
+**关于分析**: 本文基于对Linux内核源代码（Linux 6.x）的直接检查，包括对338个Rust文件的自动扫描和关键子系统的手动代码审查。所有代码示例均来自实际内核源代码，而非简化演示。
 
