@@ -14,7 +14,7 @@ abstract: "Does Rust in the Linux kernel provide userspace interfaces? What's th
 → **No.** Internal kernel APIs (between modules and kernel) are **explicitly unstable**. Only **userspace ABI** is sacred.
 
 **Q3: Will Rust be used for userspace-facing features that require ABI stability?**
-→ **Already happening.** Android Binder (Rust) provides critical userspace ABI to billions of devices.
+→ **Already happening.** Android Binder (Rust) merged in mainline kernel, providing production-grade IPC with identical userspace ABI.
 
 ## Deep Dive: System Call ABI - The Immutable Contract
 
@@ -429,14 +429,16 @@ unsafe impl AsBytes for BinderTransactionData {}
 
 | Interface Type | Rust Support | Example |
 |---------------|--------------|---------|
-| **ioctl** | ✅ Full support | DRM drivers, Binder |
+| **ioctl handlers** | ✅ Full support (drivers handle commands) | DRM drivers, Binder |
 | **/dev device nodes** | ✅ Via miscdevice/cdev | Character devices |
 | **/sys (sysfs)** | ✅ Via kobject bindings | Device attributes |
 | **/proc** | ✅ Via seq_file | Process info |
-| **System calls** | ⚠️ Not yet (all syscalls are C) | - |
+| **Defining new syscalls** | ❌ Not possible (syscall entry is C) | - |
 | **Netlink** | ✅ Via net subsystem | Network configuration |
 
-**Answer**: Yes, Rust **fully supports** userspace interfaces through standard kernel mechanisms.
+**Important distinction**: Rust drivers can **handle** ioctl commands (the driver-specific logic), but the ioctl **system call entry point** itself (in `fs/ioctl.c`) remains C code. The same applies to other interfaces - Rust provides the handler, not the core mechanism.
+
+**Answer**: Yes, Rust **fully supports** userspace interfaces through standard kernel mechanisms, though the core system call layer remains in C.
 
 ## Question 2: Kernel Internal ABI Stability Policy
 
@@ -532,7 +534,7 @@ removed/    - Historical record only
 
 ### Current State: Rust Already Provides Stable Userspace ABI
 
-**Android Binder**: Running on billions of devices with **identical userspace ABI** as C version.
+**Android Binder**: Merged in mainline kernel (September 2025) with **identical userspace ABI** as C version, replacing 6kLOC C implementation.
 
 ```rust
 // Same BINDER_WRITE_READ ioctl as C version
@@ -579,27 +581,6 @@ const _: () = assert!(
 );
 ```
 
-### Rust's `#[repr(C)]` Guarantees
-
-From the Rust language specification:
-
-```rust
-#[repr(C)]
-struct UserspaceFacingStruct {
-    field1: u64,
-    field2: u32,
-}
-```
-
-**Guarantees**:
-- Same layout as C struct
-- Same padding rules
-- Same alignment
-- Same size
-- Stable across Rust compiler versions
-
-**This is a language-level guarantee**, not just convention.
-
 ### Real Example: DRM Driver Backward Compatibility
 
 From the Nova GPU driver (Rust):
@@ -635,76 +616,18 @@ pub struct drm_nova_gem_create {
 
 ### Will Rust Provide Critical Userspace ABI?
 
-**Already happening:**
+**Production deployments:**
 
-1. **Android Binder** (IPC): Billions of devices
-2. **GPU drivers** (Nova): DRM userspace ABI
-3. **Network PHY drivers**: ethtool/netlink ABI
-4. **Block devices**: ioctl ABI
-5. **Android ashmem** (Memory Management): Android 16's memory allocator
+1. **Android Binder** (IPC): Merged September 2025, replacing 6kLOC C implementation
+2. **GPU drivers** (Nova): DRM userspace ABI for Nvidia GPUs
+3. **Network PHY drivers**: ethtool/netlink ABI (ax88796b, qt2025)
+4. **Block devices**: rnull driver with standard ioctl ABI
 
-### Case Study: ashmem - Rust in Memory Management Subsystem
-
-**Breaking news**: Rust has **already entered the memory management (mm) subsystem** - earlier than most predictions suggested.
-
-**What is ashmem?**
-- **ashmem** (Anonymous Shared Memory subsystem) is a memory allocator designed for Android
-- Similar to POSIX SHM but optimized for mobile devices
-- Handles shared memory allocation with low-memory pressure awareness
-- Critical component for Android's memory management
-
-**The Rust Rewrite** (announced December 2025):
-- **Android 16** (based on Linux 6.12) ships with ashmem **completely rewritten in Rust**
-- Announced by Miguel Ojeda (Rust-for-Linux project lead) at Linux Kernel Maintainers Summit
-- Already deployed on **millions of consumer devices**
-
-**Why this matters:**
-
-1. **First mm subsystem component in Rust**: Proves Rust can handle kernel memory management
-2. **Production scale**: Running on millions of devices in the wild
-3. **Earlier than expected**: Most predictions put mm subsystem adoption at 2028-2030
-4. **Memory safety in memory management**: The irony of using a memory-safe language to implement memory allocation is not lost - but highly beneficial
-
-**Technical details:**
-
-```rust
-// Simplified example of ashmem's safety benefits
-pub struct AshmemArea {
-    size: usize,
-    prot: u32,
-    // Rust's ownership system prevents:
-    // - Double-free of memory regions
-    // - Use-after-free when area is unmapped
-    // - Race conditions via type system
-}
-
-impl Drop for AshmemArea {
-    fn drop(&mut self) {
-        // Automatic cleanup - cannot forget to free
-        // Guaranteed to run, unlike manual cleanup in C
-    }
-}
-```
-
-**Security impact:**
-
-Memory management code is particularly prone to memory safety bugs:
-- Buffer overflows in allocator metadata
-- Use-after-free in freed memory tracking
-- Race conditions in concurrent allocations
-
-Rust's type system eliminates these **at compile time** for ashmem's implementation.
-
-**References:**
-- [Android ashmem - Rust for Linux](https://rust-for-linux.com/android-%60ashmem%60)
-- [Rust boosted by permanent adoption for Linux kernel code](https://devclass.com/2025/12/15/rust-boosted-by-permanent-adoption-for-linux-kernel-code/)
-
-**Coming soon** (based on current development and LSF/MM/BPF 2026 discussions):
+**Coming soon** (based on current development):
 
 1. **File systems**: VFS operations, mount options
 2. **Network protocols**: Socket options, packet formats
-3. **More mm components**: Additional memory allocators, page management experiments
-4. **LSF/MM/BPF Summit (May 2026)**: Technical discussions on memory management subsystem improvements - likely including more Rust adoption plans
+3. **More device drivers**: Expanding hardware support
 
 ### The Key Policy: Language-Agnostic ABI
 
@@ -721,6 +644,93 @@ From Linus Torvalds (summarized from various LKML posts):
 - ABI breaks are **equally unacceptable** in both languages
 
 **Answer**: Yes, Rust **will be and already is** used for userspace-facing features requiring ABI stability.
+
+## Current Scope: Peripheral Drivers, Not Core Kernel
+
+**Critical clarification**: As of early 2026, Rust in the Linux kernel is **exclusively in peripheral areas** - device drivers and Android-specific components. **No core kernel subsystems have been rewritten in Rust.**
+
+### ✅ Where Rust Code Exists
+
+```
+drivers/                    # Peripheral driver layer
+├── android/binder/        # Android IPC (18 .rs files, 9,190 lines)
+├── gpu/drm/nova/          # GPU driver (Nvidia, 47 files)
+├── net/phy/               # Network PHY drivers (2 drivers)
+├── block/rnull.rs         # Block device example
+└── cpufreq/               # CPU frequency management
+
+rust/kernel/               # Abstraction layer (45,622 lines)
+├── sync/                  # Rust bindings for sync primitives
+├── mm/                    # Rust bindings for memory functions
+├── fs/                    # Rust bindings for filesystem
+└── net/                   # Rust bindings for networking
+```
+
+**Key point**: The `rust/kernel/` directory provides **abstractions** (safe wrappers around C APIs), not **implementations** of core functionality.
+
+### ❌ What Remains 100% C (Core Kernel)
+
+```
+mm/                        # Memory management core
+├── 153 files, 128 C files
+├── page_alloc.c          # Page allocator (9,000+ lines)
+├── slab.c                # Slab allocator (4,000+ lines)
+├── vmalloc.c             # Virtual memory (3,500+ lines)
+└── kasan_test_rust.rs    # ⚠️ Only Rust file (just a test!)
+
+kernel/sched/             # Process scheduler
+├── 46 files, 33 C files
+├── core.c                # Scheduler core (11,000+ lines)
+└── 0 Rust files
+
+fs/                       # VFS core
+├── Hundreds of C files
+├── namei.c               # Path lookup (5,000+ lines)
+├── inode.c               # Inode management (2,000+ lines)
+└── 0 Rust files (drivers only)
+
+net/core/                 # Network protocol stack core
+kernel/entry/             # System call entry points
+arch/x86/kernel/          # Architecture-specific code
+```
+
+### Why This Matters
+
+This distribution is **not a technical limitation** but a **deliberate strategy**:
+
+1. **Risk management**: Driver failures are contained; core subsystem bugs crash the system
+2. **Trust building**: Prove Rust's value in low-risk areas first
+3. **Community acceptance**: Gradual adoption allows kernel maintainers to adapt
+4. **Tooling maturity**: Build testing infrastructure and debugging tools
+
+### Adoption Timeline (Current Trajectory)
+
+**Phase 1 (2022-2026)**: ✅ **Completed**
+- Device drivers and Android components
+- Abstraction layer infrastructure
+- Build system integration
+
+**Phase 2 (2026-2028)**: 🔄 **In progress**
+- More device drivers (expanding hardware support)
+- Filesystem drivers (experimental)
+- Network driver expansion
+
+**Phase 3 (2028-2030+)**: 🔮 **Highly speculative**
+- Core subsystem adoption (mm, scheduler, VFS)
+- **This may never happen** - requires massive community consensus
+- No official roadmap exists for core rewrites
+
+### The Reality Check
+
+**Question**: "Will Rust replace C in the kernel core?"
+
+**Answer**: Unknown and unlikely in the near term (5-10 years). Current evidence shows:
+- Rust is succeeding in **drivers** (proven value)
+- Core subsystems have **decades of battle-tested C code**
+- Rewriting core = **enormous risk** with unclear benefit
+- Community focus is on **new drivers**, not rewriting existing core
+
+**Conclusion**: Rust in Linux is currently a **driver development language**, not a **kernel core language**. This may change, but not soon.
 
 ## Practical Implications
 
@@ -798,17 +808,23 @@ Whether the kernel driver is C or Rust, **this code works identically**.
 
 **Summary of findings:**
 
-1. ✅ **Rust provides userspace interfaces** through `uapi` crate, ioctl support, device nodes, sysfs, etc.
+1. ✅ **Rust provides userspace interfaces** through `uapi` crate, ioctl handlers, device nodes, sysfs, etc.
 
 2. ❌ **Kernel internal ABI is NOT stable** - modules must recompile for each kernel version (same as C)
 
 3. ✅ **Userspace ABI IS stable** - never breaks (same rule for C and Rust)
 
-4. ✅ **Rust already provides critical userspace ABI** - Android Binder on billions of devices, GPU drivers, network drivers
+4. ✅ **Rust already provides critical userspace ABI** - Android Binder (merged 2025), GPU drivers (Nova), network PHY drivers
 
-**Key insight**: The kernel's ABI stability policy is **orthogonal to the implementation language**. Rust drivers must follow the same rules as C drivers:
-- Internal APIs can change anytime
-- Userspace ABI is sacred and immutable
+5. ⚠️ **Rust is currently peripheral-only** - Device drivers and Android components only; core kernel (mm, scheduler, VFS) remains 100% C
+
+**Key insights**:
+
+1. The kernel's ABI stability policy is **orthogonal to the implementation language**. Rust drivers must follow the same rules as C drivers:
+   - Internal APIs can change anytime
+   - Userspace ABI is sacred and immutable
+
+2. Rust's current scope is **deliberate and strategic** - proving value in low-risk drivers before considering core subsystems.
 
 **Rust's advantage**: Better compile-time verification of ABI compatibility through `#[repr(C)]`, size assertions, and type safety, reducing accidental ABI breaks.
 
@@ -841,7 +857,7 @@ Whether the kernel driver is C or Rust, **this code works identically**.
 → **不。** 内核内部API（模块和内核之间）**明确不稳定**。只有**用户空间ABI**是神圣的。
 
 **问题3: Rust是否会被用于提供需要ABI稳定性的用户空间功能?**
-→ **已经在发生。** Android Binder (Rust) 为数十亿设备提供关键的用户空间ABI。
+→ **已经在发生。** Android Binder (Rust) 已合并到主线内核，提供与C版本完全相同的用户空间ABI。
 
 ## 深入探讨：系统调用ABI - 不可变的契约
 
@@ -1192,14 +1208,16 @@ unsafe impl AsBytes for BinderTransactionData {}
 
 | 接口类型 | Rust支持 | 示例 |
 |---------|---------|------|
-| **ioctl** | ✅ 完全支持 | DRM驱动, Binder |
+| **ioctl处理器** | ✅ 完全支持（驱动处理命令） | DRM驱动, Binder |
 | **/dev设备节点** | ✅ 通过miscdevice/cdev | 字符设备 |
 | **/sys (sysfs)** | ✅ 通过kobject绑定 | 设备属性 |
 | **/proc** | ✅ 通过seq_file | 进程信息 |
-| **系统调用** | ⚠️ 尚未(所有syscall都是C) | - |
+| **定义新系统调用** | ❌ 不可能（syscall入口是C） | - |
 | **Netlink** | ✅ 通过net子系统 | 网络配置 |
 
-**答案**: 是的，Rust通过标准内核机制**完全支持**用户空间接口。
+**重要区别**: Rust驱动可以**处理**ioctl命令（驱动特定的逻辑），但ioctl **系统调用入口点**本身（在`fs/ioctl.c`中）仍然是C代码。其他接口也是如此 - Rust提供处理器，而不是核心机制。
+
+**答案**: 是的，Rust通过标准内核机制**完全支持**用户空间接口，尽管核心系统调用层仍然是C。
 
 ## 问题2：内核内部ABI稳定性策略
 
@@ -1278,7 +1296,7 @@ Linus Torvalds的著名规则（从无数LKML帖子中概括）：
 
 ### 当前状态：Rust已经提供稳定的用户空间ABI
 
-**Android Binder**: 运行在数十亿设备上，与C版本具有**相同的用户空间ABI**。
+**Android Binder**: 已合并到主线内核（2025年9月），替代6000行C实现，与C版本具有**完全相同的用户空间ABI**。
 
 ```rust
 // 与C版本相同的BINDER_WRITE_READ ioctl
@@ -1359,76 +1377,18 @@ struct UserspaceFacingStruct {
 
 ### Rust会提供关键的用户空间ABI吗？
 
-**已经在发生:**
+**生产环境部署:**
 
-1. **Android Binder** (IPC): 数十亿设备
-2. **GPU驱动** (Nova): DRM用户空间ABI
-3. **网络PHY驱动**: ethtool/netlink ABI
-4. **块设备**: ioctl ABI
-5. **Android ashmem** (内存管理): Android 16的内存分配器
+1. **Android Binder** (IPC): 2025年9月合并，替代6000行C实现
+2. **GPU驱动** (Nova): 为Nvidia GPU提供DRM用户空间ABI
+3. **网络PHY驱动**: ethtool/netlink ABI (ax88796b, qt2025)
+4. **块设备**: rnull驱动，提供标准ioctl ABI
 
-### 案例研究：ashmem - Rust进入内存管理子系统
-
-**重大新闻**: Rust**已经进入内存管理(mm)子系统** - 比大多数预测都要早。
-
-**什么是ashmem?**
-- **ashmem**（匿名共享内存子系统）是为Android设计的内存分配器
-- 类似POSIX SHM但为移动设备优化
-- 处理具有低内存压力感知的共享内存分配
-- Android内存管理的关键组件
-
-**Rust重写** (2025年12月宣布):
-- **Android 16**（基于Linux 6.12）搭载**完全用Rust重写的ashmem**
-- 由Miguel Ojeda（Rust-for-Linux项目负责人）在Linux内核维护者峰会上宣布
-- 已部署在**数百万消费设备**上
-
-**为什么重要:**
-
-1. **mm子系统中的第一个Rust组件**: 证明Rust可以处理内核内存管理
-2. **生产规模**: 在数百万设备上运行
-3. **比预期更早**: 大多数预测将mm子系统采用时间定在2028-2030年
-4. **内存管理中的内存安全**: 使用内存安全语言实现内存分配的讽刺意味不言而喻 - 但非常有益
-
-**技术细节:**
-
-```rust
-// ashmem安全优势的简化示例
-pub struct AshmemArea {
-    size: usize,
-    prot: u32,
-    // Rust的所有权系统防止：
-    // - 内存区域的double-free
-    // - 区域取消映射时的use-after-free
-    // - 通过类型系统防止竞态条件
-}
-
-impl Drop for AshmemArea {
-    fn drop(&mut self) {
-        // 自动清理 - 不会忘记释放
-        // 保证运行，不像C中的手动清理
-    }
-}
-```
-
-**安全影响:**
-
-内存管理代码特别容易出现内存安全bug：
-- 分配器元数据中的缓冲区溢出
-- 已释放内存跟踪中的use-after-free
-- 并发分配中的竞态条件
-
-Rust的类型系统在**编译时**消除了ashmem实现中的这些问题。
-
-**参考资料:**
-- [Android ashmem - Rust for Linux](https://rust-for-linux.com/android-%60ashmem%60)
-- [Rust boosted by permanent adoption for Linux kernel code](https://devclass.com/2025/12/15/rust-boosted-by-permanent-adoption-for-linux-kernel-code/)
-
-**即将推出** (基于当前开发和LSF/MM/BPF 2026讨论):
+**即将推出** (基于当前开发):
 
 1. **文件系统**: VFS操作，挂载选项
 2. **网络协议**: Socket选项，数据包格式
-3. **更多mm组件**: 额外的内存分配器，页面管理实验
-4. **LSF/MM/BPF峰会 (2026年5月)**: 关于内存管理子系统改进的技术讨论 - 可能包括更多Rust采用计划
+3. **更多设备驱动**: 扩展硬件支持
 
 ### 关键策略：与语言无关的ABI
 
@@ -1445,6 +1405,93 @@ Rust的类型系统在**编译时**消除了ashmem实现中的这些问题。
 - ABI破坏在两种语言中**同样不可接受**
 
 **答案**: 是的，Rust**将会并且已经**被用于需要ABI稳定性的用户空间功能。
+
+## 当前范围：外围驱动，而非内核核心
+
+**重要澄清**: 截至2026年初，Linux内核中的Rust**仅限于外围区域** - 设备驱动和Android特定组件。**没有核心内核子系统被用Rust重写。**
+
+### ✅ Rust代码存在的位置
+
+```
+drivers/                    # 外围驱动层
+├── android/binder/        # Android IPC (18个.rs文件, 9,190行)
+├── gpu/drm/nova/          # GPU驱动 (Nvidia, 47个文件)
+├── net/phy/               # 网络PHY驱动 (2个驱动)
+├── block/rnull.rs         # 块设备示例
+└── cpufreq/               # CPU频率管理
+
+rust/kernel/               # 抽象层 (45,622行)
+├── sync/                  # 同步原语的Rust绑定
+├── mm/                    # 内存函数的Rust绑定
+├── fs/                    # 文件系统的Rust绑定
+└── net/                   # 网络的Rust绑定
+```
+
+**关键点**: `rust/kernel/`目录提供**抽象**（围绕C API的安全包装器），而不是核心功能的**实现**。
+
+### ❌ 仍然100% C的部分（核心内核）
+
+```
+mm/                        # 内存管理核心
+├── 153个文件, 128个C文件
+├── page_alloc.c          # 页面分配器 (9,000+ 行)
+├── slab.c                # Slab分配器 (4,000+ 行)
+├── vmalloc.c             # 虚拟内存 (3,500+ 行)
+└── kasan_test_rust.rs    # ⚠️ 唯一的Rust文件（仅仅是测试！）
+
+kernel/sched/             # 进程调度器
+├── 46个文件, 33个C文件
+├── core.c                # 调度器核心 (11,000+ 行)
+└── 0个Rust文件
+
+fs/                       # VFS核心
+├── 数百个C文件
+├── namei.c               # 路径查找 (5,000+ 行)
+├── inode.c               # Inode管理 (2,000+ 行)
+└── 0个Rust文件（仅驱动）
+
+net/core/                 # 网络协议栈核心
+kernel/entry/             # 系统调用入口点
+arch/x86/kernel/          # 架构特定代码
+```
+
+### 为什么这很重要
+
+这种分布**不是技术限制**，而是**deliberate战略**：
+
+1. **风险管理**: 驱动故障是局部的；核心子系统bug会导致系统崩溃
+2. **建立信任**: 先在低风险区域证明Rust的价值
+3. **社区接受**: 渐进式采用让内核维护者有时间适应
+4. **工具成熟**: 构建测试基础设施和调试工具
+
+### 采用时间线（当前轨迹）
+
+**第1阶段 (2022-2026)**: ✅ **已完成**
+- 设备驱动和Android组件
+- 抽象层基础设施
+- 构建系统集成
+
+**第2阶段 (2026-2028)**: 🔄 **进行中**
+- 更多设备驱动（扩展硬件支持）
+- 文件系统驱动（实验性）
+- 网络驱动扩展
+
+**第3阶段 (2028-2030+)**: 🔮 **高度推测**
+- 核心子系统采用（mm、调度器、VFS）
+- **这可能永远不会发生** - 需要巨大的社区共识
+- 核心重写没有官方路线图
+
+### 现实检验
+
+**问题**: "Rust会替换内核核心中的C吗？"
+
+**答案**: 未知且在近期（5-10年）不太可能。当前证据显示：
+- Rust在**驱动**中取得成功（已证明价值）
+- 核心子系统拥有**数十年经过实战检验的C代码**
+- 重写核心 = **巨大风险**，收益不明确
+- 社区重点是**新驱动**，而非重写现有核心
+
+**结论**: Linux中的Rust目前是一种**驱动开发语言**，而不是**内核核心语言**。这可能会改变，但不会很快。
 
 ## 实际影响
 
@@ -1510,16 +1557,22 @@ ioctl(fd, BINDER_WRITE_READ, &bwr);
 
 **发现总结:**
 
-1. ✅ **Rust通过`uapi` crate、ioctl支持、设备节点、sysfs等提供用户空间接口**
+1. ✅ **Rust通过`uapi` crate、ioctl处理器、设备节点、sysfs等提供用户空间接口**
 
 2. ❌ **内核内部ABI不稳定** - 模块必须为每个内核版本重新编译（与C相同）
 
 3. ✅ **用户空间ABI是稳定的** - 永不破坏（C和Rust规则相同）
 
-4. ✅ **Rust已经提供关键的用户空间ABI** - 数十亿设备上的Android Binder，GPU驱动，网络驱动
+4. ✅ **Rust已经提供关键的用户空间ABI** - Android Binder（2025年合并），GPU驱动（Nova），网络PHY驱动
 
-**关键洞察**: 内核的ABI稳定性策略**与实现语言正交**。Rust驱动必须遵循与C驱动相同的规则：
-- 内部API可以随时更改
-- 用户空间ABI是神圣和不可变的
+5. ⚠️ **Rust目前仅在外围** - 仅设备驱动和Android组件；核心内核（mm、调度器、VFS）仍然100% C
+
+**关键洞察**:
+
+1. 内核的ABI稳定性策略**与实现语言正交**。Rust驱动必须遵循与C驱动相同的规则：
+   - 内部API可以随时更改
+   - 用户空间ABI是神圣和不可变的
+
+2. Rust的当前范围是**deliberate和战略性的** - 在考虑核心子系统之前，先在低风险驱动中证明价值。
 
 **Rust的优势**: 通过`#[repr(C)]`、大小断言和类型安全更好地编译时验证ABI兼容性，减少意外的ABI破坏。
