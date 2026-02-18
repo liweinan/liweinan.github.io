@@ -645,90 +645,148 @@ impl Driver for PhyAX88772A {
 | Lines of code | ~200 lines | ~135 lines (more concise) |
 | CVE potential | High (manual memory management) | Low (isolated to abstraction layer) |
 
-### Call Direction: Currently Unidirectional (C → Rust Only)
+### C Calling Rust: Module Lifecycle Management
 
 An important architectural question: **Can C kernel code call Rust functions?**
 
-**Current Reality**: The architecture is **unidirectional** - C calls into Rust through abstractions, but Rust does NOT export functions back to the C kernel core.
+**Answer: Yes, for module lifecycle management.** C kernel code DOES call Rust functions, specifically for initializing and cleaning up Rust modules.
 
-```
-Current Call Flow (One Direction):
+**Actual Implementation in Kernel:**
 
-C Kernel Core
-    ↓ (calls)
-rust/helpers.c (C wrappers for macros/inline functions)
-    ↓ (wrapped by)
-rust/bindings/ (auto-generated FFI via bindgen)
-    ↓ (used by)
-rust/kernel/ (safe Rust abstractions)
-    ↓ (used by)
-Rust Drivers/Modules
-
-Direction: C → Rust only (no reverse calls)
-```
-
-**Evidence from codebase analysis:**
-
-1. **No `#[no_mangle]` exports found**: Searching the entire Rust codebase reveals zero instances of `#[no_mangle]`, which would be required to export Rust functions with stable symbol names for C to call.
-
-2. **No `pub extern "C" fn` patterns**: No Rust functions are declared with C calling convention for external use.
-
-3. **`rust/exports.c` purpose**: This file exports Rust symbols, but only for Rust *loadable modules* to link against the kernel, not for C code to call:
-   ```c
-   // rust/exports.c
-   // A hack to export Rust symbols for loadable modules without kallsyms
-   #define EXPORT_SYMBOL_RUST_GPL(sym) extern int sym; EXPORT_SYMBOL_GPL(sym)
-   #include "exports_kernel_generated.h"
-   ```
-
-4. **`rust/helpers.c` direction**: Contains C helper functions that wrap macros/inline functions specifically so Rust can call them - the opposite direction.
-
-**Technical Feasibility**: While Rust CAN export C-callable functions, it's not currently implemented:
+Every Rust module/driver automatically generates C-callable functions via the `module!` macro. Here's the actual code from `rust/macros/module.rs`:
 
 ```rust
-// Theoretically possible (not found in current kernel):
+// For loadable modules (.ko files)
+#[cfg(MODULE)]
 #[no_mangle]
-pub extern "C" fn rust_safe_allocator(size: usize) -> *mut u8 {
-    // Safe Rust implementation with compile-time guarantees
-    // C code could call this for memory-safe allocation
+#[link_section = ".init.text"]
+pub unsafe extern "C" fn init_module() -> ::kernel::ffi::c_int {
+    // SAFETY: It is called exactly once by the C side via its unique name.
+    unsafe { __init() }
+}
+
+#[cfg(MODULE)]
+#[no_mangle]
+#[link_section = ".exit.text"]
+pub extern "C" fn cleanup_module() {
+    // SAFETY: It is called exactly once by the C side via its unique name
+    unsafe { __exit() }
+}
+
+// For built-in modules (compiled into kernel)
+#[cfg(not(MODULE))]
+#[no_mangle]
+pub extern "C" fn __<driver_name>_init() -> ::kernel::ffi::c_int {
+    // Called exactly once by the C side
+    unsafe { __init() }
+}
+
+#[cfg(not(MODULE))]
+#[no_mangle]
+pub extern "C" fn __<driver_name>_exit() {
+    unsafe { __exit() }
 }
 ```
 
-Then C code could use it:
-```c
-// Hypothetical future C code calling Rust
-extern void *rust_safe_allocator(size_t size);
+**C Kernel Side - Module Loading** (`kernel/module/main.c`):
 
-void *ptr = rust_safe_allocator(1024);  // Calls Rust function
+```c
+static noinline int do_init_module(struct module *mod)
+{
+    int ret = 0;
+    // ...
+
+    /* Start the module */
+    if (mod->init != NULL)
+        ret = do_one_initcall(mod->init);  // ← Calls Rust's init_module()
+
+    if (ret < 0) {
+        goto fail_free_freeinit;
+    }
+
+    mod->state = MODULE_STATE_LIVE;
+    // ...
+}
 ```
 
-**Why the Current Design is Unidirectional:**
+**Module Structure** (`include/linux/module.h`):
 
-1. **Design Philosophy**: `rust/kernel/` is a *wrapper layer* over C APIs, not a replacement of core kernel services. Rust provides safer abstractions for driver developers, not new APIs for C kernel core.
+```c
+struct module {
+    // ...
+    /* Startup function. */
+    int (*init)(void);  // ← Points to Rust's init_module() function
+    // ...
+};
+```
 
-2. **ABI Stability Constraints**: C kernel internal APIs must maintain eternal ABI stability across kernel versions. Rust abstractions in `rust/kernel/` are still actively evolving (the API is not yet stable).
+**Real Example - Every Rust Driver:**
 
-3. **Dependency Direction**: Making C kernel core depend on Rust functions would create circular dependencies and significantly complicate the build system and maintenance.
+```rust
+// drivers/cpufreq/rcpufreq_dt.rs
+module_platform_driver! {
+    type: CPUFreqDTDriver,
+    name: "cpufreq-dt",
+    author: "Viresh Kumar <viresh.kumar@linaro.org>",
+    description: "Generic CPUFreq DT driver",
+    license: "GPL v2",
+}
 
-4. **Current Adoption Scope**: Rust is used for new drivers and modules at the periphery, not for core kernel services that existing C code would need to call.
+// The macro above expands to generate:
+// - init_module() - called by C when loading module
+// - cleanup_module() - called by C when unloading module
+```
 
-**Future Possibilities:**
+**Call Flow for Module Lifecycle:**
 
-As Rust matures in the kernel (2028-2030+), bidirectional calls could become necessary:
+```
+Module Load:
+C kernel (kernel/module/main.c)
+    → do_init_module(mod)
+        → do_one_initcall(mod->init)
+            → init_module() [Rust function with #[no_mangle]]
+                → Rust driver initialization code
 
-1. **Rewritten Subsystems**: If a critical subsystem is fully rewritten in Rust, legacy C code might need to interface with it during migration.
+Module Unload:
+C kernel
+    → cleanup_module() [Rust function with #[no_mangle]]
+        → Rust driver cleanup code
+```
 
-2. **Memory-Safe Utilities**: Rust could provide memory-safe utility functions that C code calls to gradually improve safety without full rewrites.
+**Key Mechanism:**
 
-3. **Gradual Core Migration**: During partial rewrites of core components, C and Rust would need bidirectional communication.
+1. **`#[no_mangle]`**: Prevents Rust name mangling, keeping function name as `init_module`
+2. **`extern "C"`**: Uses C calling convention (System V ABI)
+3. **Known symbol names**: C expects standard names (`init_module`, `cleanup_module`, or `__<name>_init`)
+4. **Function pointer in module struct**: C stores the address and calls it
 
-**Requirements for C→Rust calls:**
-- Stable Rust→C ABI guarantees (`#[repr(C)]` and System V ABI compliance)
-- Clear safety contracts (C code calling into safe Rust must maintain invariants)
-- Build system support for cross-language dependencies
-- Careful API design to avoid exposing Rust's internal complexity to C
+**Scope of C→Rust Calls:**
 
-**Current Conclusion**: The Linux kernel's Rust integration is architecturally designed as a **one-way wrapper** - Rust wraps C to provide safety, not the other way around. This may evolve in future phases (2030+) if core kernel components are rewritten in Rust, but it's not part of the current design (2022-2026 infrastructure phase).
+**Currently implemented:**
+- ✅ Module initialization (`init_module`, `__<name>_init`)
+- ✅ Module cleanup (`cleanup_module`, `__<name>_exit`)
+
+**NOT currently implemented:**
+- ❌ C calling Rust for data processing
+- ❌ C calling Rust utility functions
+- ❌ C core subsystems depending on Rust implementations
+
+**Why Limited to Module Lifecycle:**
+
+1. **Well-defined interface**: Module init/exit has a stable, simple signature
+2. **ABI stability**: Only entry points need stable ABI, internal Rust code can evolve freely
+3. **Minimal coupling**: C kernel doesn't depend on Rust for functionality, only for loading Rust modules
+4. **Standard pattern**: Same mechanism works for C and Rust modules uniformly
+
+**Future Expansion Possibilities:**
+
+As Rust adoption grows (2028-2030+), C→Rust calls could expand:
+
+1. **Callback functions**: C registering Rust callbacks for events
+2. **Subsystem interfaces**: If core subsystems are rewritten in Rust
+3. **Utility functions**: Memory-safe allocators or data structure operations
+
+But currently (2022-2026 phase), **C→Rust calls are strictly limited to module lifecycle management**, which is the cleanest and most stable integration point.
 
 ## Performance: Zero-Cost Abstractions in Practice
 
@@ -1164,90 +1222,148 @@ C内核（原生实现）：
 3. **RAII保证**：资源（锁、内存）自动管理
 4. **零成本抽象**：编译成与手写C相同的汇编代码
 
-### 调用方向：目前单向（仅C → Rust）
+### C调用Rust：模块生命周期管理
 
 一个重要的架构问题：**C内核代码能否调用Rust函数？**
 
-**当前现实**：架构是**单向的** - C通过抽象层调用Rust，但Rust**不会**将函数导出回C内核核心。
+**答案：能，用于模块生命周期管理。** C内核代码确实会调用Rust函数，特别是用于初始化和清理Rust模块。
 
-```
-当前调用流（单向）：
+**内核中的实际实现：**
 
-C内核核心
-    ↓ (调用)
-rust/helpers.c (为宏/内联函数提供C包装器)
-    ↓ (被封装为)
-rust/bindings/ (通过bindgen自动生成的FFI)
-    ↓ (被使用于)
-rust/kernel/ (安全的Rust抽象)
-    ↓ (被使用于)
-Rust驱动/模块
-
-方向：仅C → Rust（没有反向调用）
-```
-
-**代码库分析证据：**
-
-1. **未找到`#[no_mangle]`导出**：搜索整个Rust代码库未发现`#[no_mangle]`实例，而这是导出具有稳定符号名的Rust函数供C调用所必需的。
-
-2. **未找到`pub extern "C" fn`模式**：没有Rust函数声明为C调用约定以供外部使用。
-
-3. **`rust/exports.c`的用途**：此文件导出Rust符号，但仅供Rust *可加载模块*链接到内核使用，而非供C代码调用：
-   ```c
-   // rust/exports.c
-   // 一个hack，用于导出Rust符号供可加载模块使用（无需kallsyms）
-   #define EXPORT_SYMBOL_RUST_GPL(sym) extern int sym; EXPORT_SYMBOL_GPL(sym)
-   #include "exports_kernel_generated.h"
-   ```
-
-4. **`rust/helpers.c`的方向**：包含C辅助函数，专门封装宏/内联函数以便Rust调用 - 这是相反的方向。
-
-**技术可行性**：虽然Rust**可以**导出C可调用函数，但目前未实现：
+每个Rust模块/驱动都会通过`module!`宏自动生成C可调用函数。以下是`rust/macros/module.rs`中的实际代码：
 
 ```rust
-// 理论上可行（当前内核中未找到）：
+// 对于可加载模块（.ko文件）
+#[cfg(MODULE)]
 #[no_mangle]
-pub extern "C" fn rust_safe_allocator(size: usize) -> *mut u8 {
-    // 具有编译时保证的安全Rust实现
-    // C代码可以调用此函数进行内存安全的分配
+#[link_section = ".init.text"]
+pub unsafe extern "C" fn init_module() -> ::kernel::ffi::c_int {
+    // 安全性：此函数由C侧通过其唯一名称恰好调用一次
+    unsafe { __init() }
+}
+
+#[cfg(MODULE)]
+#[no_mangle]
+#[link_section = ".exit.text"]
+pub extern "C" fn cleanup_module() {
+    // 安全性：此函数由C侧通过其唯一名称恰好调用一次
+    unsafe { __exit() }
+}
+
+// 对于内置模块（编译到内核中）
+#[cfg(not(MODULE))]
+#[no_mangle]
+pub extern "C" fn __<驱动名>_init() -> ::kernel::ffi::c_int {
+    // 由C侧恰好调用一次
+    unsafe { __init() }
+}
+
+#[cfg(not(MODULE))]
+#[no_mangle]
+pub extern "C" fn __<驱动名>_exit() {
+    unsafe { __exit() }
 }
 ```
 
-然后C代码可以使用它：
-```c
-// 假设的未来C代码调用Rust
-extern void *rust_safe_allocator(size_t size);
+**C内核侧 - 模块加载** (`kernel/module/main.c`):
 
-void *ptr = rust_safe_allocator(1024);  // 调用Rust函数
+```c
+static noinline int do_init_module(struct module *mod)
+{
+    int ret = 0;
+    // ...
+
+    /* Start the module */
+    if (mod->init != NULL)
+        ret = do_one_initcall(mod->init);  // ← 调用Rust的init_module()
+
+    if (ret < 0) {
+        goto fail_free_freeinit;
+    }
+
+    mod->state = MODULE_STATE_LIVE;
+    // ...
+}
 ```
 
-**为什么当前设计是单向的：**
+**模块结构体** (`include/linux/module.h`):
 
-1. **设计哲学**：`rust/kernel/`被设计为C API的*封装层*，而非核心内核服务的替代品。Rust为驱动开发者提供更安全的抽象，而非为C内核核心提供新API。
+```c
+struct module {
+    // ...
+    /* Startup function. */
+    int (*init)(void);  // ← 指向Rust的init_module()函数
+    // ...
+};
+```
 
-2. **ABI稳定性约束**：C内核内部API必须在内核版本之间维持永久ABI稳定性。`rust/kernel/`中的Rust抽象仍在积极演进（API尚未稳定）。
+**真实示例 - 每个Rust驱动：**
 
-3. **依赖方向**：让C内核核心依赖Rust函数会产生循环依赖，并显著增加构建系统和维护的复杂性。
+```rust
+// drivers/cpufreq/rcpufreq_dt.rs
+module_platform_driver! {
+    type: CPUFreqDTDriver,
+    name: "cpufreq-dt",
+    author: "Viresh Kumar <viresh.kumar@linaro.org>",
+    description: "Generic CPUFreq DT driver",
+    license: "GPL v2",
+}
 
-4. **当前采用范围**：Rust用于外围的新驱动和模块，而非现有C代码需要调用的核心内核服务。
+// 上面的宏会展开生成：
+// - init_module() - 加载模块时由C调用
+// - cleanup_module() - 卸载模块时由C调用
+```
 
-**未来可能性：**
+**模块生命周期的调用流：**
 
-随着Rust在内核中成熟（2028-2030+），双向调用可能变得必要：
+```
+模块加载：
+C内核 (kernel/module/main.c)
+    → do_init_module(mod)
+        → do_one_initcall(mod->init)
+            → init_module() [带#[no_mangle]的Rust函数]
+                → Rust驱动初始化代码
 
-1. **重写的子系统**：如果关键子系统完全用Rust重写，迁移期间遗留的C代码可能需要与之交互。
+模块卸载：
+C内核
+    → cleanup_module() [带#[no_mangle]的Rust函数]
+        → Rust驱动清理代码
+```
 
-2. **内存安全工具**：Rust可以提供内存安全的工具函数，供C代码调用，以在不完全重写的情况下逐步提高安全性。
+**关键机制：**
 
-3. **渐进式核心迁移**：在核心组件的部分重写期间，C和Rust需要双向通信。
+1. **`#[no_mangle]`**：防止Rust名称改编，保持函数名为`init_module`
+2. **`extern "C"`**：使用C调用约定（System V ABI）
+3. **已知符号名**：C期望标准名称（`init_module`、`cleanup_module`或`__<名称>_init`）
+4. **模块结构体中的函数指针**：C存储地址并调用它
 
-**C→Rust调用的要求：**
-- 稳定的Rust→C ABI保证（`#[repr(C)]`和System V ABI兼容性）
-- 清晰的安全契约（调用安全Rust的C代码必须维护不变量）
-- 构建系统对跨语言依赖的支持
-- 精心的API设计以避免向C暴露Rust的内部复杂性
+**C→Rust调用的范围：**
 
-**当前结论**：Linux内核的Rust集成在架构上被设计为**单向封装** - Rust封装C以提供安全性，而非相反。这可能在未来阶段（2030+）演进，如果核心内核组件用Rust重写，但这不是当前设计（2022-2026基础设施阶段）的一部分。
+**当前已实现：**
+- ✅ 模块初始化（`init_module`、`__<名称>_init`）
+- ✅ 模块清理（`cleanup_module`、`__<名称>_exit`）
+
+**当前未实现：**
+- ❌ C调用Rust进行数据处理
+- ❌ C调用Rust工具函数
+- ❌ C核心子系统依赖Rust实现
+
+**为何仅限于模块生命周期：**
+
+1. **良好定义的接口**：模块init/exit具有稳定、简单的签名
+2. **ABI稳定性**：只有入口点需要稳定的ABI，内部Rust代码可以自由演进
+3. **最小耦合**：C内核不依赖Rust的功能，仅用于加载Rust模块
+4. **标准模式**：同样的机制对C和Rust模块统一适用
+
+**未来扩展可能性：**
+
+随着Rust采用的增长（2028-2030+），C→Rust调用可能扩展：
+
+1. **回调函数**：C注册Rust回调以处理事件
+2. **子系统接口**：如果核心子系统用Rust重写
+3. **工具函数**：内存安全的分配器或数据结构操作
+
+但目前（2022-2026阶段），**C→Rust调用严格限制于模块生命周期管理**，这是最干净、最稳定的集成点。
 
 ## 案例研究2：锁抽象 - 内核中的RAII
 
