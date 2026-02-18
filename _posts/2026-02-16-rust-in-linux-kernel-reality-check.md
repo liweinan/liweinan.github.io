@@ -306,12 +306,7 @@ pub unsafe trait Backend {
 }
 ```
 
-The brilliance here is the layered safety model:
-1. **Unsafe FFI layer**: Direct calls to C kernel primitives (marked `unsafe`)
-2. **Safe abstraction layer**: Type-safe wrapper that handles RAII
-3. **Safe user code**: Driver developers never touch `unsafe`
-
-Let's see how driver developers actually use this:
+Building on the three-layer architecture explained above, the `Backend` trait provides the unsafe low-level interface. Driver developers use the safe high-level API:
 
 ```rust
 // Safe to use in driver code - compiler prevents forgetting to unlock
@@ -439,7 +434,102 @@ Any alternative language would need similar investment: building kernel abstract
 
 ## The Actual Kernel Code Architecture
 
-Let's look at what the Rust kernel infrastructure actually provides. From `rust/kernel/lib.rs`:
+### Understanding the Three-Layer Architecture
+
+The Rust kernel infrastructure follows a clear three-layer architecture that safely wraps C kernel APIs:
+
+**Layer 1: C Kernel APIs (底层C内核)**
+```c
+// Native Linux kernel C functions
+void spin_lock(spinlock_t *lock);
+void spin_unlock(spinlock_t *lock);
+int genphy_soft_reset(struct phy_device *phydev);
+```
+
+**Layer 2: Auto-generated C Bindings (`rust/bindings/`)**
+
+The `rust/bindings/bindings_helper.h` file specifies which C headers to bind:
+```c
+#include <linux/spinlock.h>
+#include <linux/mutex.h>
+#include <linux/phy.h>
+#include <drm/drm_device.h>
+// ... 80+ kernel headers
+```
+
+The **bindgen** tool automatically generates Rust FFI (Foreign Function Interface) declarations:
+```rust
+// Generated in rust/bindings/bindings_generated.rs
+pub unsafe fn spin_lock(ptr: *mut spinlock_t);
+pub unsafe fn spin_unlock(ptr: *mut spinlock_t);
+pub unsafe fn genphy_soft_reset(phydev: *mut phy_device) -> c_int;
+```
+
+**Layer 3: Safe Rust Abstractions (`rust/kernel/`)**
+
+This is the critical layer that wraps unsafe C calls into safe Rust APIs. For example, `rust/kernel/sync/lock/spinlock.rs`:
+
+```rust
+// Unsafe wrapper (used internally)
+unsafe impl super::Backend for SpinLockBackend {
+    type State = bindings::spinlock_t;  // ← C type
+
+    unsafe fn lock(ptr: *mut Self::State) -> Self::GuardState {
+        // ↓ Call underlying C function (unsafe)
+        unsafe { bindings::spin_lock(ptr) }
+    }
+
+    unsafe fn unlock(ptr: *mut Self::State, _guard_state: &Self::GuardState) {
+        unsafe { bindings::spin_unlock(ptr) }
+    }
+}
+
+// Safe public API (used by drivers)
+pub struct SpinLock<T> {
+    inner: Opaque<bindings::spinlock_t>,
+    data: UnsafeCell<T>,
+}
+
+impl<T> SpinLock<T> {
+    /// Acquire the lock and return RAII guard
+    pub fn lock(&self) -> Guard<'_, T, SpinLockBackend> {
+        // Guard automatically releases lock on drop
+    }
+}
+```
+
+**The Call Chain in Practice:**
+
+When a driver calls a Rust API, here's what happens behind the scenes:
+
+```
+Driver code (100% safe Rust):
+  dev.genphy_soft_reset()
+      ↓
+rust/kernel/net/phy.rs (safe wrapper):
+  pub fn genphy_soft_reset(&mut self) -> Result {
+      to_result(unsafe { bindings::genphy_soft_reset(self.as_ptr()) })
+  }
+      ↓
+rust/bindings/ (unsafe FFI):
+  pub unsafe fn genphy_soft_reset(phydev: *mut phy_device) -> c_int;
+      ↓
+C kernel (native implementation):
+  int genphy_soft_reset(struct phy_device *phydev) { ... }
+```
+
+**Key Statistics:**
+- **Layer 2** (`rust/bindings/`): Auto-generated, ~80+ C headers wrapped
+- **Layer 3** (`rust/kernel/`): 13,500 lines of safe abstractions (67.3% of Rust code)
+- **Driver code**: 1,913 lines (9.5% of Rust code) - uses safe APIs only
+
+This architecture ensures that:
+1. **Unsafe code is isolated**: All unsafe C FFI calls are contained in `rust/kernel/`
+2. **Type safety**: Rust's type system (enums, Option, Result) prevents invalid states
+3. **RAII guarantees**: Resources (locks, memory) are automatically managed
+4. **Zero-cost abstractions**: Compiles to the same assembly as hand-written C
+
+Let's examine the actual code structure. From `rust/kernel/lib.rs`:
 
 ```rust
 // SPDX-License-Identifier: GPL-2.0
@@ -914,9 +1004,106 @@ $ grep -r "unsafe" drivers/android/binder/*.rs | wc -l
 
 **全部在编译时强制执行，而非运行时。**
 
+## 实际内核代码架构
+
+### 理解三层架构
+
+Rust内核基础设施遵循清晰的三层架构，安全地封装C内核API：
+
+**第1层：C内核API（底层C内核）**
+```c
+// Linux内核原生C函数
+void spin_lock(spinlock_t *lock);
+void spin_unlock(spinlock_t *lock);
+int genphy_soft_reset(struct phy_device *phydev);
+```
+
+**第2层：自动生成的C绑定（`rust/bindings/`）**
+
+`rust/bindings/bindings_helper.h` 文件指定要绑定的C头文件：
+```c
+#include <linux/spinlock.h>
+#include <linux/mutex.h>
+#include <linux/phy.h>
+#include <drm/drm_device.h>
+// ... 80+个内核头文件
+```
+
+**bindgen** 工具自动生成Rust FFI（外部函数接口）声明：
+```rust
+// 生成在 rust/bindings/bindings_generated.rs
+pub unsafe fn spin_lock(ptr: *mut spinlock_t);
+pub unsafe fn spin_unlock(ptr: *mut spinlock_t);
+pub unsafe fn genphy_soft_reset(phydev: *mut phy_device) -> c_int;
+```
+
+**第3层：安全的Rust抽象（`rust/kernel/`）**
+
+这是关键层，将unsafe的C调用封装成安全的Rust API。例如，`rust/kernel/sync/lock/spinlock.rs`：
+
+```rust
+// Unsafe包装器（内部使用）
+unsafe impl super::Backend for SpinLockBackend {
+    type State = bindings::spinlock_t;  // ← C类型
+
+    unsafe fn lock(ptr: *mut Self::State) -> Self::GuardState {
+        // ↓ 调用底层C函数（unsafe）
+        unsafe { bindings::spin_lock(ptr) }
+    }
+
+    unsafe fn unlock(ptr: *mut Self::State, _guard_state: &Self::GuardState) {
+        unsafe { bindings::spin_unlock(ptr) }
+    }
+}
+
+// 安全的公共API（驱动使用）
+pub struct SpinLock<T> {
+    inner: Opaque<bindings::spinlock_t>,
+    data: UnsafeCell<T>,
+}
+
+impl<T> SpinLock<T> {
+    /// 获取锁并返回RAII guard
+    pub fn lock(&self) -> Guard<'_, T, SpinLockBackend> {
+        // Guard在drop时自动释放锁
+    }
+}
+```
+
+**实际调用链：**
+
+当驱动调用Rust API时，背后发生的事情：
+
+```
+驱动代码（100%安全Rust）：
+  dev.genphy_soft_reset()
+      ↓
+rust/kernel/net/phy.rs（安全包装器）：
+  pub fn genphy_soft_reset(&mut self) -> Result {
+      to_result(unsafe { bindings::genphy_soft_reset(self.as_ptr()) })
+  }
+      ↓
+rust/bindings/（unsafe FFI）：
+  pub unsafe fn genphy_soft_reset(phydev: *mut phy_device) -> c_int;
+      ↓
+C内核（原生实现）：
+  int genphy_soft_reset(struct phy_device *phydev) { ... }
+```
+
+**关键统计数据：**
+- **第2层**（`rust/bindings/`）：自动生成，封装了约80+个C头文件
+- **第3层**（`rust/kernel/`）：13,500行安全抽象（占Rust代码的67.3%）
+- **驱动代码**：1,913行（占Rust代码的9.5%）- 仅使用安全API
+
+这种架构确保了：
+1. **Unsafe代码被隔离**：所有unsafe的C FFI调用都包含在`rust/kernel/`中
+2. **类型安全**：Rust的类型系统（枚举、Option、Result）防止无效状态
+3. **RAII保证**：资源（锁、内存）自动管理
+4. **零成本抽象**：编译成与手写C相同的汇编代码
+
 ## 案例研究2：锁抽象 - 内核中的RAII
 
-Rust对内核开发最强大的特性之一是RAII（资源获取即初始化）。这是`rust/kernel/sync/lock.rs`的实际抽象层：
+Rust对内核开发最强大的特性之一是RAII（资源获取即初始化）。让我们深入看看这个抽象层如何工作：
 
 ```rust
 // rust/kernel/sync/lock.rs (实际内核代码)
@@ -936,12 +1123,7 @@ pub unsafe trait Backend {
 }
 ```
 
-这里的精妙之处在于分层安全模型：
-1. **Unsafe FFI层**: 直接调用C内核原语（标记为`unsafe`）
-2. **安全抽象层**: 处理RAII的类型安全包装器
-3. **安全用户代码**: 驱动开发者永远不接触`unsafe`
-
-驱动开发者实际如何使用：
+基于前面介绍的三层架构，`Backend` trait提供了unsafe的底层接口。驱动开发者使用的是安全的高层API：
 
 ```rust
 // 在驱动代码中安全使用 - 编译器防止忘记解锁
