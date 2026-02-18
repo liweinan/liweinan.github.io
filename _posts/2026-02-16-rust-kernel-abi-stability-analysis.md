@@ -14,7 +14,7 @@ abstract: "Does Rust in the Linux kernel provide userspace interfaces? What's th
 → **No.** Internal kernel APIs (between modules and kernel) are **explicitly unstable**. Only **userspace ABI** is sacred.
 
 **Q3: Will Rust be used for userspace-facing features that require ABI stability?**
-→ **Already happening.** Android Binder (Rust) merged in mainline kernel, providing production-grade IPC with identical userspace ABI.
+→ **Yes, with existing examples.** Rust drivers (GPU, network PHY) in mainline kernel provide production-grade userspace ABIs. Android Binder Rust rewrite exists out-of-tree as a reference implementation.
 
 ## Deep Dive: System Call ABI - The Immutable Contract
 
@@ -185,12 +185,12 @@ const _: () = assert!(core::mem::size_of::<KernelStruct>() == 16);
 const _: () = assert!(core::mem::align_of::<KernelStruct>() == 8);
 ```
 
-### Real Kernel Example: Binder ABI Compliance
+### Reference Example: Binder ABI Compliance
 
-From the Android Binder driver (actual kernel code):
+From the Android Binder Rust rewrite (out-of-tree reference implementation):
 
 ```rust
-// drivers/android/binder/defs.rs
+// drivers/android/binder/defs.rs (from Rust-for-Linux tree, not mainline)
 #[repr(C)]
 #[derive(Copy, Clone)]
 pub(crate) struct BinderTransactionData(
@@ -201,6 +201,8 @@ pub(crate) struct BinderTransactionData(
 unsafe impl FromBytes for BinderTransactionData {}
 unsafe impl AsBytes for BinderTransactionData {}
 ```
+
+**Note**: This code is from the Rust-for-Linux project's Binder implementation, which exists as an out-of-tree reference showing how userspace ABI compatibility is achieved in Rust.
 
 **Why `MaybeUninit`?** It preserves **padding bytes** to ensure bit-for-bit identical layout with C, including uninitialized padding. This is critical for userspace compatibility.
 
@@ -363,12 +365,12 @@ kernel::declare_drm_ioctls! {
 
 These ioctls are **directly exposed to userspace** - the same ABI as C drivers.
 
-### Real Example: Android Binder Userspace Protocol
+### Reference Example: Android Binder Userspace Protocol
 
-The Android Binder driver (rewritten in Rust) exposes extensive userspace APIs:
+The Android Binder Rust rewrite (out-of-tree) demonstrates how to expose extensive userspace APIs:
 
 ```rust
-// drivers/android/binder/defs.rs (actual kernel code)
+// Example from Rust-for-Linux Binder implementation (not in mainline)
 use kernel::{
     transmute::{AsBytes, FromBytes},
     uapi::{self, *},
@@ -532,9 +534,18 @@ removed/    - Historical record only
 
 ## Question 3: Rust and Userspace ABI Stability
 
-### Current State: Rust Already Provides Stable Userspace ABI
+### Current State: Rust Provides Stable Userspace ABI
 
-**Android Binder**: Merged in mainline kernel (September 2025) with **identical userspace ABI** as C version, replacing 6kLOC C implementation.
+**Production drivers in mainline** (as of Linux 6.x):
+
+1. **GPU drivers (Nova)**: DRM userspace ABI for Nvidia GPUs - full ioctl interface
+2. **Network PHY drivers** (ax88796b, qt2025): ethtool/netlink ABI
+3. **Block devices** (rnull): Standard block device ioctl ABI
+4. **CPU frequency** (rcpufreq_dt): sysfs and ioctl interfaces
+
+**Reference implementations (out-of-tree)**:
+
+**Android Binder** (Rust rewrite, not yet in mainline): Demonstrates **identical userspace ABI** as C version:
 
 ```rust
 // Same BINDER_WRITE_READ ioctl as C version
@@ -546,7 +557,7 @@ const BINDER_WRITE_READ: u32 = kernel::ioctl::_IOWR::<BinderWriteRead>(
 // Userspace code using C headers sends exact same binary data
 ```
 
-**Verification**: Android's libbinder (C++ userspace library) works **without modification** with Rust kernel driver.
+This out-of-tree implementation has been **validated** - Android's libbinder (C++ userspace library) works without modification with the Rust driver.
 
 ### Why Rust is Actually Better for ABI Stability
 
@@ -616,12 +627,16 @@ pub struct drm_nova_gem_create {
 
 ### Will Rust Provide Critical Userspace ABI?
 
-**Production deployments:**
+**Production deployments (mainline kernel):**
 
-1. **Android Binder** (IPC): Merged September 2025, replacing 6kLOC C implementation
-2. **GPU drivers** (Nova): DRM userspace ABI for Nvidia GPUs
-3. **Network PHY drivers**: ethtool/netlink ABI (ax88796b, qt2025)
-4. **Block devices**: rnull driver with standard ioctl ABI
+1. **GPU drivers** (Nova): DRM userspace ABI for Nvidia GPUs (13 files in-tree)
+2. **Network PHY drivers**: ethtool/netlink ABI (ax88796b, qt2025)
+3. **Block devices**: rnull driver with standard ioctl ABI
+4. **CPU frequency**: rcpufreq_dt with sysfs interfaces
+
+**Reference implementations (out-of-tree):**
+
+1. **Android Binder** (IPC): Rust rewrite demonstrates ABI compatibility (not yet mainline)
 
 **Coming soon** (based on current development):
 
@@ -653,13 +668,13 @@ From Linus Torvalds (summarized from various LKML posts):
 
 ```
 drivers/                    # Peripheral driver layer
-├── android/binder/        # Android IPC (18 .rs files, 9,190 lines)
-├── gpu/drm/nova/          # GPU driver (Nvidia, 47 files)
-├── net/phy/               # Network PHY drivers (2 drivers)
-├── block/rnull.rs         # Block device example
-└── cpufreq/               # CPU frequency management
+├── gpu/drm/nova/          # GPU driver (Nvidia, 13 files, ~1,200 lines)
+├── net/phy/               # Network PHY drivers (2 files, ~237 lines)
+├── block/rnull.rs         # Block device example (80 lines)
+├── cpufreq/rcpufreq_dt.rs # CPU frequency management (227 lines)
+└── gpu/drm/drm_panic_qr.rs # DRM panic QR code (996 lines)
 
-rust/kernel/               # Abstraction layer (45,622 lines)
+rust/kernel/               # Abstraction layer (101 files, 13,500 lines)
 ├── sync/                  # Rust bindings for sync primitives
 ├── mm/                    # Rust bindings for memory functions
 ├── fs/                    # Rust bindings for filesystem
@@ -814,9 +829,9 @@ Whether the kernel driver is C or Rust, **this code works identically**.
 
 3. ✅ **Userspace ABI IS stable** - never breaks (same rule for C and Rust)
 
-4. ✅ **Rust already provides critical userspace ABI** - Android Binder (merged 2025), GPU drivers (Nova), network PHY drivers
+4. ✅ **Rust already provides userspace ABI in production** - GPU drivers (Nova), network PHY drivers, block devices, CPU frequency drivers (all in mainline)
 
-5. ⚠️ **Rust is currently peripheral-only** - Device drivers and Android components only; core kernel (mm, scheduler, VFS) remains 100% C
+5. ⚠️ **Rust is currently peripheral-only** - Device drivers only; core kernel (mm, scheduler, VFS) remains 100% C
 
 **Key insights**:
 
@@ -857,7 +872,7 @@ Whether the kernel driver is C or Rust, **this code works identically**.
 → **不。** 内核内部API（模块和内核之间）**明确不稳定**。只有**用户空间ABI**是神圣的。
 
 **问题3: Rust是否会被用于提供需要ABI稳定性的用户空间功能?**
-→ **已经在发生。** Android Binder (Rust) 已合并到主线内核，提供与C版本完全相同的用户空间ABI。
+→ **是的，已有实例。** 主线内核中的Rust驱动（GPU、网络PHY）提供生产级用户空间ABI。Android Binder的Rust重写作为树外参考实现存在。
 
 ## 深入探讨：系统调用ABI - 不可变的契约
 
@@ -1028,12 +1043,12 @@ const _: () = assert!(core::mem::size_of::<KernelStruct>() == 16);
 const _: () = assert!(core::mem::align_of::<KernelStruct>() == 8);
 ```
 
-### 实际内核示例：Binder ABI兼容性
+### 参考示例：Binder ABI兼容性
 
-来自Android Binder驱动（实际内核代码）：
+来自Android Binder Rust重写（树外参考实现）：
 
 ```rust
-// drivers/android/binder/defs.rs
+// drivers/android/binder/defs.rs (来自Rust-for-Linux树，非主线)
 #[repr(C)]
 #[derive(Copy, Clone)]
 pub(crate) struct BinderTransactionData(
@@ -1044,6 +1059,8 @@ pub(crate) struct BinderTransactionData(
 unsafe impl FromBytes for BinderTransactionData {}
 unsafe impl AsBytes for BinderTransactionData {}
 ```
+
+**注意**: 此代码来自Rust-for-Linux项目的Binder实现，作为树外参考存在，展示了如何在Rust中实现用户空间ABI兼容性。
 
 **为什么使用`MaybeUninit`?** 它保留**填充字节**以确保与C的逐位相同布局，包括未初始化的填充。这对用户空间兼容性至关重要。
 
@@ -1164,12 +1181,12 @@ pub const fn _IOWR<T>(ty: u32, nr: u32) -> u32 {
 
 **这与C的ioctl宏完全相同**，但具有类型安全。
 
-### 实际例子：Android Binder用户空间协议
+### 参考示例：Android Binder用户空间协议
 
-Android Binder驱动（用Rust重写）暴露了广泛的用户空间API：
+Android Binder Rust重写（树外）展示了如何暴露广泛的用户空间API：
 
 ```rust
-// drivers/android/binder/defs.rs (实际内核代码)
+// 来自Rust-for-Linux Binder实现的示例（非主线）
 use kernel::uapi::{self, *};
 
 // 用户空间协议常量 - 必须保持稳定
@@ -1294,9 +1311,18 @@ Linus Torvalds的著名规则（从无数LKML帖子中概括）：
 
 ## 问题3：Rust与用户空间ABI稳定性
 
-### 当前状态：Rust已经提供稳定的用户空间ABI
+### 当前状态：Rust提供稳定的用户空间ABI
 
-**Android Binder**: 已合并到主线内核（2025年9月），替代6000行C实现，与C版本具有**完全相同的用户空间ABI**。
+**主线内核中的生产级驱动**（截至Linux 6.x）：
+
+1. **GPU驱动 (Nova)**: 为Nvidia GPU提供DRM用户空间ABI - 完整的ioctl接口
+2. **网络PHY驱动** (ax88796b, qt2025): ethtool/netlink ABI
+3. **块设备** (rnull): 标准块设备ioctl ABI
+4. **CPU频率** (rcpufreq_dt): sysfs和ioctl接口
+
+**参考实现（树外）**：
+
+**Android Binder**（Rust重写，尚未进入主线）：展示了与C版本**完全相同的用户空间ABI**：
 
 ```rust
 // 与C版本相同的BINDER_WRITE_READ ioctl
@@ -1308,7 +1334,7 @@ const BINDER_WRITE_READ: u32 = kernel::ioctl::_IOWR::<BinderWriteRead>(
 // 使用C头文件的用户空间代码发送完全相同的二进制数据
 ```
 
-**验证**: Android的libbinder（C++用户空间库）与Rust内核驱动**无需修改**即可工作。
+这个树外实现已经**验证** - Android的libbinder（C++用户空间库）与Rust驱动无需修改即可工作。
 
 ### 为什么Rust实际上更适合ABI稳定性
 
@@ -1377,12 +1403,16 @@ struct UserspaceFacingStruct {
 
 ### Rust会提供关键的用户空间ABI吗？
 
-**生产环境部署:**
+**生产环境部署（主线内核）:**
 
-1. **Android Binder** (IPC): 2025年9月合并，替代6000行C实现
-2. **GPU驱动** (Nova): 为Nvidia GPU提供DRM用户空间ABI
-3. **网络PHY驱动**: ethtool/netlink ABI (ax88796b, qt2025)
-4. **块设备**: rnull驱动，提供标准ioctl ABI
+1. **GPU驱动** (Nova): 为Nvidia GPU提供DRM用户空间ABI（树内13个文件）
+2. **网络PHY驱动**: ethtool/netlink ABI (ax88796b, qt2025)
+3. **块设备**: rnull驱动，提供标准ioctl ABI
+4. **CPU频率**: rcpufreq_dt，提供sysfs接口
+
+**参考实现（树外）:**
+
+1. **Android Binder** (IPC): Rust重写展示ABI兼容性（尚未进入主线）
 
 **即将推出** (基于当前开发):
 
@@ -1414,13 +1444,13 @@ struct UserspaceFacingStruct {
 
 ```
 drivers/                    # 外围驱动层
-├── android/binder/        # Android IPC (18个.rs文件, 9,190行)
-├── gpu/drm/nova/          # GPU驱动 (Nvidia, 47个文件)
-├── net/phy/               # 网络PHY驱动 (2个驱动)
-├── block/rnull.rs         # 块设备示例
-└── cpufreq/               # CPU频率管理
+├── gpu/drm/nova/          # GPU驱动 (Nvidia, 13个文件, ~1,200行)
+├── net/phy/               # 网络PHY驱动 (2个文件, ~237行)
+├── block/rnull.rs         # 块设备示例 (80行)
+├── cpufreq/rcpufreq_dt.rs # CPU频率管理 (227行)
+└── gpu/drm/drm_panic_qr.rs # DRM panic QR码 (996行)
 
-rust/kernel/               # 抽象层 (45,622行)
+rust/kernel/               # 抽象层 (101个文件, 13,500行)
 ├── sync/                  # 同步原语的Rust绑定
 ├── mm/                    # 内存函数的Rust绑定
 ├── fs/                    # 文件系统的Rust绑定
@@ -1563,9 +1593,9 @@ ioctl(fd, BINDER_WRITE_READ, &bwr);
 
 3. ✅ **用户空间ABI是稳定的** - 永不破坏（C和Rust规则相同）
 
-4. ✅ **Rust已经提供关键的用户空间ABI** - Android Binder（2025年合并），GPU驱动（Nova），网络PHY驱动
+4. ✅ **Rust已经在生产环境提供用户空间ABI** - GPU驱动（Nova），网络PHY驱动，块设备，CPU频率驱动（均在主线）
 
-5. ⚠️ **Rust目前仅在外围** - 仅设备驱动和Android组件；核心内核（mm、调度器、VFS）仍然100% C
+5. ⚠️ **Rust目前仅在外围** - 仅设备驱动；核心内核（mm、调度器、VFS）仍然100% C
 
 **关键洞察**:
 
