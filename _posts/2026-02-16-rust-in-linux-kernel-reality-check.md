@@ -13,23 +13,35 @@ These are legitimate questions that deserve data-driven answers. To understand R
 
 ## The Numbers: Rust's Actual Penetration
 
-Based on a comprehensive scan of the Linux kernel source tree, here's the reality:
+Based on comprehensive analysis using cloc v2.04 on the Linux kernel source tree (Linux 6.x), here's the reality:
 
 ```
-Total Rust files:        338 .rs files
-Total lines of code:     135,662 lines
-Kernel abstractions:     74 top-level modules
-Production drivers:      71 driver files
-C helper functions:      56 .c files
-Third-party libraries:   69 files (proc-macro2, quote, syn)
+Total Rust files:        163 .rs files
+Lines of code:           20,064 lines (pure code, excluding comments/blanks)
+Total lines:             41,907 lines (including 17,760 comment lines)
+Kernel abstraction modules: 74 modules across rust/kernel/
+Production drivers:      17 driver files
+Build infrastructure:    9 macro files + 15 pin-init files
 ```
 
-**Distribution breakdown:**
+**Distribution breakdown (by lines of code):**
 ```
-rust/kernel/           45,622 lines (33.6%) - Core abstraction layer
-drivers/               22,385 lines (16.5%) - Production drivers
-Compiler & macros      65,844 lines (48.6%) - Build infrastructure
-samples/rust/           1,811 lines (1.3%)  - Example code
+rust/kernel/           13,500 lines (67.3%) - Core abstraction layer
+rust/pin-init/          2,435 lines (12.1%) - Pin initialization infrastructure
+drivers/                1,913 lines ( 9.5%) - Production drivers
+rust/macros/              894 lines ( 4.5%) - Procedural macros
+samples/rust/             758 lines ( 3.8%) - Example code
+Other (scripts, etc)      564 lines ( 2.8%) - Supporting code
+```
+
+**Total line counts (with comments and blanks):**
+```
+rust/kernel/           30,858 lines (101 files) - Includes 14,290 comment lines
+drivers/                2,602 lines ( 17 files) - Production Rust drivers
+rust/pin-init/          4,826 lines ( 15 files) - Memory safety infrastructure
+rust/macros/            1,541 lines (  9 files) - Compile-time code generation
+samples/rust/           1,179 lines ( 12 files) - Learning examples
+Other                     901 lines (  9 files) - Scripts and utilities
 ```
 
 This is not a toy experiment. This is **production-grade infrastructure** covering 74 kernel subsystems.
@@ -136,32 +148,27 @@ The core abstraction layer provides safe Rust interfaces to kernel functionality
 - `revocable` - Revocable resources
 - `types` - Core type definitions
 
-### The 71 Production Drivers
+### The 17 Production Drivers (1,913 lines of code)
 
-**GPU Drivers (47 files, ~15,000 lines):**
-- **Nova** (Nvidia GSP firmware driver): Complete GPU driver implementation for Nvidia cards using the GSP (GPU System Processor) firmware interface
+**GPU Drivers (13 files):**
+- **Nova** (Nvidia GSP firmware driver):
+  - `drivers/gpu/drm/nova/` (5 files): DRM integration layer
+    - `nova.rs`, `driver.rs`, `gem.rs`, `uapi.rs`, `file.rs`
+  - `drivers/gpu/nova-core/` (7 files): Core GPU driver logic
+    - `nova_core.rs`, `driver.rs`, `gpu.rs`, `firmware.rs`, `util.rs`
+    - `regs.rs`, `regs/macros.rs` - Register access abstractions
+  - `drivers/gpu/drm/drm_panic_qr.rs` - QR code panic screen (996 lines)
 
-**Android IPC (18 files, ~8,000 lines):**
-- **Binder**: Complete rewrite of Android's inter-process communication mechanism
-  - `rust_binder_main.rs` (611 lines) - Module entry point
-  - `process.rs` (1,745 lines) - Process management
-  - `thread.rs` (1,596 lines) - Thread management
-  - `node.rs` (1,131 lines) - Binder node handling
-  - `transaction.rs` (456 lines) - Transaction processing
-  - `allocation.rs` (602 lines) - Memory allocation
-  - `page_range.rs` (734 lines) - Page range management
-  - Plus 11 more supporting modules
-
-**Network Drivers (3 files):**
+**Network Drivers (2 files):**
 - **PHY Drivers**:
-  - `ax88796b_rust.rs` - ASIX Electronics PHY driver (AX88772A/AX88772C/AX88796B)
-  - `realtek.rs` - Realtek PHY driver
-  - Generic PHY abstractions
+  - `ax88796b_rust.rs` (134 lines) - ASIX Electronics PHY driver (AX88772A/AX88772C/AX88796B)
+  - `qt2025.rs` (103 lines) - Marvell QT2025 PHY driver
 
-**Sample/Example Drivers (3 files):**
-- `rust_minimal.rs` - Minimal kernel module example
-- `rust_print.rs` - Printing and logging example
-- `rust_sync.rs` - Synchronization primitives example
+**Other Drivers (2 files):**
+- `cpufreq/rcpufreq_dt.rs` (227 lines) - Device tree-based CPU frequency driver
+- `block/rnull.rs` (80 lines) - Rust null block device (testing/example)
+
+Note: The Android Binder driver mentioned in case studies below is currently in development/out-of-tree and not yet merged into mainline Linux 6.x. The production driver count reflects only in-tree drivers as of the current kernel version.
 
 This comprehensive infrastructure demonstrates that Rust in Linux has moved far beyond experimentation into production deployment across critical subsystems. Let's examine actual kernel code to understand what "Rust in the kernel" really means.
 
@@ -651,17 +658,17 @@ Let's synthesize the evidence:
 **"Expansion into core kernel components"** → The 10-20 year timeline suggests this is a long-term evolution rather than an immediate transformation. Progress depends on continued success in current domains.
 
 **What the data shows:**
-- 338 Rust files, 135,662 lines of production code
-- 74 kernel subsystem abstractions
-- Production deployment in Android (billions of devices)
-- Performance comparable to C implementations (<2% variance)
+- 163 Rust files, 20,064 lines of code (41,907 total lines with comments)
+- 74 kernel subsystem abstraction modules in rust/kernel/
+- 17 production drivers (GPU, network PHY, CPU frequency, block devices)
+- Performance comparable to C implementations (<2% variance in benchmarks)
 - Compile-time prevention of memory safety issues (70% of historical CVE classes)
 
 **Rust in Linux represents a measured experiment** in bringing compile-time memory safety to kernel development. The code is already in production, running on billions of devices. Its future expansion will be determined by continued demonstration of reliability, maintainability, and developer productivity in increasingly complex subsystems.
 
 The current evidence suggests Rust has found a sustainable foothold in the kernel. Whether this expands to core components remains to be seen, but the foundation has been established through substantial engineering investment and production validation.
 
-**About the analysis**: This article is based on direct examination of the Linux kernel source code at `/Users/weli/works/linux` (Linux 6.x), including automated scanning of 338 Rust files and manual code review of key subsystems. All code examples are from actual kernel source, not simplified demonstrations.
+**About the analysis**: This article is based on direct examination of the Linux kernel source code (Linux 6.x) using cloc v2.04 for code metrics. All statistics reflect actual in-tree kernel code: 163 Rust files totaling 20,064 lines of code (41,907 lines including comments and blanks). Manual code review was performed on key subsystems. All code examples are from actual kernel source, not simplified demonstrations.
 
 ## References
 
@@ -687,7 +694,7 @@ The current evidence suggests Rust has found a sustainable foothold in the kerne
 
 # Rust在Linux内核中：理解现状与未来方向
 
-**摘要**: 通过数据和生产代码来审视Rust在Linux内核中的实际状态。本文分析了目前内核中的135,662行Rust代码，回答关于`unsafe`、开发体验和渐进式采用路径的常见问题。通过Android Binder重写的具体代码示例和代码库的真实指标，我们探讨成就与挑战。
+**摘要**: 通过数据和生产代码来审视Rust在Linux内核中的实际状态。本文分析了目前内核中的20,064行Rust代码（使用cloc v2.04统计），回答关于`unsafe`、开发体验和渐进式采用路径的常见问题。通过具体代码示例和代码库的真实指标，我们探讨成就与挑战。
 
 ## 引言：理解Rust在内核中的当前角色
 
@@ -697,23 +704,35 @@ The current evidence suggests Rust has found a sustainable foothold in the kerne
 
 ## 数据：Rust的实际渗透情况
 
-基于对Linux内核源代码树的全面扫描，真实情况如下：
+基于使用cloc v2.04对Linux内核源代码树（Linux 6.x）的综合分析，真实情况如下：
 
 ```
-Rust文件总数:        338个.rs文件
-代码总行数:          135,662行
-内核抽象层:          74个顶层模块
-生产级驱动:          71个驱动文件
-C辅助函数:          56个.c文件
-第三方库:            69个文件 (proc-macro2, quote, syn)
+Rust文件总数:        163个.rs文件
+代码行数:            20,064行（纯代码，不含注释/空行）
+总行数:              41,907行（包含17,760行注释）
+内核抽象模块:        rust/kernel/中的74个模块
+生产级驱动:          17个驱动文件
+构建基础设施:        9个宏文件 + 15个pin-init文件
 ```
 
-**分布明细:**
+**分布明细（按代码行数）:**
 ```
-rust/kernel/           45,622行 (33.6%) - 核心抽象层
-drivers/               22,385行 (16.5%) - 生产级驱动
-编译器和宏            65,844行 (48.6%) - 构建基础设施
-samples/rust/           1,811行 (1.3%)  - 示例代码
+rust/kernel/           13,500行 (67.3%) - 核心抽象层
+rust/pin-init/          2,435行 (12.1%) - Pin初始化基础设施
+drivers/                1,913行 ( 9.5%) - 生产级驱动
+rust/macros/              894行 ( 4.5%) - 过程宏
+samples/rust/             758行 ( 3.8%) - 示例代码
+其他 (scripts等)          564行 ( 2.8%) - 支持代码
+```
+
+**总行数统计（含注释和空行）:**
+```
+rust/kernel/           30,858行 (101个文件) - 包含14,290行注释
+drivers/                2,602行 ( 17个文件) - 生产级Rust驱动
+rust/pin-init/          4,826行 ( 15个文件) - 内存安全基础设施
+rust/macros/            1,541行 (  9个文件) - 编译时代码生成
+samples/rust/           1,179行 ( 12个文件) - 学习示例
+其他                      901行 (  9个文件) - 脚本和工具
 ```
 
 这不是玩具实验。这是**生产级基础设施**，覆盖74个内核子系统。
@@ -820,32 +839,27 @@ samples/rust/           1,811行 (1.3%)  - 示例代码
 - `revocable` - 可撤销资源
 - `types` - 核心类型定义
 
-### 71个生产级驱动
+### 17个生产级驱动（1,913行代码）
 
-**GPU驱动（47个文件，约15,000行）：**
-- **Nova**（Nvidia GSP固件驱动）：使用GSP（GPU系统处理器）固件接口的Nvidia显卡完整GPU驱动实现
+**GPU驱动（13个文件）：**
+- **Nova**（Nvidia GSP固件驱动）：
+  - `drivers/gpu/drm/nova/`（5个文件）：DRM集成层
+    - `nova.rs`、`driver.rs`、`gem.rs`、`uapi.rs`、`file.rs`
+  - `drivers/gpu/nova-core/`（7个文件）：核心GPU驱动逻辑
+    - `nova_core.rs`、`driver.rs`、`gpu.rs`、`firmware.rs`、`util.rs`
+    - `regs.rs`、`regs/macros.rs` - 寄存器访问抽象
+  - `drivers/gpu/drm/drm_panic_qr.rs` - QR码panic屏幕（996行）
 
-**Android IPC（18个文件，约8,000行）：**
-- **Binder**：Android进程间通信机制的完整重写
-  - `rust_binder_main.rs`（611行）- 模块入口点
-  - `process.rs`（1,745行）- 进程管理
-  - `thread.rs`（1,596行）- 线程管理
-  - `node.rs`（1,131行）- Binder节点处理
-  - `transaction.rs`（456行）- 事务处理
-  - `allocation.rs`（602行）- 内存分配
-  - `page_range.rs`（734行）- 页面范围管理
-  - 另外11个支持模块
-
-**网络驱动（3个文件）：**
+**网络驱动（2个文件）：**
 - **PHY驱动**：
-  - `ax88796b_rust.rs` - ASIX Electronics PHY驱动（AX88772A/AX88772C/AX88796B）
-  - `realtek.rs` - Realtek PHY驱动
-  - 通用PHY抽象
+  - `ax88796b_rust.rs`（134行）- ASIX Electronics PHY驱动（AX88772A/AX88772C/AX88796B）
+  - `qt2025.rs`（103行）- Marvell QT2025 PHY驱动
 
-**示例/样例驱动（3个文件）：**
-- `rust_minimal.rs` - 最小内核模块示例
-- `rust_print.rs` - 打印和日志示例
-- `rust_sync.rs` - 同步原语示例
+**其他驱动（2个文件）：**
+- `cpufreq/rcpufreq_dt.rs`（227行）- 基于设备树的CPU频率驱动
+- `block/rnull.rs`（80行）- Rust null块设备（测试/示例）
+
+注：下面案例研究中提到的Android Binder驱动目前处于开发/树外状态，尚未合并到主线Linux 6.x中。生产级驱动数量仅反映当前内核版本中的树内驱动。
 
 这个综合基础设施表明，Rust在Linux中已经远远超越了实验阶段，进入了跨关键子系统的生产部署。让我们看看实际的内核代码，以理解"内核中的Rust"真正意味着什么。
 
@@ -1093,15 +1107,15 @@ Zig作为"更好的C"的哲学 - 具有显式控制、零隐藏行为和优秀�
 **"扩展到核心内核组件"** → 10-20年的时间线表明这是长期演进而非立即转型。进展取决于在当前领域的持续成功。
 
 **数据显示:**
-- 338个Rust文件，135,662行生产代码
-- 74个内核子系统抽象
-- 在Android中的生产部署（数十亿设备）
-- 与C实现相当的性能（<2%差异）
+- 163个Rust文件，20,064行代码（含注释共41,907行）
+- rust/kernel/中的74个内核子系统抽象模块
+- 17个生产级驱动（GPU、网络PHY、CPU频率、块设备）
+- 与C实现相当的性能（基准测试中<2%差异）
 - 编译时预防内存安全问题（70%的历史CVE类别）
 
 **Rust in Linux代表了一次审慎的实验**，将编译时内存安全引入内核开发。代码已经在生产环境中，运行在数十亿设备上。其未来扩展将取决于在越来越复杂的子系统中持续展示可靠性、可维护性和开发者生产力。
 
 当前证据表明Rust已在内核中找到了可持续的立足点。这是否会扩展到核心组件仍有待观察，但基础已通过大量工程投资和生产验证而建立。
 
-**关于分析**: 本文基于对Linux内核源代码（Linux 6.x）的直接检查，包括对338个Rust文件的自动扫描和关键子系统的手动代码审查。所有代码示例均来自实际内核源代码，而非简化演示。
+**关于分析**: 本文基于使用cloc v2.04对Linux内核源代码（Linux 6.x）的直接检查进行代码度量。所有统计数据反映实际树内内核代码：163个Rust文件，共20,064行代码（包含注释和空行共41,907行）。对关键子系统进行了人工代码审查。所有代码示例均来自实际内核源代码，而非简化演示。
 
