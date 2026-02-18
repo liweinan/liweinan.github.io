@@ -760,28 +760,6 @@ The current evidence suggests Rust has found a sustainable foothold in the kerne
 
 **About the analysis**: This article is based on direct examination of the Linux kernel source code (Linux 6.x) using cloc v2.04 for code metrics. All statistics reflect actual in-tree kernel code: 163 Rust files totaling 20,064 lines of code (41,907 lines including comments and blanks). Manual code review was performed on key subsystems. All code examples are from actual kernel source, not simplified demonstrations.
 
-## References
-
-[^1]: [Rust for Linux](https://rust-for-linux.com/) - Official project website
-
-[^2]: [Linux Kernel Adopts Rust as Permanent Core Language in 2025](https://www.webpronews.com/linux-kernel-adopts-rust-as-permanent-core-language-in-2025/)
-
-[^3]: [Rust for Linux: Understanding the Security Impact](https://mars-research.github.io/doc/2024-acsac-rfl.pdf) - Research paper on Rust's security impact in kernel
-
-[^4]: [The Linux Kernel - Rust Documentation](https://docs.kernel.org/rust/) - Official kernel Rust documentation
-
-[^5]: [An Empirical Study of Rust-for-Linux](https://www.usenix.org/system/files/atc24-li-hongyu.pdf) - USENIX ATC 2024 paper
-
-[^9]: [Greg Kroah-Hartman Makes A Compelling Case For New Linux Kernel Drivers To Be Written In Rust](https://www.phoronix.com/news/Greg-KH-On-New-Rust-Code) - Phoronix, February 21, 2025 reporting on Greg's LKML post
-
-[^10]: [Rust Integration in Linux Kernel Faces Challenges but Shows Progress](https://thenewstack.io/rust-integration-in-linux-kernel-faces-challenges-but-shows-progress/) - The New Stack on Rust for Linux development status
-
-[^14]: [Re: Compiling C++ kernel module](https://harmful.cat-v.org/software/c++/linus) - Linus Torvalds on C++ in kernel (2004)
-
----
-
-## 中文版 / Chinese Version
-
 # Rust在Linux内核中：理解现状与未来方向
 
 **摘要**: 通过数据和生产代码来审视Rust在Linux内核中的实际状态。本文分析了目前内核中的20,064行Rust代码（使用cloc v2.04统计），回答关于`unsafe`、开发体验和渐进式采用路径的常见问题。通过具体代码示例和代码库的真实指标，我们探讨成就与挑战。
@@ -1301,3 +1279,20 @@ Zig作为"更好的C"的哲学 - 具有显式控制、零隐藏行为和优秀�
 
 **关于分析**: 本文基于使用cloc v2.04对Linux内核源代码（Linux 6.x）的直接检查进行代码度量。所有统计数据反映实际树内内核代码：163个Rust文件，共20,064行代码（包含注释和空行共41,907行）。对关键子系统进行了人工代码审查。所有代码示例均来自实际内核源代码，而非简化演示。
 
+## References
+
+[^1]: [Rust for Linux](https://rust-for-linux.com/) - Official project website
+
+[^2]: [Linux Kernel Adopts Rust as Permanent Core Language in 2025](https://www.webpronews.com/linux-kernel-adopts-rust-as-permanent-core-language-in-2025/)
+
+[^3]: [Rust for Linux: Understanding the Security Impact](https://mars-research.github.io/doc/2024-acsac-rfl.pdf) - Research paper on Rust's security impact in kernel
+
+[^4]: [The Linux Kernel - Rust Documentation](https://docs.kernel.org/rust/) - Official kernel Rust documentation
+
+[^5]: [An Empirical Study of Rust-for-Linux](https://www.usenix.org/system/files/atc24-li-hongyu.pdf) - USENIX ATC 2024 paper
+
+[^9]: [Greg Kroah-Hartman Makes A Compelling Case For New Linux Kernel Drivers To Be Written In Rust](https://www.phoronix.com/news/Greg-KH-On-New-Rust-Code) - Phoronix, February 21, 2025 reporting on Greg's LKML post
+
+[^10]: [Rust Integration in Linux Kernel Faces Challenges but Shows Progress](https://thenewstack.io/rust-integration-in-linux-kernel-faces-challenges-but-shows-progress/) - The New Stack on Rust for Linux development status
+
+[^14]: [Re: Compiling C++ kernel module](https://harmful.cat-v.org/software/c++/linus) - Linus Torvalds on C++ in kernel (2004)
