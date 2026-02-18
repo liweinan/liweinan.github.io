@@ -645,6 +645,91 @@ impl Driver for PhyAX88772A {
 | Lines of code | ~200 lines | ~135 lines (more concise) |
 | CVE potential | High (manual memory management) | Low (isolated to abstraction layer) |
 
+### Call Direction: Currently Unidirectional (C → Rust Only)
+
+An important architectural question: **Can C kernel code call Rust functions?**
+
+**Current Reality**: The architecture is **unidirectional** - C calls into Rust through abstractions, but Rust does NOT export functions back to the C kernel core.
+
+```
+Current Call Flow (One Direction):
+
+C Kernel Core
+    ↓ (calls)
+rust/helpers.c (C wrappers for macros/inline functions)
+    ↓ (wrapped by)
+rust/bindings/ (auto-generated FFI via bindgen)
+    ↓ (used by)
+rust/kernel/ (safe Rust abstractions)
+    ↓ (used by)
+Rust Drivers/Modules
+
+Direction: C → Rust only (no reverse calls)
+```
+
+**Evidence from codebase analysis:**
+
+1. **No `#[no_mangle]` exports found**: Searching the entire Rust codebase reveals zero instances of `#[no_mangle]`, which would be required to export Rust functions with stable symbol names for C to call.
+
+2. **No `pub extern "C" fn` patterns**: No Rust functions are declared with C calling convention for external use.
+
+3. **`rust/exports.c` purpose**: This file exports Rust symbols, but only for Rust *loadable modules* to link against the kernel, not for C code to call:
+   ```c
+   // rust/exports.c
+   // A hack to export Rust symbols for loadable modules without kallsyms
+   #define EXPORT_SYMBOL_RUST_GPL(sym) extern int sym; EXPORT_SYMBOL_GPL(sym)
+   #include "exports_kernel_generated.h"
+   ```
+
+4. **`rust/helpers.c` direction**: Contains C helper functions that wrap macros/inline functions specifically so Rust can call them - the opposite direction.
+
+**Technical Feasibility**: While Rust CAN export C-callable functions, it's not currently implemented:
+
+```rust
+// Theoretically possible (not found in current kernel):
+#[no_mangle]
+pub extern "C" fn rust_safe_allocator(size: usize) -> *mut u8 {
+    // Safe Rust implementation with compile-time guarantees
+    // C code could call this for memory-safe allocation
+}
+```
+
+Then C code could use it:
+```c
+// Hypothetical future C code calling Rust
+extern void *rust_safe_allocator(size_t size);
+
+void *ptr = rust_safe_allocator(1024);  // Calls Rust function
+```
+
+**Why the Current Design is Unidirectional:**
+
+1. **Design Philosophy**: `rust/kernel/` is a *wrapper layer* over C APIs, not a replacement of core kernel services. Rust provides safer abstractions for driver developers, not new APIs for C kernel core.
+
+2. **ABI Stability Constraints**: C kernel internal APIs must maintain eternal ABI stability across kernel versions. Rust abstractions in `rust/kernel/` are still actively evolving (the API is not yet stable).
+
+3. **Dependency Direction**: Making C kernel core depend on Rust functions would create circular dependencies and significantly complicate the build system and maintenance.
+
+4. **Current Adoption Scope**: Rust is used for new drivers and modules at the periphery, not for core kernel services that existing C code would need to call.
+
+**Future Possibilities:**
+
+As Rust matures in the kernel (2028-2030+), bidirectional calls could become necessary:
+
+1. **Rewritten Subsystems**: If a critical subsystem is fully rewritten in Rust, legacy C code might need to interface with it during migration.
+
+2. **Memory-Safe Utilities**: Rust could provide memory-safe utility functions that C code calls to gradually improve safety without full rewrites.
+
+3. **Gradual Core Migration**: During partial rewrites of core components, C and Rust would need bidirectional communication.
+
+**Requirements for C→Rust calls:**
+- Stable Rust→C ABI guarantees (`#[repr(C)]` and System V ABI compliance)
+- Clear safety contracts (C code calling into safe Rust must maintain invariants)
+- Build system support for cross-language dependencies
+- Careful API design to avoid exposing Rust's internal complexity to C
+
+**Current Conclusion**: The Linux kernel's Rust integration is architecturally designed as a **one-way wrapper** - Rust wraps C to provide safety, not the other way around. This may evolve in future phases (2030+) if core kernel components are rewritten in Rust, but it's not part of the current design (2022-2026 infrastructure phase).
+
 ## Performance: Zero-Cost Abstractions in Practice
 
 A common concern is whether Rust's safety comes with performance overhead. Data from production deployments:
@@ -1078,6 +1163,91 @@ C内核（原生实现）：
 2. **类型安全**：Rust的类型系统（枚举、Option、Result）防止无效状态
 3. **RAII保证**：资源（锁、内存）自动管理
 4. **零成本抽象**：编译成与手写C相同的汇编代码
+
+### 调用方向：目前单向（仅C → Rust）
+
+一个重要的架构问题：**C内核代码能否调用Rust函数？**
+
+**当前现实**：架构是**单向的** - C通过抽象层调用Rust，但Rust**不会**将函数导出回C内核核心。
+
+```
+当前调用流（单向）：
+
+C内核核心
+    ↓ (调用)
+rust/helpers.c (为宏/内联函数提供C包装器)
+    ↓ (被封装为)
+rust/bindings/ (通过bindgen自动生成的FFI)
+    ↓ (被使用于)
+rust/kernel/ (安全的Rust抽象)
+    ↓ (被使用于)
+Rust驱动/模块
+
+方向：仅C → Rust（没有反向调用）
+```
+
+**代码库分析证据：**
+
+1. **未找到`#[no_mangle]`导出**：搜索整个Rust代码库未发现`#[no_mangle]`实例，而这是导出具有稳定符号名的Rust函数供C调用所必需的。
+
+2. **未找到`pub extern "C" fn`模式**：没有Rust函数声明为C调用约定以供外部使用。
+
+3. **`rust/exports.c`的用途**：此文件导出Rust符号，但仅供Rust *可加载模块*链接到内核使用，而非供C代码调用：
+   ```c
+   // rust/exports.c
+   // 一个hack，用于导出Rust符号供可加载模块使用（无需kallsyms）
+   #define EXPORT_SYMBOL_RUST_GPL(sym) extern int sym; EXPORT_SYMBOL_GPL(sym)
+   #include "exports_kernel_generated.h"
+   ```
+
+4. **`rust/helpers.c`的方向**：包含C辅助函数，专门封装宏/内联函数以便Rust调用 - 这是相反的方向。
+
+**技术可行性**：虽然Rust**可以**导出C可调用函数，但目前未实现：
+
+```rust
+// 理论上可行（当前内核中未找到）：
+#[no_mangle]
+pub extern "C" fn rust_safe_allocator(size: usize) -> *mut u8 {
+    // 具有编译时保证的安全Rust实现
+    // C代码可以调用此函数进行内存安全的分配
+}
+```
+
+然后C代码可以使用它：
+```c
+// 假设的未来C代码调用Rust
+extern void *rust_safe_allocator(size_t size);
+
+void *ptr = rust_safe_allocator(1024);  // 调用Rust函数
+```
+
+**为什么当前设计是单向的：**
+
+1. **设计哲学**：`rust/kernel/`被设计为C API的*封装层*，而非核心内核服务的替代品。Rust为驱动开发者提供更安全的抽象，而非为C内核核心提供新API。
+
+2. **ABI稳定性约束**：C内核内部API必须在内核版本之间维持永久ABI稳定性。`rust/kernel/`中的Rust抽象仍在积极演进（API尚未稳定）。
+
+3. **依赖方向**：让C内核核心依赖Rust函数会产生循环依赖，并显著增加构建系统和维护的复杂性。
+
+4. **当前采用范围**：Rust用于外围的新驱动和模块，而非现有C代码需要调用的核心内核服务。
+
+**未来可能性：**
+
+随着Rust在内核中成熟（2028-2030+），双向调用可能变得必要：
+
+1. **重写的子系统**：如果关键子系统完全用Rust重写，迁移期间遗留的C代码可能需要与之交互。
+
+2. **内存安全工具**：Rust可以提供内存安全的工具函数，供C代码调用，以在不完全重写的情况下逐步提高安全性。
+
+3. **渐进式核心迁移**：在核心组件的部分重写期间，C和Rust需要双向通信。
+
+**C→Rust调用的要求：**
+- 稳定的Rust→C ABI保证（`#[repr(C)]`和System V ABI兼容性）
+- 清晰的安全契约（调用安全Rust的C代码必须维护不变量）
+- 构建系统对跨语言依赖的支持
+- 精心的API设计以避免向C暴露Rust的内部复杂性
+
+**当前结论**：Linux内核的Rust集成在架构上被设计为**单向封装** - Rust封装C以提供安全性，而非相反。这可能在未来阶段（2030+）演进，如果核心内核组件用Rust重写，但这不是当前设计（2022-2026基础设施阶段）的一部分。
 
 ## 案例研究2：锁抽象 - 内核中的RAII
 
