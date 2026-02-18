@@ -843,22 +843,6 @@ Whether the kernel driver is C or Rust, **this code works identically**.
 
 **Rust's advantage**: Better compile-time verification of ABI compatibility through `#[repr(C)]`, size assertions, and type safety, reducing accidental ABI breaks.
 
-## References
-
-[^1]: [Linux Kernel Stable API Nonsense](https://www.kernel.org/doc/Documentation/process/stable-api-nonsense.rst) - Greg Kroah-Hartman's explanation of why internal kernel API is unstable
-
-[^2]: [Linux ABI description](https://docs.kernel.org/admin-guide/abi.html) - Official kernel documentation on ABI stability levels
-
-[^3]: [ABI README](https://github.com/torvalds/linux/blob/master/Documentation/ABI/README) - Documentation of ABI stability categories
-
-[^4]: [A Stable Linux Kernel API/ABI? "The Most Insane Proposal"](https://www.phoronix.com/news/Linux-Kernel-Stable-API-ABI) - Phoronix coverage of ABI stability debates
-
-[^5]: [When the kernel ABI has to change](https://lwn.net/Articles/557082/) - LWN article on userspace ABI changes
-
----
-
-## 中文版 / Chinese Version
-
 # Rust与Linux内核ABI稳定性：技术深度分析
 
 **摘要**: Rust在Linux内核中提供用户空间接口吗？内核的ABI稳定性策略是什么？本文分析Rust驱动如何与用户空间交互，内部和外部ABI稳定性的关键区别，以及Android Binder和DRM驱动等生产代码的具体示例。
@@ -1606,3 +1590,15 @@ ioctl(fd, BINDER_WRITE_READ, &bwr);
 2. Rust的当前范围是**deliberate和战略性的** - 在考虑核心子系统之前，先在低风险驱动中证明价值。
 
 **Rust的优势**: 通过`#[repr(C)]`、大小断言和类型安全更好地编译时验证ABI兼容性，减少意外的ABI破坏。
+
+## References
+
+[^1]: [Linux Kernel Stable API Nonsense](https://www.kernel.org/doc/Documentation/process/stable-api-nonsense.rst) - Greg Kroah-Hartman's explanation of why internal kernel API is unstable
+
+[^2]: [Linux ABI description](https://docs.kernel.org/admin-guide/abi.html) - Official kernel documentation on ABI stability levels
+
+[^3]: [ABI README](https://github.com/torvalds/linux/blob/master/Documentation/ABI/README) - Documentation of ABI stability categories
+
+[^4]: [A Stable Linux Kernel API/ABI? "The Most Insane Proposal"](https://www.phoronix.com/news/Linux-Kernel-Stable-API-ABI) - Phoronix coverage of ABI stability debates
+
+[^5]: [When the kernel ABI has to change](https://lwn.net/Articles/557082/) - LWN article on userspace ABI changes

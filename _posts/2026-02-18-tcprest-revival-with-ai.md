@@ -451,8 +451,6 @@ TcpRest从2012年的实验到2026年生产就绪框架的旅程，展示了AI辅
 
 **教训**：好的想法不必消亡。借助AI工具，遗留项目可以焕发新生。
 
----
-
 ## References
 
 - **Project Repository**: [https://github.com/liweinan/tcprest](https://github.com/liweinan/tcprest)

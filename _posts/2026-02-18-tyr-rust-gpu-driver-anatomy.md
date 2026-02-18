@@ -1386,8 +1386,6 @@ Blog1 (宏观) → Blog2 (ABI) → Blog3 (代码实战)
 
 **Rust在Linux内核已经从"实验"进入"生产"，Tyr项目是这一转变的代码级见证。**
 
----
-
 ## 参考资料
 
 [^1]: [Rust in the Linux Kernel: A Reality Check from Code to Controversy](/2026/02/16/rust-in-linux-kernel-reality-check.html) - 本系列第一篇
