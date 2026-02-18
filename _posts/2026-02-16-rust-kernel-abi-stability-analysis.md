@@ -504,7 +504,7 @@ unsafe impl AsBytes for BinderTransactionData {}
 **1. `#![no_std]` - No Standard Library**
 
 ```rust
-// rust/kernel/lib.rs
+// rust/kernel/lib.rs (library crate root)
 #![no_std]  // ← Critical: No standard library!
 
 // Kernel space does NOT have:
@@ -518,6 +518,8 @@ unsafe impl AsBytes for BinderTransactionData {}
 // - core library (no OS required)
 // - Kernel-specific APIs
 ```
+
+**Note**: The `#![no_std]` attribute is only declared in library crate roots like `rust/kernel/lib.rs`, `rust/bindings/lib.rs`, etc. Individual driver modules (e.g., `drivers/gpu/drm/nova/driver.rs`) do NOT need this declaration - they inherit the no_std environment by using the kernel library via `use kernel::prelude::*`.
 
 **2. Different Compilation Targets**
 
@@ -552,7 +554,6 @@ Virtual Address Space:
 **Kernel side (Rust driver):**
 ```rust
 // drivers/example/my_device.rs
-#![no_std]
 use kernel::prelude::*;
 use kernel::file::Operations;
 
@@ -671,7 +672,6 @@ fn main() {
 **1. Kernel Rust GPU driver:**
 ```rust
 // drivers/gpu/drm/nova/driver.rs
-#![no_std]
 use kernel::drm;
 
 impl drm::Driver for NovaDriver {
@@ -1573,7 +1573,7 @@ unsafe impl AsBytes for BinderTransactionData {}
 **1. `#![no_std]` - 没有标准库**
 
 ```rust
-// rust/kernel/lib.rs
+// rust/kernel/lib.rs (库crate根文件)
 #![no_std]  // ← 关键：没有标准库！
 
 // 内核空间没有：
@@ -1587,6 +1587,8 @@ unsafe impl AsBytes for BinderTransactionData {}
 // - core库（不需要操作系统）
 // - 内核特定API
 ```
+
+**注意**：`#![no_std]` 属性只在库crate的根文件中声明，如 `rust/kernel/lib.rs`、`rust/bindings/lib.rs` 等。单独的驱动模块文件（例如 `drivers/gpu/drm/nova/driver.rs`）不需要这个声明 - 它们通过 `use kernel::prelude::*` 使用kernel库，从而继承了no_std环境。
 
 **2. 不同的编译目标**
 
@@ -1621,7 +1623,6 @@ $ rustc --target x86_64-linux-kernel module.rs
 **内核侧（Rust驱动）：**
 ```rust
 // drivers/example/my_device.rs
-#![no_std]
 use kernel::prelude::*;
 use kernel::file::Operations;
 
@@ -1740,7 +1741,6 @@ fn main() {
 **1. 内核Rust GPU驱动：**
 ```rust
 // drivers/gpu/drm/nova/driver.rs
-#![no_std]
 use kernel::drm;
 
 impl drm::Driver for NovaDriver {
