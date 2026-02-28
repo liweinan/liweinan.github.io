@@ -150,6 +150,58 @@ struct packet {
 };  // 内存布局完全由程序员控制
 ```
 
+### 内核 C 的面向对象风格
+
+内核虽然用 C 编写，但大量采用**面向对象式**的写法：用结构体承载「状态」，用函数指针表承载「行为」，多态通过查表调用实现，无需 C++ 的虚函数或异常[^7][^8]。
+
+**1. 函数指针表（类似 vtable）**
+
+例如 VFS 层的 `struct file_operations`（`include/linux/fs.h`）：每个字段是一类操作，由具体驱动/文件系统填不同实现，通用代码通过 `file->f_op->read(...)` 等形式调用，实现多态。`file_operations` 与 inode 等结构的定义与用法可参考本博客[^9]。
+
+```c
+// 简化自 linux/fs.h
+struct file_operations {
+    struct module *owner;
+    ssize_t (*read) (struct file *, char __user *, size_t, loff_t *);
+    ssize_t (*write) (struct file *, const char __user *, size_t, loff_t *);
+    int (*open) (struct inode *, struct file *);
+    int (*release) (struct inode *, struct file *);
+    // ...
+};
+
+// 驱动侧：实现“类”并挂到 file 上
+static struct file_operations my_fops = {
+    .owner = THIS_MODULE,
+    .read  = my_read,
+    .write = my_write,
+    .open  = my_open,
+    .release = my_release,
+};
+```
+
+同类结构还有 `inode_operations`、`dentry_operations`、`super_operations`、各类 `*_ops` 等，内核中有大量这种「操作表」[^4]。
+
+**2. “继承”通过结构体嵌入**
+
+子类型通过**在结构体里嵌入父类型**复用共同字段，并可用 `container_of` 从父指针反推子指针。例如设备模型里 `struct device` 内嵌 `struct kobject`，子设备再内嵌 `struct device`，形成层次与共同生命周期管理。
+
+```c
+// 概念上：子结构体包含“基类”
+struct my_device {
+    struct device dev;   // 内嵌，相当于“继承” device 的字段
+    int my_private_data;
+};
+
+// 从通用 device* 得到 my_device*
+struct my_device *mdev = container_of(dev, struct my_device, dev);
+```
+
+**3. “方法”约定：首参为对象指针**
+
+很多内核 API 的「方法」形态是：第一个参数为操作对象，例如 `int (*open)(struct inode *, struct file *)`。调用方持有 `struct file *`，通过 `f_op->open(inode, filp)` 调用，等价于「对 file 做 open」，与 OO 的 `obj->method(args)` 对应。
+
+综上，内核 C 用「结构体 + 函数指针表 + 嵌入 + 显式首参」实现接口抽象和多态，无需 C++ 的运行时（异常、vtable 展开、构造/析构顺序），仍能保持清晰的层次与可扩展性。
+
 ### Rust 的创新解决方案
 
 Rust 通过所有权系统和生命周期来平衡安全性和控制力：
@@ -500,3 +552,9 @@ impl SerialPort {
 [^5]: [Redox OS](https://www.redox-os.org/) - 使用 Rust no_std 编写的操作系统
 
 [^6]: [Rust for Linux](https://rust-for-linux.com/) - 内核内 Rust 支持项目与文档
+
+[^7]: [Object-oriented design patterns in the kernel, part 1](https://lwn.net/Articles/444910/) - LWN，方法分派与 vtable（file_operations、inode_operations 等）模式
+
+[^8]: [Object-oriented design patterns in the kernel, part 2](https://lwn.net/Articles/446317/) - LWN，数据继承与结构体内嵌（container_of）模式
+
+[^9]: [Linux驱动开发入门（四）](https://weinan.io/2017/12/17/linux-driver.html) - 本博客，file_operations / inode 等内核数据结构与驱动示例
