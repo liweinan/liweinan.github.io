@@ -58,7 +58,46 @@ void driver_function() {
 - 增加了二进制文件大小
 - 实时性无法保证
 
-3. **RAII 的局限性**
+3. **RAII 的局限性与运行时依赖**
+
+RAII（Resource Acquisition Is Initialization）的核心是：资源在对象构造时获取，在对象析构时释放。这一机制在内核中受限，且其实现本身依赖运行时支持。
+
+**为何 RAII 需要运行时支持：**
+
+- **构造与析构的自动调用**：编译器需在正确位置插入构造/析构调用，对象生命周期的管理（何时创建、何时销毁）依赖运行时机制。例如：
+
+```cpp
+class FileHandler {
+    FILE* file;
+public:
+    FileHandler(const char* filename) { file = fopen(filename, "r"); }
+    ~FileHandler() { if (file) fclose(file); }
+};
+
+void processFile() {
+    FileHandler fh("data.txt");  // 构造时获取资源
+    // 使用文件...
+}  // 离开作用域时析构被自动调用
+```
+
+- **栈展开（Stack Unwinding）**：异常发生时，需要按与构造相反的顺序自动调用所有已构造局部对象的析构函数，并维护调用栈信息。内核通常禁用异常，因此无法依赖这套机制。
+
+```cpp
+void function() {
+    FileHandler fh1("a.txt");
+    FileHandler fh2("b.txt");
+    throw std::runtime_error("error");  // 异常时 fh2、fh1 的析构须被调用
+}
+```
+
+- **动态内存与智能指针**：`std::vector`、`std::unique_ptr`/`std::shared_ptr` 等依赖堆分配与引用计数，需要在运行时跟踪资源。
+
+- **多态对象的析构**：通过基类指针删除派生类对象时，必须通过虚函数表（vtable）在运行时找到正确的析构函数，同样依赖运行时类型信息。
+
+若纯靠编译时实现，无法处理异常路径下的释放、多态析构和动态资源的引用计数等，因此 RAII 既是 C++ 的核心特性，又离不开运行时支持，这与内核需要的确定性、无异常、显式控制相冲突。
+
+**运行时实现简述**：局部对象的构造/析构由编译器在固定位置插入调用；全局或静态对象由启动代码遍历 `.init_array`（或 `.ctors`）在进程启动时调用构造，退出时按逆序调用析构。异常时的栈展开则依赖 **unwinder**：编译器为每个函数生成 unwind 元数据（如 DWARF 的 `.eh_frame`），描述栈帧与需析构的对象；异常抛出时，运行时库按栈回溯，调用每帧的 personality 函数，按表调用析构并查找 catch。多态析构通过对象的 vtable 在运行时查表得到正确析构函数。这些机制多在编译器运行时（如 libgcc、libstdc++ 的一部分）中实现，与「标准库 STL」不是同一层，但都属 C++ 运行时。
+
 - RAII 假设资源释放是确定性的、无错的
 - 内核中可能需要延迟释放、异步释放
 - 硬件资源的释放可能非常复杂
@@ -237,6 +276,23 @@ C++ 的问题：
 - **STL 无法移植**：容器都假设有堆内存管理和操作系统服务
 - **构造函数限制**：无法优雅处理初始化失败
 
+**澄清**：离开标准库并不等于「所有 C++ 特性都用不了」。RAII（自己的类）、虚函数、vtable、重载 `operator new/delete` 都是**语言特性**，不依赖标准库；异常则依赖 unwinder 等**运行时**（多在编译器运行时库里），与 STL 是不同层。内核里通常还禁用异常（`-fno-exceptions`）和 RTTI（`-fno-rtti`），因此异常和 `dynamic_cast`/`typeid` 不可用，RAII 在异常路径上的保障也随之消失。
+
+**假设内核用 C++：去掉标准库并加上常见限制（如 -fno-exceptions、-fno-rtti、禁止复杂全局构造）后，功能退化可概括为：**
+
+| 情况 | 功能 | 说明 |
+|------|------|------|
+| **完全不可用** | STL 容器/算法、std::string、标准智能指针、iostream | 依赖标准库，内核不链接 |
+| | 异常 (throw/catch) | 通常 -fno-exceptions，且不愿携带 unwinder |
+| | RTTI (dynamic_cast, typeid) | 通常 -fno-rtti |
+| **语义退化** | RAII | 构造不能返回错误 → 退化为两阶段 init；无异常则「任意路径都析构」的保证弱化；析构常被要求只做简单、确定性释放 |
+| | 全局/静态对象（非平凡构造） | 依赖 .init_array 与启动顺序，内核中多禁止或极简使用 |
+| **仍可用但受限** | new/delete | 可重载到 kmalloc/kfree；有的规范禁止全局 new，仅允许 placement new + 内核分配器 |
+| | 虚函数 / vtable、模板、类与继承 | 不依赖标准库；风格上常限制深继承与过度模板 |
+| | const、引用、重载、命名空间 | 纯语言特性，无退化 |
+
+整体上 C++ 会退化成「带类、模板和虚函数的 C」：语法和类型系统仍在，错误处理回到返回码，资源管理更显式，不能依赖异常与标准库。
+
 ### Rust：no_std 模式[^1]
 
 ```rust
@@ -276,7 +332,7 @@ impl Device {
 ```
 
 Rust 的优势[^1]：
-- **core 库**：提供语言核心功能，无操作系统依赖
+- **core 库**：提供语言核心功能，无操作系统依赖。core 中**不包含与操作系统相关的 I/O 能力**：文件、标准输入/输出（stdin/stdout）、网络（TcpStream 等）均在 `std` 中；core 里仅有极少的 I/O 相关 trait/类型定义（如 `BorrowedBuf`），不提供实际读写，因此 `#![no_std]` 下无法使用 `println!`、`File`、`std::net` 等，需自行实现或依赖其他库。
 - **语言特性零成本**：所有权、借用检查都在编译期
 - **明确的 unsafe**：硬件操作需要显式标记
 - **const fn**：可以在编译时执行函数
@@ -404,7 +460,7 @@ impl SerialPort {
 | Vec/String | ✅ | ❌ | 需要内存分配器 |
 | Box/Rc/Arc | ✅ | ⚠️ | 需要内存分配器 |
 | HashMap | ✅ | ❌ | 需要随机数源 |
-| println! | ✅ | ❌ | 需要 IO |
+| println! | ✅ | ❌ | 需要 IO（core 无具体 I/O 实现） |
 | 文件操作 | ✅ | ❌ | 需要文件系统 |
 | 线程 | ✅ | ❌ | 需要调度器 |
 | Mutex | ✅ | ⚠️ | 需要原子操作支持 |
