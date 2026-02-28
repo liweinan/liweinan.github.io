@@ -230,6 +230,36 @@ Rust 解决了 C++ 的几个关键问题：
 3. **零成本抽象**：无运行时开销
 4. **内存安全**：编译时检查，无 GC 开销
 
+**Rust 的错误处理（与 C++ 异常对比）**
+
+Rust 没有异常，错误通过类型在类型系统中显式表达，调用方必须处理，适合内核等不能依赖 unwinder 的环境。
+
+- **`Result<T, E>`**：表示可能失败的操作，成功为 `Ok(t)`，失败为 `Err(e)`。`Option<T>` 表示可选值（`Some(t)` / `None`），二者均在 `core` 中，no_std 可用。
+- **构造/初始化可返回错误**：类似上面 `Device::new() -> Result<Self, Error>`，失败时返回 `Err(...)`，无需两阶段 init。
+- **`?` 操作符**：在返回 `Result` 的函数内，`expr?` 表示若 `expr` 为 `Err(e)` 则当前函数立即返回 `Err(e)`，否则解出 `Ok` 中的值继续执行，错误沿调用栈「向上传播」但**无栈展开**，仅是一次返回。
+- **调用方必须处理**：用 `match`、`if let`、`.map_err()` 或继续 `?`，编译器要求覆盖 `Ok`/`Err` 分支，不会「忘记」检查错误。
+
+示例（no_std 下常见写法）：
+
+```rust
+// 内核/裸机中常用 &'static str 或自定义 enum 作为错误类型
+fn init_hw() -> Result<(), &'static str> {
+    enable_clock().ok_or("clock init failed")?;
+    let cfg = read_cfg().ok_or("bad config")?;
+    apply_config(cfg)?;  // 若返回 Err，本函数直接 return Err(...)
+    Ok(())
+}
+
+fn driver_init() -> Result<(), &'static str> {
+    init_hw()?;
+    register_irq()?;
+    Ok(())
+}
+// 调用方：match driver_init() { Ok(()) => {}, Err(e) => { ... } }
+```
+
+与 C++ 对比：C++ 构造不能返回错误，只能抛异常或两阶段 init；Rust 用 `Result` 让「可能失败」成为类型的一部分，无运行时开销，也不依赖异常展开，因此更适合内核。
+
 ## 为什么内核不能使用标准库
 
 ### 1. 标准库依赖操作系统服务
