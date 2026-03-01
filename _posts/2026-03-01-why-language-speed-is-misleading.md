@@ -42,7 +42,7 @@ for (;;) {
 
 语言如何从内核要内存、何时释放，对延迟和常驻内存影响很大：
 
-- **有 GC 的语言**（Java、Go）：向内核申请大块堆，自行管理。优点是开发效率高，缺点是 GC 的 Stop-The-World 或回收不及时会导致与内核的交互不可预测；若长期不把内存还给 OS，常驻内存会偏高。
+- **有 GC 的语言**（Java、Go）：向内核申请大块堆，自行管理。优点是开发效率高，缺点包括：**Stop-The-World（STW）**——GC 时暂停所有业务线程，导致延迟尖刺，对延迟敏感场景（如游戏、实时系统）是实打实的问题[^8]；回收不及时或长期不把内存还给 OS 会导致常驻内存偏高，与内核的交互也变得不可预测。
 - **无 GC 的语言**（Rust、C++）：可精细控制何时释放回 OS。例如 glibc 下可用 **`malloc_trim(0)`** 把空闲页归还内核，降低进程 RSS；Rust 的所有权在编译期约束生命周期，减少运行时开销[^3]。
 
 ```c
@@ -121,3 +121,5 @@ void release_unused_heap(void) {
 [^6]: [Efficient IO with io_uring](https://kernel.dk/io_uring.pdf) - Jens Axboe，io_uring 设计说明（PDF）
 
 [^7]: 本博客 [内核开发中的语言选择：C、C++ 与 Rust 的运行时与标准库](https://weinan.io/2026/02/26/kernel-c-cpp-rust-runtime-stdlib.html) - 内核为何不能用 VM、C++/Rust 的约束与取舍
+
+[^8]: **Stop-The-World（STW）**：GC 暂停所有应用线程以独占堆访问，导致延迟尖刺。[Oracle Java GC Tuning - Introduction](https://docs.oracle.com/en/java/javase/21/gctuning/introduction-garbage-collection-tuning.html) 介绍各 GC 与停顿；[A Guide to the Go Garbage Collector](https://go.dev/doc/gc-guide) 说明 Go 的并发 GC 与 STW 阶段
