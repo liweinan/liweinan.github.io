@@ -128,6 +128,18 @@ Arena、pool 等分配器本质是在堆上**模拟栈**：一次性向系统要
 
 若只比较「第一次访问某页、触发缺页」的那条路径，栈和堆没有区别：都是 #PF → 内核分配物理页 → 映射（堆上匿名区还可能多一步清零或 COW）。因此**在缺页场景下，栈并不比堆快**。「栈比堆快」指的是分配虚拟空间的成本（栈几乎为零、堆可能涉及系统调用）以及缺页发生频率的摊薄（栈往往早已 fault in），而不是指单次缺页处理本身。
 
+### 5.5 用户态申请堆内存是否一定触发缺页？
+
+**不一定。** 内核源码可以验证两点：
+
+1. **默认情况**：用户态通过 `brk`/`sbrk` 或 `mmap(MAP_ANONYMOUS)`「申请」堆内存时，内核**只建立或扩展 VMA**（虚拟区间），并不立刻分配物理页。`mm/vma.c` 中的 **`do_brk_flags()`** 仅做 `vm_area_alloc`、设置区间与 flags、挂入红黑树，没有任何 `alloc_pages` 或 `mm_populate`。因此物理页要等到**首次访问**该区间时由缺页处理程序分配，那时才会触发一次 #PF。
+
+2. **会预填页、从而首次访问不触发缺页的情况**：
+   - **`mmap(..., MAP_POPULATE)`**：`mm/mmap.c` 里 `do_mmap` 在成功建立映射后，若 flags 含 `MAP_POPULATE`（且非 `MAP_NONBLOCK`），会设置 `*populate = len`，返回用户态前由 `mm_populate(ret, populate)` 在内核里把页 fault in，所以用户第一次访问时页已在，不会 #PF。
+   - **扩展 brk 且进程曾 `mlockall`（`mm->def_flags & VM_LOCKED`）**：`mm/mmap.c` 中 **`SYSCALL_DEFINE1(brk, ...)`** 在 `do_brk_flags()` 成功后若 `mm->def_flags & VM_LOCKED`，会调用 `mm_populate(oldbrk, newbrk - oldbrk)`，在 brk 返回前就预填新堆区间的页，用户首次访问同样不会触发缺页。
+
+因此：**「申请」堆内存本身通常不触发缺页；缺页发生在首次访问新区间时。** 只有在使用 `MAP_POPULATE` 或 `VM_LOCKED` 时，内核会在申请路径上预填页，此时首次访问不再触发缺页（代价是 brk/mmap 变慢、可能失败）。
+
 ---
 
 ## 总结
@@ -189,28 +201,48 @@ struct free_area {
 
 **3. sys_brk 系统调用**（`mm/mmap.c`）
 
-用户态 `brk`/`sbrk` 的内核入口；通过 `mm->brk`、`mm->start_brk` 与 VMA 扩展堆[^8]。
+用户态 `brk`/`sbrk` 的内核入口；通过 `mm->brk`、`mm->start_brk` 与 VMA 扩展堆。**默认只调 `do_brk_flags()` 扩展 VMA，不分配物理页**；仅当 `mm->def_flags & VM_LOCKED`（如进程曾 `mlockall`）时才在返回前调用 `mm_populate(oldbrk, newbrk - oldbrk)` 预填页，此时用户首次访问新区间不会触发缺页[^8]。
 
 ```c
 // 简化自 mm/mmap.c（约 115 行起）
 SYSCALL_DEFINE1(brk, unsigned long, brk)
 {
     struct mm_struct *mm = current->mm;
+    bool populate = false;
     // ...
-    origbrk = mm->brk;
-    min_brk = mm->start_brk;   /* 堆起始 */
-    // ...
-    newbrk = PAGE_ALIGN(brk);
-    oldbrk = PAGE_ALIGN(mm->brk);
-    if (oldbrk == newbrk) {
-        mm->brk = brk;
-        goto success;
-    }
-    // 扩展或收缩堆 VMA...
+    if (do_brk_flags(&vmi, brkvma, oldbrk, newbrk - oldbrk, 0) < 0)
+        goto out;
+    mm->brk = brk;
+    if (mm->def_flags & VM_LOCKED)
+        populate = true;
+success:
+    mmap_write_unlock(mm);
+    if (populate)
+        mm_populate(oldbrk, newbrk - oldbrk);   /* 仅 VM_LOCKED 时预填页 */
+    return brk;
 }
 ```
 
-**4. Slab 分配接口**（`mm/slub.c`）
+**4. do_brk_flags 只建 VMA**（`mm/vma.c`）
+
+扩展堆时仅创建/扩展匿名 VMA，不分配物理页；物理页在首次访问时由缺页处理分配。
+
+```c
+// 简化自 mm/vma.c（约 2714 行）— do_brk_flags 仅做 VMA 分配与合并，无 alloc_pages/mm_populate
+int do_brk_flags(struct vma_iterator *vmi, struct vm_area_struct *vma,
+                 unsigned long addr, unsigned long len, unsigned long flags)
+{
+    // ... may_expand_vm, security_vm_enough_memory_mm ...
+    vma = vm_area_alloc(mm);   /* 只分配 VMA 结构 */
+    vma_set_anonymous(vma);
+    vma_set_range(vma, addr, addr + len, ...);
+    vm_flags_init(vma, flags);
+    // ... vma_iter_store_gfp, vma_link ... 无 mm_populate
+    return 0;
+}
+```
+
+**5. Slab 分配接口**（`mm/slub.c`）
 
 当前默认 Slab 实现；`kmem_cache_alloc` 从指定 cache 取对象（如 `task_struct`、`vm_area_struct` 等）[^6]。
 
@@ -225,6 +257,10 @@ void *kmem_cache_alloc_noprof(struct kmem_cache *s, gfp_t gfpflags)
 }
 EXPORT_SYMBOL(kmem_cache_alloc_noprof);
 ```
+
+**6. mmap 与 MAP_POPULATE**（`mm/mmap.c`）
+
+默认 `mmap(MAP_ANONYMOUS)` 只建立 VMA，不预填页；若带 **`MAP_POPULATE`**，`do_mmap` 成功后会设 `*populate = len`（约 562–565 行：`(flags & (MAP_POPULATE | MAP_NONBLOCK)) == MAP_POPULATE`），返回前在 `vm_mmap_pgoff` 里调 `mm_populate(ret, populate)`，在内核内把页 fault in，用户首次访问不再触发缺页。
 
 本文引用已用 pdftotext 与本地 kernel 源码校对。
 
