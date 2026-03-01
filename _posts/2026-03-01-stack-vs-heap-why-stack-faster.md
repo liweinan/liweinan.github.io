@@ -66,7 +66,7 @@ title: "栈为什么比堆快：从分配方式到「批发-零售」链条"
 用户程序通过 **`malloc`** 获取堆内存。当内部池不足时，`malloc` 会调用 **`sbrk`** 或 **`mmap`**：
 
 - **`sbrk`** 调整 program break，向内核「圈」出一块新的虚拟地址空间，本身是一次系统调用，成本较高；内核用 `mm->brk` 与 VMA 管理堆顶[^8][^9]。
-- **`malloc`** 把拿到的大块在用户态切分、合并、复用，承担「零售」角色，带来管理开销和可能的碎片。
+- **`malloc`** 把拿到的大块在用户态切分、合并、复用，承担「零售」角色，带来管理开销和可能的碎片。内存池、arena 等做法正是通过减少对 `brk`/`mmap` 的调用次数来降低与内核的交互成本；从系统视角看，这与「用户态与内核态壁垒」、减少系统调用的思路一致，可参见本博客[《为什么「语言速度」是伪命题》](https://weinan.io/2026/03/01/why-language-speed-is-misleading.html)[^10]。
 
 ### 4.4 栈：无中间商的「自家后院」
 
@@ -147,7 +147,7 @@ Arena、pool 等分配器本质是在堆上**模拟栈**：一次性向系统要
 1. **同一进程内，栈和堆的「访问」速度无本质差别**；差异主要来自**分配方式**与**物理页的建立方式**（栈按需缺页，堆常伴随清零或 COW）。
 2. **在缺页发生的那一刻**，栈与堆走同一条内核路径，栈并不比堆快；**栈的快**体现在分配虚拟空间几乎零成本（改栈指针）、缺页通常只发生一次且易被摊薄、以及 LIFO 带来的良好局部性。
 3. 从内核 Buddy → Slab → sbrk/mmap → malloc 到栈，是一条「批发-零售」链；栈在末端、无中间层，分配成本最低。
-4. **「栈比堆快」**是有用的经验法则，但不是普适真理；工程上更值得关心的是「为什么快」和「在什么情况下快」，再按场景选择栈、池或堆。
+4. **「栈比堆快」**是有用的经验法则，但不是普适真理；工程上更值得关心的是「为什么快」和「在什么情况下快」，再按场景选择栈、池或堆。从选型与系统视角看，「谁快」往往不是唯一维度，I/O、并发与内存同内核的交互方式同样关键，可参见本博客[《为什么「语言速度」是伪命题》](https://weinan.io/2026/03/01/why-language-speed-is-misleading.html)[^10]。
 
 ## 扩展阅读
 
@@ -283,3 +283,5 @@ EXPORT_SYMBOL(kmem_cache_alloc_noprof);
 [^8]: Linux 内核 **mm/mmap.c**（`SYSCALL_DEFINE1(brk,...)`、`mm->brk`/`mm->start_brk`）。[Bootlin - mmap.c](https://elixir.bootlin.com/linux/latest/source/mm/mmap.c)
 
 [^9]: Mel Gorman, **Understanding the Linux® Virtual Memory Manager**。[kernel.org PDF](https://www.kernel.org/doc/gorman/pdf/understand.pdf)、[HTML 目录](https://www.kernel.org/doc/gorman/html/understand/)。Ch4/6/8 见扩展阅读
+
+[^10]: 本博客 [为什么「语言速度」是伪命题：I/O、并发、内存与内核](https://weinan.io/2026/03/01/why-language-speed-is-misleading.html) - 系统调用成本、内存池与 I/O 对实际性能的影响
