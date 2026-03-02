@@ -6,7 +6,7 @@ title: "用户态锁与内核：谁在管理「等待」与 futex"
 
 ## 1. 谁在管理「等待」？
 
-用户态程序**无法直接控制 CPU 的调度**，只有内核才有权暂停一个线程（让出 CPU）并在未来某刻恢复它。
+用户态程序**无法直接控制 CPU 的调度**，只有内核才有权暂停一个线程（让出 CPU）并在未来某刻恢复它。内核能获得这一能力，依赖两类入口：**系统调用**（线程主动进入内核，例如调用 `futex` 后在内核里执行 `schedule()` 让出 CPU）与**定时中断**（周期性的时钟中断让内核有机会更新运行时间、设置「需要调度」标志，从而在返回用户态前或下次进入内核时执行 `schedule()`，实现抢占或时间片轮转）。定时中断路径在 Linux 上的实现大致为：时钟事件驱动 **`tick_periodic()`**（传统周期 tick）或 **`tick_nohz_handler()`**（高分辨率/动态 tick）→ **`update_process_times()`**（`kernel/time/timer.c`）→ **`sched_tick()`**（`kernel/sched/core.c`）；`sched_tick()` 的注释写明 “This function gets called by the timer code, with HZ frequency”，在其中更新 runqueue 时钟、调用当前任务所属调度类的 **`task_tick`**，并可能调用 **`resched_curr()`** 标记需要重新调度，从而在适当时机触发 **`__schedule()`** 切换任务[^9]。
 
 - **若锁被占用且等待时间可能较长**：线程需要**阻塞**——主动放弃 CPU、进入睡眠，直到锁被释放。这个「让出 CPU 并睡眠」的动作必须通过内核提供的系统调用来完成，在 Linux 上即 **`futex`** 等[^2][^3]。
 - **若锁只被短暂占用**：线程可以选择**自旋**，即原地循环检查锁状态，不进入内核；线程一直占着 CPU。这仅适用于多核且持锁时间极短的场景，否则会浪费 CPU。
@@ -86,6 +86,7 @@ Exclusive monitor 是硬件状态：若其它 CPU 在该地址上产生了 store
 - **等待与唤醒逻辑**：**`waitwake.c`** 中 `futex_wait_setup()` 将当前任务入队，`__futex_wait()` 调用 `futex_do_wait()` 进入调度；`futex_wake()` 在哈希桶中查找等待者并 `wake_up_q()`[^4][^5]。
 - **futex 设计**：**`kernel/futex/core.c`** 文件头注释（Rusty Russell 等）对 Fast Userspace Mutex 的由来与设计有简要说明；LWN 多篇文章介绍其演进与优化[^2][^6]。
 - **CPU 原子与内存序**：x86 LOCK 前缀与多核原子见 Intel SDM Vol 2A/Vol 3A；ARM 独占加载/存储见 ARM ARM；Linux 内核 **atomic_t.txt**、**memory-barriers.txt** 对原子 RMW 与 acquire/release 的说明[^7][^8]。
+- **定时中断与调度**：**`kernel/time/timer.c`** 中 **`update_process_times()`** 由时钟中断路径调用，内部调用 **`sched_tick()`**；**`kernel/time/tick-common.c`** 的 **`tick_periodic()`**、**`kernel/time/tick-sched.c`** 的 **`tick_nohz_handler()`** → **`tick_sched_handle()`** 均会调用 **`update_process_times()`**；**`kernel/sched/core.c`** 中 **`sched_tick()`** 以 HZ 频率被 timer 代码调用，负责更新 rq 时钟与 **`task_tick`**、必要时 **`resched_curr()`**[^9]。
 
 ---
 
@@ -193,3 +194,5 @@ int futex_wake(u32 __user *uaddr, unsigned int flags, int nr_wake, u32 bitset)
 [^7]: **Intel® 64 and IA-32 Architectures Software Developer’s Manual**：Vol 2A 中 **LOCK**（Instruction set reference）说明 LOCK 前缀可施加的指令及多核原子性；Vol 3A 第 8 章 **Multiple-Processor Management** 涉及 LOCK#、总线与缓存锁定及内存序。可查 [Intel SDM 索引](https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sdm.html) 或 [felixcloutier x86 LOCK](https://www.felixcloutier.com/x86/lock)。
 
 [^8]: **ARM**：架构参考手册中 **Load-Exclusive and Store-Exclusive**（如 LDXR/STXR、LDAXR/STLXR）与 **Synchronization and semaphores** 说明独占监视器与原子 RMW。[ARM Architecture Reference Manual](https://developer.arm.com/documentation/ddi0487/latest)。**Linux 内核**：**Documentation/atomic_t.txt** 描述 atomic RMW API 与 acquire/release 变种；**Documentation/memory-barriers.txt** 描述内存屏障与锁的配对。[atomic_t.txt](https://www.kernel.org/doc/html/latest/core-api/atomic_t.html)、[memory-barriers.txt](https://www.kernel.org/doc/html/latest/core-api/wrappers/memory-barriers.html)
+
+[^9]: **定时中断与调度**：时钟中断路径调用 **`update_process_times()`**（`kernel/time/timer.c`），其内调用 **`sched_tick()`**；`sched_tick()` 在 **`kernel/sched/core.c`** 中实现，注释写明 “gets called by the timer code, with HZ frequency”，内部执行 `update_rq_clock(rq)`、`donor->sched_class->task_tick(rq, donor, 0)` 及条件性的 `resched_curr(rq)`，从而在定时中断上下文中为抢占/时间片提供入口。Tick 入口见 **`kernel/time/tick-common.c`**（`tick_periodic`）与 **`kernel/time/tick-sched.c`**（`tick_nohz_handler` → `tick_sched_handle` → `update_process_times`）。[Bootlin - timer.c](https://elixir.bootlin.com/linux/latest/source/kernel/time/timer.c)、[Bootlin - core.c](https://elixir.bootlin.com/linux/latest/source/kernel/sched/core.c)（搜索 sched_tick）
