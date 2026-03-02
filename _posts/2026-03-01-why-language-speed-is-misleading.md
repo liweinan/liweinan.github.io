@@ -83,7 +83,7 @@ pthread_mutex_unlock(&bucket_lock[key % NBUCKET]);
 if (item) process(item);      /* I/O 与重逻辑在锁外，不阻塞其他桶 */
 ```
 
-可参见：Linux 内核 [Generic Mutex Subsystem](https://docs.kernel.org/locking/mutex-design.html)（mutex 设计、自旋与睡眠的取舍）、[LWN — mutex: implement adaptive spinning](https://lwn.net/Articles/314512/)（竞争下的自适应行为），以及 [Intel Advisor — Reduce Lock Contention](https://www.intel.com/content/www/us/en/docs/advisor/user-guide/2025-0/reduce-lock-contention-001.html)（用户态锁竞争分析与优化思路）[^9]。
+可参见：Linux 内核 [Generic Mutex Subsystem](https://docs.kernel.org/locking/mutex-design.html)（mutex 设计、自旋与睡眠的取舍）、[LWN — mutex: implement adaptive spinning](https://lwn.net/Articles/314512/)（竞争下的自适应行为），以及 [Intel Advisor — Reduce Lock Contention](https://www.intel.com/content/www/us/en/docs/advisor/user-guide/2025-0/reduce-lock-contention-001.html)（用户态锁竞争分析与优化思路）[^9]。用户态锁的阻塞与唤醒如何依赖内核（futex），见本博客[《用户态锁与内核：谁在管理「等待」与 futex》](https://weinan.io/2026/03/02/userspace-locks-and-kernel-futex.html)[^10]。
 
 ---
 
@@ -124,7 +124,7 @@ if (item) process(item);      /* I/O 与重逻辑在锁外，不阻塞其他桶 
 - **epoll**：Linux 内核 **`fs/eventpoll.c`**，`epoll_create1`、`epoll_ctl`、`epoll_wait` 等[^1]。一次 `epoll_wait` 可返回多个就绪 fd，减少系统调用次数。
 - **io_uring**：**`io_uring/io_uring.c`**，`io_uring_setup`、提交与完成队列；适合高 IOPS、低 syscall 场景[^2]。
 - **用户态堆与内核**：`brk`/`mmap`、VMA、缺页与零页见本博客[《栈为什么比堆快》](https://weinan.io/2026/03/01/stack-vs-heap-why-stack-faster.html)[^4]。内核 `mm/mmap.c`（`sys_brk`）、`mm/vma.c`（`do_brk_flags`）。
-- **锁与性能**：细粒度锁、持锁时间最小化、自旋与睡眠取舍见内核 [mutex-design](https://docs.kernel.org/locking/mutex-design.html)、LWN mutex 自适应自旋[^9]，以及 Intel Advisor 锁竞争分析。
+- **锁与性能**：细粒度锁、持锁时间最小化、自旋与睡眠取舍见内核 [mutex-design](https://docs.kernel.org/locking/mutex-design.html)、LWN mutex 自适应自旋[^9]，以及 Intel Advisor 锁竞争分析。用户态锁如何依赖内核（futex）见本博客[《用户态锁与内核》](https://weinan.io/2026/03/02/userspace-locks-and-kernel-futex.html)[^10]。
 
 ---
 
@@ -147,3 +147,5 @@ if (item) process(item);      /* I/O 与重逻辑在锁外，不阻塞其他桶 
 [^8]: **Stop-The-World（STW）**：GC 暂停所有应用线程以独占堆访问，导致延迟尖刺。[Oracle Java GC Tuning - Introduction](https://docs.oracle.com/en/java/javase/21/gctuning/introduction-garbage-collection-tuning.html) 介绍各 GC 与停顿；[A Guide to the Go Garbage Collector](https://go.dev/doc/gc-guide) 说明 Go 的并发 GC 与 STW 阶段
 
 [^9]: **锁与性能**：粗粒度锁与持锁做 I/O 会串行化多线程并拉高延迟。[Generic Mutex Subsystem — The Linux Kernel documentation](https://docs.kernel.org/locking/mutex-design.html) 介绍内核 mutex 设计与自旋/睡眠取舍；[LWN — mutex: implement adaptive spinning](https://lwn.net/Articles/314512/) 讨论竞争下的自适应自旋；[Intel Advisor — Reduce Lock Contention](https://www.intel.com/content/www/us/en/docs/advisor/user-guide/2025-0/reduce-lock-contention-001.html) 提供用户态锁竞争分析与优化思路
+
+[^10]: 本博客 [用户态锁与内核：谁在管理「等待」与 futex](https://weinan.io/2026/03/02/userspace-locks-and-kernel-futex.html) - futex 无竞争 fast path、有竞争时进内核阻塞/唤醒，及内核代码说明
