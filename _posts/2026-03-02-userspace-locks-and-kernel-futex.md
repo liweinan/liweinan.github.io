@@ -80,6 +80,32 @@ Exclusive monitor 是硬件状态：若其它 CPU 在该地址上产生了 store
 
 ---
 
+## 补充阅读：自旋、睡眠与 sleep 时间准确度
+
+### 自旋就是在浪费 CPU 的循环
+
+**自旋（spin）**即拿不到锁时不放弃 CPU，在用户态（或内核态）反复执行「读锁变量 → 判断是否可用 → 再读再判断」的循环，直到锁被释放。这段时间里 CPU 一直在跑这条循环，没有做业务逻辑，从系统角度看就是**空转、浪费该核的算力**。因此自旋只适合「预计很快就能拿到锁」的场景（例如持锁只有几条指令）；否则会长时间白占 CPU。自旋时常配合 **PAUSE**（x86）或 **WFE**（ARM）等指令减轻总线竞争，但本质仍是循环等待。
+
+### CPU 如何「实现」sleep：没有 sleep 指令，靠调度与上下文切换
+
+CPU **没有**「让某条线程 sleep」的指令。「Sleep」是操作系统用**调度 + 上下文切换**实现的效果：CPU 只是在执行当前被调度到的指令流。
+
+- **线程如何睡过去**：线程在用户态执行会阻塞的操作（如 `futex(FUTEX_WAIT)`、`read()` 阻塞 fd）时发生**系统调用**，陷入内核。内核把对应 **task** 挂到**等待队列**，状态改为 **`TASK_INTERRUPTIBLE`** 等，**不再放在 runqueue 上**；随后内核调用 **`schedule()`**，做**上下文切换**——把当前线程的寄存器、PC、栈等存到内存，从 runqueue 选另一 task 加载回 CPU 并执行。从这一刻起，「睡着」的线程的指令不再被 CPU 执行。futex 路径上可见 **`kernel/futex/waitwake.c`** 中 **`set_current_state(TASK_INTERRUPTIBLE|TASK_FREEZABLE)`** 与 **`futex_do_wait()`** 内的 **`schedule()`**[^4][^10]。
+- **CPU 在做什么**：当线程 A sleep 时，A 的上下文保存在内存里，CPU 去执行线程 B 或 idle。没有「sleep」这条指令，只是内核不再把 CPU 分给该线程。
+- **易混淆的指令**：**HLT**（x86）/ **WFI**（ARM）是 idle 任务在「完全没活可干」时用的，让整核等中断，不是「某条线程 sleep」。**PAUSE**（x86）是自旋等锁时用的，不是 sleep。
+
+### Sleep 的时间准确度：定时器到期，由时钟/定时器中断触发唤醒
+
+「睡多久」由内核**定时器（timer）**到期保证；到期由**时钟/定时器中断**（或高精度 timer 回调）触发。
+
+- **带时间的 sleep 在内核里**：例如 `nanosleep(2s)`、`futex_wait(..., timeout)` 时，内核把线程挂到等待队列，并依「当前时间 + 时长」登记一个**高精度定时器（hrtimer）**，到期时间即目标唤醒时间。futex 带超时等待使用 **`struct hrtimer_sleeper`**，在 **`futex_do_wait()`** 中若传入 timeout 会调用 **`hrtimer_sleeper_start_expires(timeout, HRTIMER_MODE_ABS)`**，到期后 hrtimer 回调会间接使该 task 被唤醒[^10]。
+- **时间到了怎么醒**：定时器子系统（如 hrtimer）按到期时间排序，到点由**时钟/定时器中断**或高精度 timer 中断（及后续 softirq）执行回调；对「sleep 到期」的 timer，回调里通过 **wake_up** 等把线程从等待队列移回 **runqueue**，设为可运行。
+- **准确度**：**何时被唤醒（变为 runnable）**由 timer 到期与中断路径保证；**何时真正再次得到 CPU** 还受调度延迟影响（通常为微秒到毫秒级）。高精度定时器（hrtimer）可提供微秒级分辨率；若仅用低分辨率 jiffies，到期检查受 tick 间隔限制。
+
+可参见 **`kernel/futex/waitwake.c`**（`futex_do_wait`、`hrtimer_sleeper_start_expires`、`set_current_state(TASK_INTERRUPTIBLE)`、`schedule()`）及 **`kernel/sched/core.c`**（`schedule()`/`__schedule()` 的上下文切换）[^4][^10]。
+
+---
+
 ## 扩展阅读（内核与接口）
 
 - **futex 系统调用**：**`kernel/futex/syscalls.c`** 中 **`SYSCALL_DEFINE6(futex, ...)`** 与 **`do_futex()`**，根据 `op`（如 `FUTEX_WAIT`、`FUTEX_WAKE`）分发到 **`kernel/futex/waitwake.c`** 的 **`futex_wait()`**、**`futex_wake()`**[^3][^4]。
@@ -87,6 +113,7 @@ Exclusive monitor 是硬件状态：若其它 CPU 在该地址上产生了 store
 - **futex 设计**：**`kernel/futex/core.c`** 文件头注释（Rusty Russell 等）对 Fast Userspace Mutex 的由来与设计有简要说明；LWN 多篇文章介绍其演进与优化[^2][^6]。
 - **CPU 原子与内存序**：x86 LOCK 前缀与多核原子见 Intel SDM Vol 2A/Vol 3A；ARM 独占加载/存储见 ARM ARM；Linux 内核 **atomic_t.txt**、**memory-barriers.txt** 对原子 RMW 与 acquire/release 的说明[^7][^8]。
 - **定时中断与调度**：**`kernel/time/timer.c`** 中 **`update_process_times()`** 由时钟中断路径调用，内部调用 **`sched_tick()`**；**`kernel/time/tick-common.c`** 的 **`tick_periodic()`**、**`kernel/time/tick-sched.c`** 的 **`tick_nohz_handler()`** → **`tick_sched_handle()`** 均会调用 **`update_process_times()`**；**`kernel/sched/core.c`** 中 **`sched_tick()`** 以 HZ 频率被 timer 代码调用，负责更新 rq 时钟与 **`task_tick`**、必要时 **`resched_curr()`**[^9]。
+- **自旋、睡眠与 sleep 时间**：自旋即占 CPU 的循环等待；sleep 由内核等待队列 + **`schedule()`** 实现，无专用 CPU 指令。带超时的 sleep 依赖 **hrtimer** 到期，由时钟/定时器中断触发唤醒。见 **`kernel/futex/waitwake.c`**（`futex_do_wait`、`hrtimer_sleeper_start_expires`、`TASK_INTERRUPTIBLE`、`schedule()`）[^10]。
 
 ---
 
@@ -196,3 +223,5 @@ int futex_wake(u32 __user *uaddr, unsigned int flags, int nr_wake, u32 bitset)
 [^8]: **ARM**：架构参考手册中 **Load-Exclusive and Store-Exclusive**（如 LDXR/STXR、LDAXR/STLXR）与 **Synchronization and semaphores** 说明独占监视器与原子 RMW。[ARM Architecture Reference Manual](https://developer.arm.com/documentation/ddi0487/latest)。**Linux 内核**：**Documentation/atomic_t.txt** 描述 atomic RMW API 与 acquire/release 变种；**Documentation/memory-barriers.txt** 描述内存屏障与锁的配对。[atomic_t.txt](https://www.kernel.org/doc/html/latest/core-api/atomic_t.html)、[memory-barriers.txt](https://www.kernel.org/doc/html/latest/core-api/wrappers/memory-barriers.html)
 
 [^9]: **定时中断与调度**：时钟中断路径调用 **`update_process_times()`**（`kernel/time/timer.c`），其内调用 **`sched_tick()`**；`sched_tick()` 在 **`kernel/sched/core.c`** 中实现，注释写明 “gets called by the timer code, with HZ frequency”，内部执行 `update_rq_clock(rq)`、`donor->sched_class->task_tick(rq, donor, 0)` 及条件性的 `resched_curr(rq)`，从而在定时中断上下文中为抢占/时间片提供入口。Tick 入口见 **`kernel/time/tick-common.c`**（`tick_periodic`）与 **`kernel/time/tick-sched.c`**（`tick_nohz_handler` → `tick_sched_handle` → `update_process_times`）。[Bootlin - timer.c](https://elixir.bootlin.com/linux/latest/source/kernel/time/timer.c)、[Bootlin - core.c](https://elixir.bootlin.com/linux/latest/source/kernel/sched/core.c)（搜索 sched_tick）
+
+[^10]: **自旋、睡眠与 sleep 时间**：**`kernel/futex/waitwake.c`** 中 **`futex_do_wait()`** 在传入 timeout 时调用 **`hrtimer_sleeper_start_expires(timeout, HRTIMER_MODE_ABS)`** 启动高精度定时器，随后在 `plist_node_empty` 检查通过时调用 **`schedule()`** 让出 CPU；入队前通过 **`set_current_state(TASK_INTERRUPTIBLE|TASK_FREEZABLE)`** 将当前任务设为可中断睡眠（见同文件约 441、659 行及 341–360 行）。定时器到期由时钟/高精度 timer 中断路径触发回调，从而唤醒该 task。[Bootlin - waitwake.c](https://elixir.bootlin.com/linux/latest/source/kernel/futex/waitwake.c)
