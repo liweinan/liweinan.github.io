@@ -35,7 +35,110 @@ title: "栈为什么比堆快：从分配方式到「批发-零售」链条"
 
 需要强调的是：**在发生缺页的那一刻**，栈和堆走的是同一条内核路径（#PF → 分配物理页 → 建立映射，必要时清零），单看这一次缺页本身，**栈并不比堆快**。栈的「快」体现在：分配虚拟空间无需系统调用（§1）；缺页通常只在首次触及该页时发生一次，成本被摊薄；一旦物理页已常驻，栈与堆的访问就是普通内存访问，没有差别。
 
-**类比**：`sub rsp, N` 像在借书卡（页表）上登记一个新书名（虚拟地址），只是记录；**首次访问**像第一次去书架上取书——管理员发现书（物理页）还在仓库，于是取书、上架、更新借书卡，你才能拿到；若该地址不在进程合法地址空间内，则相当于“查无此书”，会引发 SIGSEGV 等错误。
+**类比**：`sub rsp, N` 像在借书卡（页表）上登记一个新书名（虚拟地址），只是记录；**首次访问**像第一次去书架上取书——管理员发现书（物理页）还在仓库，于是取书、上架、更新借书卡，你才能拿到；若该地址不在进程合法地址空间内，则相当于”查无此书”，会引发 SIGSEGV 等错误。
+
+### 内核视角：栈与堆的本质区别是 VMA 生命周期
+
+从内核角度看，**并不区分”栈”与”堆”**，只区分**虚拟内存区域（VMA）的类型和生命周期**。理解这一点是理解性能差异的关键。
+
+#### 栈 VMA：进程级生命周期
+
+栈在进程启动时由内核创建（`fs/exec.c:setup_arg_pages()`），设置 **`VM_GROWSDOWN`** 标志，表明这是一个”向下增长”的区域：
+
+```c
+// 简化自 fs/exec.c:778
+static int setup_arg_pages(struct linux_binprm *bprm, ...) {
+    vma = vm_area_alloc(mm);
+    vma->vm_start = stack_top - STACK_TOP_MAX;  // 通常 8MB
+    vma->vm_end = stack_top;
+    vma->vm_flags = VM_STACK_FLAGS | VM_GROWSDOWN;  // 唯一特殊标志
+    insert_vm_struct(mm, vma);
+    // 关键：只创建 VMA，不分配物理页
+    return 0;
+}
+```
+
+**关键点**：
+1. VMA 在**进程启动时**创建，**进程退出时**销毁（生命周期 = 进程）
+2. `VM_GROWSDOWN` 只是一个标志位，告诉内核这个 VMA 可以向低地址扩展
+3. 创建时**不分配任何物理页**，物理页在首次访问时按需分配
+4. **函数调用期间，VMA 始终存在**——这就是为什么栈分配不需要系统调用
+
+#### 堆 VMA：两种生命周期
+
+**brk 堆**（小块分配）：
+
+```c
+// 简化自 mm/mmap.c:115
+SYSCALL_DEFINE1(brk, unsigned long, brk) {
+    // 扩展堆顶，可能扩展已有 VMA 或创建新 VMA
+    if (do_brk_flags(&vmi, brkvma, oldbrk, newbrk - oldbrk, 0) < 0)
+        goto out;
+    mm->brk = brk;  // 更新堆顶指针
+    // 关键：也只修改 VMA，不分配物理页（除非 VM_LOCKED）
+}
+```
+
+- **生命周期**：首次 `brk()` 时创建，进程退出时销毁（类似栈）
+- **无特殊标志**：没有 `VM_GROWSDOWN`，但 VMA 同样持久
+
+**mmap 堆**（大块分配，通常 ≥128KB）：
+
+```c
+// 简化自 mm/mmap.c:337
+unsigned long do_mmap(struct file *file, unsigned long addr, ...) {
+    vma = vm_area_alloc(mm);
+    vma->vm_start = addr;
+    vma->vm_end = addr + len;
+    vma_link(mm, vma, ...);  // 插入红黑树
+    return addr;
+}
+
+// munmap 销毁
+int do_munmap(...) {
+    unmap_page_range(vma, ...);   // 删除页表项
+    free_pgtables(...);            // 释放页表
+    remove_vma(vma);               // 删除 VMA
+}
+```
+
+- **生命周期**：每次 `mmap()` 创建，每次 `munmap()` 销毁（临时性）
+- **无特殊标志**：普通匿名映射
+- **关键差异**：每次 `malloc`/`free` 大块时都要创建/销毁 VMA，触发系统调用
+
+#### 缺页处理：栈与堆完全相同
+
+无论是栈、brk 堆还是 mmap 堆，首次访问时都走同一条缺页路径：
+
+```c
+// mm/memory.c:5022
+static vm_fault_t do_anonymous_page(struct vm_fault *vmf) {
+    folio = alloc_anon_folio(vmf);        // 分配物理页
+    __folio_mark_uptodate(folio);         // 清零
+    entry = folio_mk_pte(folio, ...);
+    set_ptes(vma->vm_mm, addr, ...);      // 建立页表映射
+    // 内核不关心这是栈还是堆！处理流程完全相同
+    return 0;
+}
+```
+
+**结论**：在缺页处理层面，栈和堆**没有任何区别**。单次缺页的成本相同（~20-50μs），都需要分配物理页、清零、建立页表。
+
+#### 性能差异的真正来源
+
+| 维度 | 栈 VMA | brk 堆 VMA | mmap 堆 VMA |
+|------|--------|-----------|------------|
+| **VMA 标志** | VM_GROWSDOWN | 无 | 无 |
+| **生命周期** | 进程级别 | 进程级别 | malloc/free 级别 |
+| **创建/销毁** | 进程启动/退出 | 首次 brk/进程退出 | 每次 mmap/munmap |
+| **页表持久性** | 持久（扩展时保留） | 持久（扩展时保留） | 临时（munmap 删除） |
+| **缺页处理** | do_anonymous_page | do_anonymous_page | do_anonymous_page |
+| **运行时系统调用** | 0 次 | 0 次（扩展后） | 每次分配/释放 2 次 |
+
+**性能差异不是因为内核对栈和堆的”处理方式”不同**，而是：
+1. **VMA 生命周期不同**：栈的 VMA 在进程启动时创建，持续到进程结束；mmap 堆的 VMA 每次 malloc/free 都要创建/销毁
+2. **系统调用频率不同**：栈分配只需改栈指针（CPU 指令），mmap 堆每次都要 `mmap()/munmap()` 系统调用
+3. **页表持久性不同**：栈扩展（`expand_stack_locked`）只修改 VMA 范围，页表映射保留；`munmap` 会删除页表，下次 `mmap` 必须重建
 
 ### 堆：mmap 与安全清零
 
@@ -153,9 +256,10 @@ Arena、pool 等分配器本质是在堆上**模拟栈**：一次性向系统要
 ## 总结
 
 1. **同一进程内，栈和堆的「访问」速度无本质差别**；差异主要来自**分配方式**与**物理页的建立方式**（栈按需缺页，堆常伴随清零或 COW）。
-2. **在缺页发生的那一刻**，栈与堆走同一条内核路径，栈并不比堆快；**栈的快**体现在分配虚拟空间几乎零成本（改栈指针）、缺页通常只发生一次且易被摊薄、以及 LIFO 带来的良好局部性。
-3. 从内核 Buddy → Slab → sbrk/mmap → malloc 到栈，是一条「批发-零售」链；栈在末端、无中间层，分配成本最低。
-4. **「栈比堆快」**是有用的经验法则，但不是普适真理；工程上更值得关心的是「为什么快」和「在什么情况下快」，再按场景选择栈、池或堆。从选型与系统视角看，「谁快」往往不是唯一维度，I/O、并发与内存同内核的交互方式同样关键，可参见本博客[《为什么「语言速度」是伪命题》](https://weinan.io/2026/03/01/why-language-speed-is-misleading.html)[^10]。
+2. **内核不区分"栈"与"堆"，只区分 VMA 的类型和生命周期**：栈的特殊性仅是 `VM_GROWSDOWN` 标志；真正的性能差异来自 VMA 生命周期——栈 VMA 在进程启动时创建、进程退出时销毁（0 次运行时系统调用），mmap 堆 VMA 每次 malloc/free 都要创建/销毁（频繁系统调用）。
+3. **在缺页发生的那一刻**，栈与堆走同一条内核路径（`do_anonymous_page`），单次成本相同（~20-50μs）；**栈的快**体现在：分配虚拟空间零成本（改栈指针）、VMA 持久（无系统调用）、页表持久（`expand_stack` 保留映射，避免反复缺页）、LIFO 带来的缓存局部性。
+4. 从内核 Buddy → Slab → sbrk/mmap → malloc 到栈，是一条「批发-零售」链；栈在末端、无中间层，分配成本最低。
+5. **「栈比堆快」**是有用的经验法则，但不是普适真理；工程上更值得关心的是「为什么快」和「在什么情况下快」，再按场景选择栈、池或堆。从选型与系统视角看，「谁快」往往不是唯一维度，I/O、并发与内存同内核的交互方式同样关键，可参见本博客[《为什么「语言速度」是伪命题》](https://weinan.io/2026/03/01/why-language-speed-is-misleading.html)[^10]。
 
 ## 扩展阅读
 
@@ -177,7 +281,59 @@ Arena、pool 等分配器本质是在堆上**模拟栈**：一次性向系统要
 
 ### Linux 内核源码（代码片段与文件说明）
 
-**1. 进程地址空间：堆与栈的起止**（`include/linux/mm_types.h`）
+**1. 栈 VMA 的创建：setup_arg_pages**（`fs/exec.c`）
+
+进程启动时创建栈 VMA，设置 `VM_GROWSDOWN` 标志，生命周期 = 进程。关键：只创建 VMA，不分配物理页。
+
+```c
+// 简化自 fs/exec.c:778
+static int setup_arg_pages(struct linux_binprm *bprm, ...) {
+    vma = vm_area_alloc(mm);
+    vma->vm_start = stack_top - STACK_TOP_MAX;  // 通常 8MB
+    vma->vm_end = stack_top;
+    vma->vm_flags = VM_STACK_FLAGS | VM_GROWSDOWN;  // 栈的唯一特殊标志
+    vma->vm_page_prot = vm_get_page_prot(vma->vm_flags);
+    insert_vm_struct(mm, vma);
+    mm->stack_vm += vma_pages(vma);
+    return 0;
+}
+```
+
+**2. 栈扩展：expand_stack_locked**（`mm/mmap.c`）
+
+栈向下增长时只修改 VMA 范围，**不删除页表**，物理页映射保留。这是栈分配快的关键：页表持久，避免反复缺页。
+
+```c
+// 简化自 mm/mmap.c:961
+int expand_stack_locked(struct vm_area_struct *vma, unsigned long address) {
+    if (!(vma->vm_flags & VM_GROWSDOWN))
+        return -EFAULT;  // 检查是否是栈 VMA
+
+    vma->vm_start = address;  // 只修改 VMA 起始地址
+    mm->stack_vm += grow;
+    // 关键：不删除页表！已分配的物理页映射保留
+    return 0;
+}
+```
+
+**3. 缺页处理：do_anonymous_page**（`mm/memory.c`）
+
+栈、brk 堆、mmap 堆首次访问时都调用此函数，处理流程**完全相同**。单次缺页成本相同（~20-50μs），差异在于缺页**频率**。
+
+```c
+// 简化自 mm/memory.c:5022
+static vm_fault_t do_anonymous_page(struct vm_fault *vmf) {
+    folio = alloc_anon_folio(vmf);        // 分配物理页（栈、堆相同）
+    __folio_mark_uptodate(folio);         // 清零（栈、堆相同）
+    entry = folio_mk_pte(folio, vma->vm_page_prot);
+    set_ptes(vma->vm_mm, addr, vmf->pte, entry, nr_pages);  // 建立页表
+    add_mm_counter(vma->vm_mm, MM_ANONPAGES, nr_pages);
+    // 内核不关心这是栈还是堆！
+    return 0;
+}
+```
+
+**4. 进程地址空间：堆与栈的起止**（`include/linux/mm_types.h`）
 
 `mm_struct` 中描述堆与栈的字段；`sys_brk` 通过 `mm->brk`、`mm->start_brk` 管理堆顶[^8][^9]。
 
@@ -288,7 +444,7 @@ EXPORT_SYMBOL(kmem_cache_alloc_noprof);
 
 [^7]: Linux 内核 **mm/page_alloc.c**（`__alloc_pages`、`zone->free_area`）、**include/linux/mmzone.h**（`struct free_area`）。[Bootlin - page_alloc.c](https://elixir.bootlin.com/linux/latest/source/mm/page_alloc.c)
 
-[^8]: Linux 内核 **mm/mmap.c**（`SYSCALL_DEFINE1(brk,...)`、`mm->brk`/`mm->start_brk`）。[Bootlin - mmap.c](https://elixir.bootlin.com/linux/latest/source/mm/mmap.c)
+[^8]: Linux 内核 **mm/mmap.c**（`SYSCALL_DEFINE1(brk,...)`、`mm->brk`/`mm->start_brk`、`expand_stack_locked`）、**fs/exec.c**（`setup_arg_pages` 创建栈 VMA）、**mm/memory.c**（`do_anonymous_page` 缺页处理）。[Bootlin - mmap.c](https://elixir.bootlin.com/linux/latest/source/mm/mmap.c)、[exec.c](https://elixir.bootlin.com/linux/latest/source/fs/exec.c)、[memory.c](https://elixir.bootlin.com/linux/latest/source/mm/memory.c)
 
 [^9]: Mel Gorman, **Understanding the Linux® Virtual Memory Manager**。[kernel.org PDF](https://www.kernel.org/doc/gorman/pdf/understand.pdf)、[HTML 目录](https://www.kernel.org/doc/gorman/html/understand/)。Ch4/6/8 见扩展阅读
 
