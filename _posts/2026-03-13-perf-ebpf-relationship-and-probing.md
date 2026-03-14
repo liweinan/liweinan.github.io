@@ -60,6 +60,103 @@ eBPF 程序还可以通过 perf 子系统读取性能数据。辅助函数 `bpf_
 | **工具整合** | `perf` 从早期的「BPF 事件」演进为使用 libbpf 的 **BPF skeleton** 加载 eBPF 程序。 |
 | **安全模型** | `CAP_PERFMON` 与 `CAP_BPF` 共同控制对 perf_events 与 eBPF 追踪能力的访问。 |
 
+下图概括 eBPF 与 perf 在内核中的架构关系、挂载点及数据通道（用户空间工具、系统调用、eBPF 核心与 Map、动态/静态探针、perf_events 子系统及与硬件的交互）：
+
+```mermaid
+graph TB
+    subgraph Userspace["用户空间 (Userspace)"]
+        Tools["perf CLI / bpftrace / BCC"]
+        Libs["libbpf / libbcc"]
+    end
+
+    subgraph Kernel["内核空间 (Kernel Space)"]
+        subgraph Syscall["系统调用层"]
+            BPF_Syscall["bpf() 系统调用"]
+            Perf_Syscall["perf_event_open() 系统调用"]
+        end
+
+        subgraph BPF_Core["eBPF核心虚拟机"]
+            Verifier["验证器 (Verifier)"]
+            JIT["JIT编译器"]
+            Helper["辅助函数 (Helper Funcs)"]
+        end
+
+        subgraph BPF_Maps["eBPF Map存储系统"]
+            Hash_Map["Hash Map"]
+            Array_Map["Array Map"]
+            Perf_Array["Perf Event Array"]
+            Ring_Buffer["Ring Buffer Map"]
+        end
+
+        subgraph BPF_Hooks["eBPF程序挂载点"]
+            subgraph Dynamic["动态探针"]
+                Kprobe["kprobe (内核函数)"]
+                Uprobe["uprobe (用户函数)"]
+            end
+
+            subgraph Static["静态探针"]
+                Tracepoint["tracepoint (内核静态点)"]
+                USDT["USDT (用户静态点)"]
+            end
+
+            subgraph Network["网络钩子"]
+                XDP["XDP (网卡驱动层)"]
+                TC["TC (协议栈)"]
+                Socket["Socket Filter"]
+            end
+
+            subgraph Perf_Collab["Perf协作层"]
+                Perf_Event_Prog["BPF_PROG_TYPE_PERF_EVENT"]
+            end
+        end
+
+        subgraph Perf_Subsystem["perf_events子系统"]
+            Perf_RingBuffer["环形缓冲区 (Ring Buffer)"]
+            Perf_PMU["硬件PMU计数器"]
+            Perf_Events["软件事件计数"]
+            Perf_Tracepoint["tracepoint管理"]
+        end
+    end
+
+    subgraph Hardware["硬件层"]
+        CPU["CPU (含PMU)"]
+        NIC["网卡"]
+        Memory["内存"]
+    end
+
+    Tools --> Libs
+    Libs --> BPF_Syscall
+    Libs --> Perf_Syscall
+
+    BPF_Syscall --> BPF_Core
+    Perf_Syscall --> Perf_Subsystem
+
+    BPF_Core --> BPF_Maps
+    BPF_Core --> BPF_Hooks
+
+    BPF_Hooks -.-> Perf_Event_Prog
+    Perf_Event_Prog --> Perf_Subsystem
+
+    Perf_Array -.-> Perf_RingBuffer
+    Ring_Buffer -.-> Perf_RingBuffer
+
+    Kprobe -.-> |"动态插桩"| Kernel_Funcs["内核任意函数"]
+    Uprobe -.-> |"动态插桩"| User_Funcs["用户态任意函数"]
+    Tracepoint -.-> |"静态预埋"| Kernel_Points["内核预定义点"]
+    USDT -.-> |"静态预埋"| User_Points["用户态预定义点"]
+
+    XDP -.-> |"最早阶段"| NIC
+    TC -.-> |"协议栈入口"| Network_Stack["内核协议栈"]
+
+    Perf_PMU --> CPU
+    Perf_PMU --> Memory
+
+    BPF_Maps --> |"数据输出"| Libs
+    Perf_RingBuffer --> |"性能数据"| Libs
+```
+
+（若站点支持 Mermaid 渲染，上图会显示为流程图；否则会显示为代码块。）
+
 ---
 
 ## 二、「埋点」思路的演进：预制传感器 vs 可编程探头
