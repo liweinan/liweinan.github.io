@@ -159,6 +159,38 @@ graph TB
 
 （若站点支持 Mermaid 渲染，上图会显示为流程图；否则会显示为代码块。）
 
+下图从**用户空间工具生态**视角概括 perf、BCC、bpftrace、libbpf 如何通过 `bpf()` 系统调用进入内核 eBPF 子系统并最终作用到硬件：
+
+```mermaid
+flowchart TD
+    subgraph Userspace [用户空间工具生态]
+        direction TB
+        Tools["perf / 系统工具"] --> |"直接调用"| Syscall
+        BCC["BCC工具集<br/>(BPF Compiler Collection)"] --> |"封装复杂逻辑<br/>提供70+现成工具"| Syscall
+        bpftrace["bpftrace<br/>(高阶层级语言)"] --> |"基于BCC/libbpf<br/>提供脚本语言"| Syscall
+        Libbpf["libbpf<br/>(C库，支持CO-RE)"] --> |"轻量级库<br/>直接控制"| Syscall
+    end
+
+    subgraph Kernel [内核空间]
+        Syscall["bpf() 系统调用"]
+        Syscall --> BPFSubsys["eBPF子系统<br/>(验证器、JIT、辅助函数)"]
+        BPFSubsys --> Hooks["挂载点<br/>(kprobe/uprobe/tracepoint/...)"]
+    end
+
+    subgraph Hardware [硬件]
+        CPU["CPU (含PMU)"]
+        Mem["内存"]
+        Dev["设备"]
+    end
+
+    Hooks --> Hardware
+
+    style BCC fill:#e1f5fe,stroke:#01579b
+    style bpftrace fill:#fff3e0,stroke:#e65100
+    style Libbpf fill:#f3e5f5,stroke:#4a148c
+    style Syscall fill:#e8e8e8,stroke:#666
+```
+
 ---
 
 ## 二、「埋点」思路的演进：预制传感器 vs 可编程探头
