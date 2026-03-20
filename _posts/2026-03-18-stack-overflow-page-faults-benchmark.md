@@ -96,6 +96,12 @@ graph TB
 - `task_struct` 里 `mm` / `active_mm` 的关系与经典描述一致。
 - 缺页建立映射时，VMA 负责“地址区间与权限语义”，页表负责“虚拟地址到物理页”的具体映射。
 
+### 核心结构体定义文件（对照阅读）
+
+- `struct mm_struct`：`include/linux/mm_types.h`
+- `struct vm_area_struct`：`include/linux/mm_types.h`
+- `struct task_struct`：`include/linux/sched.h`
+
 ## 四、缺页时栈如何扩展：从查 VMA 到 expand_downwards
 
 用户访问栈上尚未映射的地址时，CPU 触发缺页异常，进入架构相关的 fault 处理（如 x86-64 的 `do_user_addr_fault`），再通过通用层查找 VMA 并决定是否扩展栈。
