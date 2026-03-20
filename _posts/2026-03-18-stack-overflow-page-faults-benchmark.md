@@ -101,6 +101,9 @@ graph TB
 - `struct mm_struct`：`include/linux/mm_types.h`
 - `struct vm_area_struct`：`include/linux/mm_types.h`
 - `struct task_struct`：`include/linux/sched.h`
+- `mm_struct.mm_mt` 的类型 `struct maple_tree`：`include/linux/maple_tree.h`
+  - 字段出现位置：`include/linux/mm_types.h`（`struct maple_tree mm_mt;`）
+  - Maple Tree 实现文件：`lib/maple_tree.c`
 
 ## 四、缺页时栈如何扩展：从查 VMA 到 expand_downwards
 
