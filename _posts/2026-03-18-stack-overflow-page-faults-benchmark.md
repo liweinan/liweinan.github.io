@@ -111,27 +111,28 @@ graph TB
 
 1. `mm_struct` 里持有 `struct maple_tree mm_mt`（树容器）。
 2. `maple_tree` 本体（`struct maple_tree`）只有锁、flags、`ma_root` 根指针，不直接内嵌 `vm_area_struct`。  
-3. 真正的节点是 `struct maple_node`；节点里有 `slot[]`，并通过 `maple_range_64` / `maple_arange_64` 维护 `pivot[]`（地址分界）。
-4. 在 mm 场景中，`slot[]` 存放的是 `struct vm_area_struct *`（以 `void *` 形式存）。
+3. `ma_root` 是编码过的 `void *` 入口：
+   - 常见（多条目）情况：`ma_root -> maple_node -> slot[] -> vma*`
+   - 单条目优化情况：`ma_root` 可直接承载条目（编码后的 `vma*`），不经过 `maple_node`
+4. 真正的节点是 `struct maple_node`；节点里有 `slot[]`，并通过 `maple_range_64` / `maple_arange_64` 维护 `pivot[]`（地址分界）。
+5. 在 mm 场景中，`slot[]` 存放的是 `struct vm_area_struct *`（以 `void *` 形式存）。
 
 ```mermaid
 graph TB
-  MM[mm_struct]
-  MT[mm_mt : struct maple_tree]
-  ROOT[ma_root]
-  NODE[maple_node]
-  PIV[pivot[]
-地址区间边界]
-  SLOTS[slot[]
-value = vma*]
-  A[VMA_A*
-vm_start..vm_end]
-  B[VMA_B*
-vm_start..vm_end]
-  C[VMA_C*
-vm_start..vm_end]
+  MM["mm_struct"]
+  MT["mm_mt: struct maple_tree"]
+  ROOT["ma_root"]
+  DIRECT["direct encoded entry<br/>(single-entry optimization)"]
+  NODE["maple_node"]
+  PIV["pivot array<br/>地址区间边界"]
+  SLOTS["slot array<br/>value = vma*"]
+  A["VMA_A*<br/>vm_start..vm_end"]
+  B["VMA_B*<br/>vm_start..vm_end"]
+  C["VMA_C*<br/>vm_start..vm_end"]
 
-  MM --> MT --> ROOT --> NODE
+  MM --> MT --> ROOT
+  ROOT --> NODE
+  ROOT --> DIRECT --> A
   NODE --> PIV
   NODE --> SLOTS
   SLOTS --> A
@@ -154,7 +155,10 @@ vm_start..vm_end]
 ### 查找过程：给定地址 -> 命中 VMA
 
 `vma_iterator` 通过 `mas_init(&vmi->mas, &mm->mm_mt, addr)` 绑定到当前进程的 `mm_mt`，
-随后 `vma_find()` 调 `mas_find()` 从 `ma_root` 开始按 pivot 导航，命中对应 slot 后返回 `vm_area_struct *`。
+随后 `vma_find()` 调 `mas_find()` 从 `ma_root` 开始查找：
+
+- 若 `ma_root` 为直接条目，直接返回对应 `vm_area_struct *`；
+- 若 `ma_root` 指向节点，则按 `pivot` 导航到 `slot[]`，再返回对应 `vm_area_struct *`。
 
 这一点也解释了为什么当前内核文档口径应该写成：
 
