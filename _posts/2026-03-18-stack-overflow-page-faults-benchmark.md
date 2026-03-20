@@ -105,6 +105,63 @@ graph TB
   - 字段出现位置：`include/linux/mm_types.h`（`struct maple_tree mm_mt;`）
   - Maple Tree 实现文件：`lib/maple_tree.c`
 
+### Maple Tree 与 VMA 的真实绑定关系（结构 + 流程）
+
+上面的关系图强调了 `mm_mt` 与 VMA 的关联，这里把“结构体层面怎么存”说清楚：
+
+1. `mm_struct` 里持有 `struct maple_tree mm_mt`（树容器）。
+2. `maple_tree` 本体（`struct maple_tree`）只有锁、flags、`ma_root` 根指针，不直接内嵌 `vm_area_struct`。  
+3. 真正的节点是 `struct maple_node`；节点里有 `slot[]`，并通过 `maple_range_64` / `maple_arange_64` 维护 `pivot[]`（地址分界）。
+4. 在 mm 场景中，`slot[]` 存放的是 `struct vm_area_struct *`（以 `void *` 形式存）。
+
+```mermaid
+graph TB
+  MM[mm_struct]
+  MT[mm_mt : struct maple_tree]
+  ROOT[ma_root]
+  NODE[maple_node]
+  PIV[pivot[]
+地址区间边界]
+  SLOTS[slot[]
+value = vma*]
+  A[VMA_A*
+vm_start..vm_end]
+  B[VMA_B*
+vm_start..vm_end]
+  C[VMA_C*
+vm_start..vm_end]
+
+  MM --> MT --> ROOT --> NODE
+  NODE --> PIV
+  NODE --> SLOTS
+  SLOTS --> A
+  SLOTS --> B
+  SLOTS --> C
+```
+
+### 创建（绑定）过程：地址区间 -> VMA 指针
+
+在 `mm/vma.h` 的 `vma_iter_store_gfp()` 里，内核会：
+
+- 用 `__mas_set_range(&vmi->mas, vma->vm_start, vma->vm_end - 1)` 设定 key 区间；
+- 再用 `mas_store_gfp(&vmi->mas, vma, gfp)` 把 `vma*` 作为 value 存入 `mm_mt`。
+
+因此绑定关系是：
+
+- **key** = 虚拟地址范围 `[vm_start, vm_end)`（内部以 `start..end-1` 存）
+- **value** = `struct vm_area_struct *`
+
+### 查找过程：给定地址 -> 命中 VMA
+
+`vma_iterator` 通过 `mas_init(&vmi->mas, &mm->mm_mt, addr)` 绑定到当前进程的 `mm_mt`，
+随后 `vma_find()` 调 `mas_find()` 从 `ma_root` 开始按 pivot 导航，命中对应 slot 后返回 `vm_area_struct *`。
+
+这一点也解释了为什么当前内核文档口径应该写成：
+
+- “Maple Tree (`mm_mt`) 按地址区间索引 VMA 指针”
+
+而不是旧口径的“`mmap` 链表 + `mm_rb` 红黑树”主路径。
+
 ## 四、缺页时栈如何扩展：从查 VMA 到 expand_downwards
 
 用户访问栈上尚未映射的地址时，CPU 触发缺页异常，进入架构相关的 fault 处理（如 x86-64 的 `do_user_addr_fault`），再通过通用层查找 VMA 并决定是否扩展栈。
