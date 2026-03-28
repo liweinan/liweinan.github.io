@@ -46,8 +46,8 @@ img.site-logo {
     object-fit: cover;
     flex-shrink: 0;
     display: block;
-    /* 相对 Palatino/中文标题略作下移，与字重心的光学对齐 */
-    transform: translateY(0.06em);
+    /* 相对 Palatino/中文标题下移，与字重心/基线视觉对齐 */
+    transform: translateY(0.15em);
 }
 
 span.site-title {
