@@ -37,6 +37,22 @@ a.site-brand {
     font-size: 1.5em;
     /* 避免继承 .main 的 150% 行高，否则行框过高会导致 logo 与字形视觉不齐 */
     line-height: 1;
+    /* 标题与 logo 容器共用，保证行框高度一致 */
+    --site-title-font-family: "Palatino Linotype", "Book Antiqua", Palatino, Helvetica, STKaiti, SimSun, serif;
+    --site-title-line-height: 1.15;
+}
+
+/* 高度 = 与 .site-title 相同的单行行框，内部 flex 居中，不依赖 translate 微调 */
+span.site-logo-wrap {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-family: var(--site-title-font-family);
+    font-size: 1em;
+    font-weight: 600;
+    line-height: var(--site-title-line-height);
+    height: calc(1em * var(--site-title-line-height));
 }
 
 img.site-logo {
@@ -46,16 +62,14 @@ img.site-logo {
     object-fit: cover;
     flex-shrink: 0;
     display: block;
-    /* 相对 Palatino/中文标题下移，与字重心/基线视觉对齐 */
-    transform: translateY(0.15em);
 }
 
 span.site-title {
-    font-family: "Palatino Linotype", "Book Antiqua", Palatino, Helvetica, STKaiti, SimSun, serif;
+    font-family: var(--site-title-font-family);
     font-size: 1em;
     font-weight: 600;
     color: #555;
-    line-height: 1.15;
+    line-height: var(--site-title-line-height);
 }
 
 a.site-brand:hover {
