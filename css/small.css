@@ -1,12 +1,12 @@
 div.main {
   width: 100%;
-  padding: 0 0 0 0;
+  padding: 1rem 0.75em 2em;
   border: none;
 }
 
 /* Site header for mobile */
 div.site-header {
-  padding: 0.5em 0;
+  padding: 0.85em 0 1em;
   margin-bottom: 1em;
 }
 
