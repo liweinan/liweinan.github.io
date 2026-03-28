@@ -35,6 +35,8 @@ a.site-brand {
     transition: all 0.2s ease;
     /* 与标题同一字号基准，logo 用 em 与「阿男的小窝」对齐 */
     font-size: 1.5em;
+    /* 避免继承 .main 的 150% 行高，否则行框过高会导致 logo 与字形视觉不齐 */
+    line-height: 1;
 }
 
 img.site-logo {
@@ -43,7 +45,9 @@ img.site-logo {
     border-radius: 0.2em;
     object-fit: cover;
     flex-shrink: 0;
-    vertical-align: middle;
+    display: block;
+    /* 相对 Palatino/中文标题略作下移，与字重心的光学对齐 */
+    transform: translateY(0.06em);
 }
 
 span.site-title {
@@ -51,6 +55,7 @@ span.site-title {
     font-size: 1em;
     font-weight: 600;
     color: #555;
+    line-height: 1.15;
 }
 
 a.site-brand:hover {
