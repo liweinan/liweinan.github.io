@@ -10,9 +10,10 @@ div.site-header {
   margin-bottom: 1em;
 }
 
-a.site-title {
-  font-size: 1.2em;
+a.site-brand {
   padding: 0.3em 0.5em;
+  gap: 0.45em;
+  font-size: 1.2em;
 }
 
 H1, H2 {

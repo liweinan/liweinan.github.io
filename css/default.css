@@ -24,21 +24,42 @@ div.site-header {
     margin-bottom: 1.5em;
 }
 
-a.site-title {
-    font-family: "Palatino Linotype", "Book Antiqua", Palatino, Helvetica, STKaiti, SimSun, serif;
-    font-size: 1.5em;
-    font-weight: 600;
-    color: #555;
+a.site-brand {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5em;
     text-decoration: none;
     padding: 0.3em 0.8em;
     border-radius: 4px;
     transition: all 0.2s ease;
+    /* 与标题同一字号基准，logo 用 em 与「阿男的小窝」对齐 */
+    font-size: 1.5em;
 }
 
-a.site-title:hover {
+img.site-logo {
+    height: 0.88em;
+    width: 0.88em;
+    border-radius: 0.2em;
+    object-fit: cover;
+    flex-shrink: 0;
+    vertical-align: middle;
+}
+
+span.site-title {
+    font-family: "Palatino Linotype", "Book Antiqua", Palatino, Helvetica, STKaiti, SimSun, serif;
+    font-size: 1em;
+    font-weight: 600;
+    color: #555;
+}
+
+a.site-brand:hover {
     background-color: #f0f0f0;
-    color: #204A87;
     text-decoration: none;
+}
+
+a.site-brand:hover span.site-title {
+    color: #204A87;
 }
 
 H1, H2, H3, H4, H5, H6 {

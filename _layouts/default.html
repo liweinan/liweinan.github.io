@@ -1,7 +1,10 @@
 {% include header.html %}
 <div class="container">
     <div class="main">
+        {% include site-header.html %}
+        {% unless page.hide_title %}
         <h2> {% if page.title %} {{ page.title }} {% else %} {{ site.title }} {% endif %} </h2>
+        {% endunless %}
         {{ content }}
     </div>
 </div>
