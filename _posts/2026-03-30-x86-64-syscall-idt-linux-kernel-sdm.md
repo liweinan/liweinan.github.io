@@ -2,13 +2,15 @@
 title: "IDT 与 SYSCALL：差异、演化、Linux 实现与性能"
 ---
 
-本文按三个问题组织：
+{% include mermaid.html %}
 
-1. **IDT 与 `SYSCALL` 的区别**（含 x86 上系统调用入口的大致演化，并给出手册与内核文档链接）。
-2. **在 x86-64 Linux 上，`syscall` 从 CPU 到内核代码的完整执行机制**（SDM 中的处理器行为与 `arch/x86` 里的实现对应起来读）。
-3. **经 IDT 的入核路径与 `SYSCALL` 入核路径的性能与开销比较**（机制层面为主，兼及测量上的数量级）。
+全文分三部分：
 
-正文中的技术细节与 Intel 官方 *Software Developer’s Manual*（尤其 **Volume 3A/3** 中 IDT、中断与异常交付、`SYSCALL`/`SYSRET` 章节）及当前 Linux `arch/x86` 源码相互对照。
+1. **IDT 与 `SYSCALL` 的机制差异与历史脉络**  
+2. **x86-64 Linux 上从 `syscall` 指令到内核服务的执行路径**（对照 SDM 与 `arch/x86`）  
+3. **经 IDT 的入核与 `SYSCALL` 入核在开销与实现上的对比**
+
+硬件叙述以 Intel *Software Developer’s Manual*（Volume 3A 等）为准，软件以 Linux 主线 `arch/x86` 为准；引用标号见文末 **References**。
 
 ---
 
@@ -16,7 +18,7 @@ title: "IDT 与 SYSCALL：差异、演化、Linux 实现与性能"
 
 ### 1.1 谁在决定内核入口
 
-- **异常、硬件中断、`INT n`**：CPU 用 **IDT（Interrupt Descriptor Table）** 按 **向量号** 取门描述符，再按架构规则完成特权级与栈等处理；OS 负责 **填表** 并用 **`LIDT`** 之类加载 **IDTR**，不能改成“凡进内核都只靠 MSR 里的一个 RIP”[^1][^2]。
+- **异常、硬件中断、`INT n`**：CPU 用 **IDT（Interrupt Descriptor Table）** 按 **向量号** 取门描述符，再按架构规则完成特权级与栈等处理；OS 负责 **填表** 并用 **`LIDT`** 之类加载 **IDTR**。该路径与一组 **MSR** 配合编程的 **`SYSCALL` 入核**是两套并存机制[^1][^2]。
 - **`SYSCALL`（64 位长模式下的系统调用主路径之一）**：CPU 根据 **`IA32_STAR`、`IA32_LSTAR`、`IA32_FMASK`** 等 **MSR** 切到 ring 0 并跳转到 **`IA32_LSTAR` 指向的 RIP**，**不查 IDT**[^3][^4]。
 
 二者都是架构规定的入口协议，但针对的事件类别不同：前者服务 **异步/异常类事件** 的统一交付，后者服务 **用户态主动发起的系统调用** 的专用快速通道。
@@ -51,10 +53,6 @@ title: "IDT 与 SYSCALL：差异、演化、Linux 实现与性能"
 4. **x86-64（AMD64 / Intel 64）**：架构在 **长模式**下提供 **`SYSCALL`/`SYSRET`**（由 **`IA32_EFER.SCE`** 等控制使能，细节以 SDM 为准）。**64 位 Linux 用户态**通常通过 **glibc 等内联 `syscall`**，内核入口落在 **`entry_SYSCALL_64`**[^3][^7]。
 5. **并存**：今日 64 位内核仍可能为 **32 位进程** 保留 **`int 0x80` / `SYSENTER` / 兼容入口**（向量与实现见内核头文件与 `entry_64_compat` 等）；**本文明细以 64 位 `syscall` 主线为主**。
 
-### 1.6 参考入口
-
-本节的手册与文档链接统一放在文末 **References**，正文按 `[^n]` 标号引用。
-
 ---
 
 ## 主题二：x86-64 Linux 上 `syscall` 从 CPU 到内核的完整机制
@@ -66,6 +64,47 @@ title: "IDT 与 SYSCALL：差异、演化、Linux 实现与性能"
 3. **分发与返回**：**`do_syscall_64`** → **`x64_sys_call`** 的 **`switch (nr)`** → 各 **`__x64_sys_*`**。返回时若满足契约则 **`SYSRET`**，否则 **`IRET`**。
 
 对比 **IDT 路径**：**IDT** 处理「向量 → 硬件按门交付」；**`syscall`** 处理「寄存器约定 + **MSR** 指定 **`RIP`** → **软件**补全栈帧再交付」。
+
+### 2.1.1 `SYSCALL` 与 MSR：多寄存器协同，而非单一 `LSTAR`
+
+**MSR（Model Specific Register）** 指通过 **`RDMSR`/`WRMSR`** 访问的 **按编号独立编址** 的一类寄存器；体系结构里与 `SYSCALL` 相关的常量名 **`IA32_STAR`、`IA32_LSTAR`、`IA32_FMASK`** 等各自对应不同 MSR 地址与语义。长模式下执行 **`SYSCALL`** 时，处理器按 **`IA32_EFER.SCE`** 判定该机制是否可用，再从 **`STAR`/`LSTAR`/`FMASK`** 读出 CS/SS、目标 RIP 与 RFLAGS 掩码[^3][^11]。
+
+SDM 在 **`STAR`/`LSTAR`/`FMASK` 布局**处写明[^11]：
+
+> See Figure 5-14 for the layout of IA32_STAR, IA32_LSTAR and IA32_FMASK.
+
+并在同一节给出 **`RIP` 取自 `IA32_LSTAR`、`RFLAGS` 与 `IA32_FMASK` 的组合关系**（正文 **§2.3** 另有逐句引文）。
+
+Linux 在 **64 位内核引导路径**中与上述分工对齐：**`syscall_init()`** 写 **`MSR_STAR`**（用户/内核段选择子约定），再调用 **`idt_syscall_init()`** 写 **`MSR_LSTAR`**（`entry_SYSCALL_64`）与 **`MSR_SYSCALL_MASK`**（对应 **`IA32_FMASK`**）[^8]：
+
+```c
+void syscall_init(void)
+{
+	/* The default user and kernel segments */
+	wrmsr(MSR_STAR, 0, (__USER32_CS << 16) | __KERNEL_CS);
+
+	if (!cpu_feature_enabled(X86_FEATURE_FRED))
+		idt_syscall_init();
+}
+```
+
+```c
+static inline void idt_syscall_init(void)
+{
+	wrmsrq(MSR_LSTAR, (unsigned long)entry_SYSCALL_64);
+	/* ia32_enabled() / SYSENTER_* / MSR_CSTAR 分支：见 common.c 全文 */
+	wrmsrq(MSR_SYSCALL_MASK,
+	       X86_EFLAGS_CF|X86_EFLAGS_PF|X86_EFLAGS_AF|
+	       X86_EFLAGS_ZF|X86_EFLAGS_SF|X86_EFLAGS_TF|
+	       X86_EFLAGS_IF|X86_EFLAGS_DF|X86_EFLAGS_OF|
+	       X86_EFLAGS_IOPL|X86_EFLAGS_NT|X86_EFLAGS_RF|
+	       X86_EFLAGS_AC|X86_EFLAGS_ID);
+}
+```
+
+内核里 **`MSR_SYSCALL_MASK`** 与手册 **`IA32_FMASK`** 对应同一类编程接口；**`idt_syscall_init()`** 在 **`MSR_LSTAR` 与兼容路径 MSRs** 之间的分支仍以 `arch/x86/kernel/cpu/common.c` 为准，**§2.5** 给出与当前主线一致的更长摘录。
+
+从机制上概括：**`IA32_LSTAR` 只给出 ring-0 入口 `RIP`**；**`IA32_STAR` 给出 `SYSCALL`/`SYSRET` 使用的 CS/SS 选择子场**；**`IA32_FMASK` 规定 `RFLAGS` 在进入时被清除的位**；**`IA32_EFER.SCE` 使能整条 `SYSCALL`/`SYSRET` 路径**[^3][^11]。三颗 MSR 与总开关共同构成 SDM **Figure 5-14** 所描述的配置平面，操作系统需一并初始化，而不是仅写 **`LSTAR`** 一项。
 
 ### 2.2 端到端序列（示意）
 
