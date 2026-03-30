@@ -124,18 +124,18 @@ static inline void idt_syscall_init(void)
 ```mermaid
 sequenceDiagram
     participant User as 用户态进程
-    participant CPU as CPU (硬件)
+    participant CPU as CPU硬件
     participant Kernel as Linux内核
-    User->>User: 1. 准备寄存器: RAX=nr; RDI/RSI/RDX/R10/R8/R9=arg0..arg5
-    User->>CPU: 2. 执行 syscall 指令
-    CPU->>CPU: 3. 保存返回现场: RCX<-next RIP, R11<-RFLAGS
-    CPU->>CPU: 4. 读取 MSR: RIP<-IA32_LSTAR; RFLAGS<-RFLAGS & ~IA32_FMASK
-    CPU->>Kernel: 5. 进入 entry_SYSCALL_64
-    Kernel->>Kernel: 6. swapgs + 切内核栈 + 构造 pt_regs
-    Kernel->>Kernel: 7. do_syscall_64 / x64_sys_call 按 RAX(nr) 分发到 __x64_sys_*
-    Kernel->>Kernel: 8. 处理函数写回返回值到 RAX (成功值或 -errno)
-    Kernel->>Kernel: 9. 满足条件走 SYSRET, 否则回退 IRET
-    CPU->>User: 10. 返回用户态, 继续执行 RCX 指向指令
+    User->>User: 1）RAX 系统调用号 nr，RDI RSI RDX R10 R8 R9 为 arg0 至 arg5
+    User->>CPU: 2）执行 syscall
+    CPU->>CPU: 3）RCX 存返回点 RIP，R11 存 RFLAGS
+    CPU->>CPU: 4）RIP 取 IA32_LSTAR，RFLAGS 按 IA32_FMASK 清零若干位
+    CPU->>Kernel: 5）进入 entry_SYSCALL_64
+    Kernel->>Kernel: 6）swapgs，切内核栈，推 pt_regs
+    Kernel->>Kernel: 7）do_syscall_64，x64_sys_call 按 nr 分发
+    Kernel->>Kernel: 8）写回 RAX 返回值或负 errno
+    Kernel->>Kernel: 9）可 SYSRET 则 SYSRET，否则 IRET
+    CPU->>User: 10）回到用户态，自 RCX 所指指令继续
 ```
 
 ### 2.3 CPU 侧（与 Vol.3A §5.8.8 等一致）
