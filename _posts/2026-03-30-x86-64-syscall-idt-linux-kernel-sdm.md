@@ -119,6 +119,113 @@ static inline void idt_syscall_init(void)
 
 从机制上概括：**`IA32_LSTAR` 只给出 ring-0 入口 `RIP`**；**`IA32_STAR` 给出 `SYSCALL`/`SYSRET` 使用的 CS/SS 选择子场**；**`IA32_FMASK` 规定 `RFLAGS` 在进入时被清除的位**；**`IA32_EFER.SCE` 使能整条 `SYSCALL`/`SYSRET` 路径**[^3][^11]。三颗 MSR 与总开关共同构成 SDM **Figure 5-14** 所描述的配置平面，操作系统需一并初始化，而不是仅写 **`LSTAR`** 一项。
 
+## 2.1.2 长模式专用：`SYSCALL` 与 `SYSRET` —— 三颗 MSR 如何协同工作
+
+### 一、核心概念：三个 MSR 各司其职
+
+在 x86-64 长模式下，`syscall` 和 `sysret` 指令依赖三个 MSR（模型特定寄存器）来完成用户态到内核态、再回到用户态的完整流程。可以这样理解：
+
+| MSR 寄存器 | 作用 | 类比 |
+| :--- | :--- | :--- |
+| **IA32_STAR** | 告诉 CPU：进入内核时用什么段（CS/SS），返回用户时用什么段 | **门禁卡的双重配置**——进去刷A区，出来刷B区 |
+| **IA32_LSTAR** | 告诉 CPU：内核的入口函数地址在哪里 | **紧急出口的指向标**——从这里进内核 |
+| **IA32_FMASK** | 告诉 CPU：进入内核时，RFLAGS 寄存器里哪些位要强制清零 | **安检过滤器**——某些标志位不能带进内核 |
+
+> **重要说明**：本文只讨论 **IA-32e 长模式**下带 `REX.W` 的 `syscall`/`sysret` 指令，不涉及 `IA32_CSTAR` 和 `SYSENTER`/`SYSEXIT` 等其他机制。
+
+---
+
+### 二、流程图：一条系统调用的完整旅程
+
+下面这个流程图展示了从**用户态执行 `syscall`** 到**内核处理**再到**返回用户态**的完整过程。每个框里都注明了“此时谁在读/写哪个 MSR”。
+
+```mermaid
+sequenceDiagram
+    participant OS as 操作系统(启动时)
+    participant User as 用户态程序
+    participant CPU as CPU硬件
+    participant Kernel as 内核态代码
+
+    Note over OS: 操作系统启动时，预先配置 MSR
+    OS->>CPU: IA32_EFER.SCE = 1 (开启 syscall 支持)
+    OS->>CPU: IA32_STAR = 入核/出核的 CS/SS 选择子
+    OS->>CPU: IA32_LSTAR = 内核入口地址
+    OS->>CPU: IA32_FMASK = RFLAGS 清零掩码
+
+    Note over User: 用户态准备系统调用
+    User->>User: RAX = 系统调用号，参数存入 RDI/RSI/RDX/R10/R8/R9
+    User->>User: RSP 指向用户栈
+
+    User->>CPU: 执行 syscall 指令
+
+    Note over CPU: syscall 指令的硬件自动行为
+    CPU->>CPU: RCX = 用户态下一条指令的 RIP
+    CPU->>CPU: R11 = 用户态完整 RFLAGS
+    CPU->>CPU: RIP = IA32_LSTAR (读 MSR)
+    CPU->>CPU: CS/SS = IA32_STAR 入核位域
+    CPU->>CPU: RFLAGS = RFLAGS & (~IA32_FMASK) (按 FMASK 清零)
+    
+    Note over CPU: 特权级从 Ring 3 切换到 Ring 0
+    CPU->>Kernel: 跳转到 LSTAR 指向的内核入口
+
+    Note over Kernel: 内核处理系统调用
+    Kernel->>Kernel: swapgs (切换到内核 GS)
+    Kernel->>Kernel: 手动切换 RSP 到内核栈
+    Kernel->>Kernel: 保存完整寄存器到内核栈 (形成 pt_regs)
+    Kernel->>Kernel: 根据 RAX 查 sys_call_table 分发
+    Kernel->>Kernel: 执行具体内核函数，返回值写入 RAX
+    Kernel->>Kernel: 恢复寄存器，准备返回
+
+    Kernel->>CPU: 执行 sysretq 指令
+
+    Note over CPU: sysret 指令的硬件自动行为
+    CPU->>CPU: CS/SS = IA32_STAR 出核位域
+    CPU->>CPU: RIP = RCX (恢复用户态返回地址)
+    CPU->>CPU: RFLAGS = R11 (恢复用户态标志位)
+
+    Note over CPU: 特权级从 Ring 0 切换回 Ring 3
+    CPU->>User: 跳转到用户态返回地址
+
+    Note over User: 继续执行，RAX 中为系统调用返回值
+```
+
+---
+
+### 三、关键要点（避免踩坑）
+
+#### 1. `syscall` 不会自动切换 RSP
+- 用户栈指针（RSP）**不会**被 `syscall` 指令改变。
+- 内核必须在入口代码中**手动切换**到内核栈（通常用 `swapgs` + 写 `rsp`）。
+- 这意味着：**RSP 的保存和恢复是软件的责任**，硬件不管。
+
+#### 2. `sysret` 的“契约”
+- `sysret` 指令假设：
+  - **RCX** 中存放着用户态的返回地址（由 `syscall` 自动保存）。
+  - **R11** 中存放着用户态的 RFLAGS（由 `syscall` 自动保存）。
+- **如果内核代码不小心破坏了 RCX 或 R11，就不能再用 `sysret` 返回**，必须改用 `iret` 路径。
+
+#### 3. 返回值约定
+- 系统调用的返回值**必须放在 RAX** 中。
+- 这是用户态和内核态的约定，`sysret` 不会动 RAX。
+
+---
+
+### 四、与 `int 0x80` + IDT 路径的对比（可选扩展）
+
+如果你想理解为什么这套机制比 `int 0x80` 快，可以这样对比：
+
+| 动作 | `int 0x80`（老方法） | `syscall`（新方法） |
+| :--- | :--- | :--- |
+| 保存返回地址 | 压栈（内存访问） | 存 RCX（寄存器） |
+| 保存 RFLAGS | 压栈（内存访问） | 存 R11（寄存器） |
+| 查找入口 | 查内存中的 IDT 表 | 读 MSR 寄存器（CPU 内部） |
+| 切换栈 | 硬件自动切（TSS 机制） | 软件手动切（更灵活） |
+| 保存段寄存器 | 硬件自动保存 5 个 | 根本不保存（因为用不上） |
+| 返回指令 | `iret`（重量级） | `sysret`（轻量级） |
+
+**核心结论**：`syscall` 快，不是因为它“做的事少”，而是因为它“用寄存器代替了内存”，并且“去掉了历史包袱”。
+
+
 ### 2.2 端到端序列（示意）
 
 ```mermaid
