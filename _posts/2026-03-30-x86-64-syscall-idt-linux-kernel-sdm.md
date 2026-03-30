@@ -138,6 +138,260 @@ sequenceDiagram
     CPU->>User: 10）回到用户态，自 RCX 所指指令继续
 ```
 
+#### 与上图步骤对应的内核代码（`linux/arch/x86`）
+
+序列图 **1）** 由用户态约定（glibc / vDSO 等内联 **`syscall`**，见 **man `syscall(2)`**[^7]）；**2）–4）** 为 CPU 根据 **`IA32_LSTAR`/`IA32_FMASK`/`IA32_STAR`** 的行为，内核侧在启动时写 MSR（**`idt_syscall_init()`** 等，见 **§2.5** 与 [^8]）。自 **5）** 起按下述代码块列举，惯例与 **`/Users/weli/works/bootimage-example/LINUX_X86_64_ENTRY_AND_PT_REGS.md`** 一致：围栏第一行为 **`起始行:结束行:arch/…/文件`**（相对 **`linux/`** 源码树根；本文行号依 **`/Users/weli/works/linux`**）。
+
+**5）–6）`entry_SYSCALL_64`（`arch/x86/entry/entry_64.S`）** — **`IA32_LSTAR`** 指向此处：**`swapgs`**、装入 **`cpu_current_top_of_stack`**、**`pt_regs`** 布局压栈、**`PUSH_AND_CLEAR_REGS`**、**`movq %rsp,%rdi`** / **`movslq %eax,%rsi`**、**`call do_syscall_64`**。
+
+```87:121:arch/x86/entry/entry_64.S
+SYM_CODE_START(entry_SYSCALL_64)
+	UNWIND_HINT_ENTRY
+	ENDBR
+
+	swapgs
+	/* tss.sp2 is scratch space. */
+	movq	%rsp, PER_CPU_VAR(cpu_tss_rw + TSS_sp2)
+	SWITCH_TO_KERNEL_CR3 scratch_reg=%rsp
+	movq	PER_CPU_VAR(cpu_current_top_of_stack), %rsp
+
+SYM_INNER_LABEL(entry_SYSCALL_64_safe_stack, SYM_L_GLOBAL)
+	ANNOTATE_NOENDBR
+
+	/* Construct struct pt_regs on stack */
+	pushq	$__USER_DS				/* pt_regs->ss */
+	pushq	PER_CPU_VAR(cpu_tss_rw + TSS_sp2)	/* pt_regs->sp */
+	pushq	%r11					/* pt_regs->flags */
+	pushq	$__USER_CS				/* pt_regs->cs */
+	pushq	%rcx					/* pt_regs->ip */
+SYM_INNER_LABEL(entry_SYSCALL_64_after_hwframe, SYM_L_GLOBAL)
+	pushq	%rax					/* pt_regs->orig_ax */
+
+	PUSH_AND_CLEAR_REGS rax=$-ENOSYS
+
+	/* IRQs are off. */
+	movq	%rsp, %rdi
+	/* Sign extend the lower 32bit as syscall numbers are treated as int */
+	movslq	%eax, %rsi
+
+	/* clobbers %rax, make sure it is after saving the syscall nr */
+	IBRS_ENTER
+	UNTRAIN_RET
+	CLEAR_BRANCH_HISTORY
+
+	call	do_syscall_64		/* returns with IRQs disabled */
+```
+
+**7）`do_syscall_64`（前半）、`do_syscall_x64`、`x64_sys_call`（`arch/x86/entry/syscall_64.c`）** — 与上引 **112–114** 行入参一致；合法系统调用号下 **`regs->ax`** 在 **`do_syscall_x64` → `x64_sys_call`** 链上更新。
+
+```87:100:arch/x86/entry/syscall_64.c
+__visible noinstr bool do_syscall_64(struct pt_regs *regs, int nr)
+{
+	add_random_kstack_offset();
+	nr = syscall_enter_from_user_mode(regs, nr);
+
+	instrumentation_begin();
+
+	if (!do_syscall_x64(regs, nr) && !do_syscall_x32(regs, nr) && nr != -1) {
+		/* Invalid system call, but still a system call. */
+		regs->ax = __x64_sys_ni_syscall(regs);
+	}
+
+	instrumentation_end();
+	syscall_exit_to_user_mode(regs);
+```
+
+```53:67:arch/x86/entry/syscall_64.c
+static __always_inline bool do_syscall_x64(struct pt_regs *regs, int nr)
+{
+	/*
+	 * Convert negative numbers to very high and thus out of range
+	 * numbers for comparisons.
+	 */
+	unsigned int unr = nr;
+
+	if (likely(unr < NR_syscalls)) {
+		unr = array_index_nospec(unr, NR_syscalls);
+		regs->ax = x64_sys_call(regs, unr);
+		return true;
+	}
+	return false;
+}
+```
+
+```34:41:arch/x86/entry/syscall_64.c
+#define __SYSCALL(nr, sym) case nr: return __x64_##sym(regs);
+long x64_sys_call(const struct pt_regs *regs, unsigned int nr)
+{
+	switch (nr) {
+	#include <asm/syscalls_64.h>
+	default: return __x64_sys_ni_syscall(regs);
+	}
+}
+```
+
+**8）`__x64_sys_*` 原型、`sys_call_table[]`、生成 `syscalls_64.h`** — 各 **`__x64_sys_*`** 实现分布在 **`kernel/`**、**`fs/`** 等；编号表 **`arch/x86/entry/syscalls/syscall_64.tbl`**，**Kbuild** 生成 **`arch/x86/include/generated/asm/syscalls_64.h`**（**`$(out)`** 见下）。
+
+```12:14:arch/x86/entry/syscall_64.c
+#define __SYSCALL(nr, sym) extern long __x64_##sym(const struct pt_regs *);
+#define __SYSCALL_NORETURN(nr, sym) extern long __noreturn __x64_##sym(const struct pt_regs *);
+#include <asm/syscalls_64.h>
+```
+
+```28:31:arch/x86/entry/syscall_64.c
+#define __SYSCALL(nr, sym) __x64_##sym,
+const sys_call_ptr_t sys_call_table[] = {
+#include <asm/syscalls_64.h>
+};
+```
+
+```1:3:arch/x86/entry/syscalls/Makefile
+# SPDX-License-Identifier: GPL-2.0
+out := arch/$(SRCARCH)/include/generated/asm
+uapi := arch/$(SRCARCH)/include/generated/uapi/asm
+```
+
+```8:9:arch/x86/entry/syscalls/Makefile
+syscall32 := $(src)/syscall_32.tbl
+syscall64 := $(src)/syscall_64.tbl
+```
+
+```53:55:arch/x86/entry/syscalls/Makefile
+$(out)/syscalls_64.h: abis := common,64
+$(out)/syscalls_64.h: $(syscall64) $(systbl) FORCE
+	$(call if_changed,systbl)
+```
+
+**9）–10）`SYSRET` 快路径与 `IRET` 慢路径** — **`do_syscall_64`** 末尾 **`return true`** 且 **`entry_SYSCALL_64`** 中 **`testb %al,%al`** 成功则 **`sysretq`**；否则 **`jmp` / `jz`** 汇入 **`swapgs_restore_regs_and_return_to_usermode`** 后经 **`iretq`**。
+
+```102:140:arch/x86/entry/syscall_64.c
+	/*
+	 * Check that the register state is valid for using SYSRET to exit
+	 * to userspace.  Otherwise use the slower but fully capable IRET
+	 * exit path.
+	 */
+
+	/* XEN PV guests always use the IRET path */
+	if (cpu_feature_enabled(X86_FEATURE_XENPV))
+		return false;
+
+	/* SYSRET requires RCX == RIP and R11 == EFLAGS */
+	if (unlikely(regs->cx != regs->ip || regs->r11 != regs->flags))
+		return false;
+
+	/* CS and SS must match the values set in MSR_STAR */
+	if (unlikely(regs->cs != __USER_CS || regs->ss != __USER_DS))
+		return false;
+
+	if (unlikely(regs->ip >= TASK_SIZE_MAX))
+		return false;
+
+	if (unlikely(regs->flags & (X86_EFLAGS_RF | X86_EFLAGS_TF)))
+		return false;
+
+	/* Use SYSRET to exit to userspace */
+	return true;
+```
+
+```123:166:arch/x86/entry/entry_64.S
+	/*
+	 * Try to use SYSRET instead of IRET if we're returning to
+	 * a completely clean 64-bit userspace context.  If we're not,
+	 * go to the slow exit path.
+	 * In the Xen PV case we must use iret anyway.
+	 */
+
+	ALTERNATIVE "testb %al, %al; jz swapgs_restore_regs_and_return_to_usermode", \
+		"jmp swapgs_restore_regs_and_return_to_usermode", X86_FEATURE_XENPV
+
+	/*
+	 * We win! This label is here just for ease of understanding
+	 * perf profiles. Nothing jumps here.
+	 */
+syscall_return_via_sysret:
+	IBRS_EXIT
+	POP_REGS pop_rdi=0
+
+	/*
+	 * Now all regs are restored except RSP and RDI.
+	 * Save old stack pointer and switch to trampoline stack.
+	 */
+	movq	%rsp, %rdi
+	movq	PER_CPU_VAR(cpu_tss_rw + TSS_sp0), %rsp
+	UNWIND_HINT_END_OF_STACK
+
+	pushq	RSP-RDI(%rdi)	/* RSP */
+	pushq	(%rdi)		/* RDI */
+
+	/*
+	 * We are on the trampoline stack.  All regs except RDI are live.
+	 * We can do future final exit work right here.
+	 */
+	STACKLEAK_ERASE_NOCLOBBER
+
+	SWITCH_TO_USER_CR3_STACK scratch_reg=%rdi
+
+	popq	%rdi
+	popq	%rsp
+SYM_INNER_LABEL(entry_SYSRETQ_unsafe_stack, SYM_L_GLOBAL)
+	ANNOTATE_NOENDBR
+	swapgs
+	CLEAR_CPU_BUFFERS
+	sysretq
+```
+
+```559:580:arch/x86/entry/entry_64.S
+SYM_CODE_START_LOCAL(common_interrupt_return)
+SYM_INNER_LABEL(swapgs_restore_regs_and_return_to_usermode, SYM_L_GLOBAL)
+	IBRS_EXIT
+#ifdef CONFIG_XEN_PV
+	ALTERNATIVE "", "jmp xenpv_restore_regs_and_return_to_usermode", X86_FEATURE_XENPV
+#endif
+#ifdef CONFIG_MITIGATION_PAGE_TABLE_ISOLATION
+	ALTERNATIVE "", "jmp .Lpti_restore_regs_and_return_to_usermode", X86_FEATURE_PTI
+#endif
+
+	STACKLEAK_ERASE
+	POP_REGS
+	add	$8, %rsp	/* orig_ax */
+	UNWIND_HINT_IRET_REGS
+
+.Lswapgs_and_iret:
+	swapgs
+	CLEAR_CPU_BUFFERS
+	/* Assert that the IRET frame indicates user mode. */
+	testb	$3, 8(%rsp)
+	jnz	.Lnative_iret
+	ud2
+```
+
+```640:659:arch/x86/entry/entry_64.S
+.Lnative_iret:
+	UNWIND_HINT_IRET_REGS
+	/*
+	 * Are we returning to a stack segment from the LDT?  Note: in
+	 * 64-bit mode SS:RSP on the exception stack is always valid.
+	 */
+#ifdef CONFIG_X86_ESPFIX64
+	testb	$4, (SS-RIP)(%rsp)
+	jnz	native_irq_return_ldt
+#endif
+
+SYM_INNER_LABEL(native_irq_return_iret, SYM_L_GLOBAL)
+	ANNOTATE_NOENDBR // exc_double_fault
+	/*
+	 * This may fault.  Non-paranoid faults on return to userspace are
+	 * handled by fixup_bad_iret.  These include #SS, #GP, and #NP.
+	 * Double-faults due to espfix64 are handled in exc_double_fault.
+	 * Other faults here are fatal.
+	 */
+	iretq
+```
+
+从 **`entry_SYSCALL_64`** 经 **`ALTERNATIVE`** 失败分支也会落到 **`swapgs_restore_regs_and_return_to_usermode`**，最终 **`iretq`**（上引 **559–580**、**640–659** 行；完整标签关系见 [^9]）。
+
+本地树路径：**`/Users/weli/works/linux`**（与主线 `torvalds/linux` 同源时行号一致；若你本地的 fork 有差异，以 **`git blame`** / 实际文件为准。）
+
 ### 2.3 CPU 侧（与 Vol.3A §5.8.8 等一致）
 
 1. **`RIP`（下一条指令）→ `RCX`**；**`RFLAGS` → `R11`**[^3]。  
