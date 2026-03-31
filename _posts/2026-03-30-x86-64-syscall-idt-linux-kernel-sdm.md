@@ -6,9 +6,9 @@ title: "IDT 与 SYSCALL：差异、演化、Linux 实现与性能"
 
 全文分三部分：
 
-1. **IDT 与 `SYSCALL` 的机制差异与历史脉络**  
-2. **x86-64 Linux 上从 `syscall` 指令到内核服务的执行路径**（对照 SDM 与 `arch/x86`）  
-3. **经 IDT 的入核与 `SYSCALL` 入核在开销与实现上的对比**
+- **IDT 与 `SYSCALL` 的机制差异与历史脉络**
+- **x86-64 Linux 上从 `syscall` 指令到内核服务的执行路径**（对照 SDM 与 `arch/x86`）
+- **经 IDT 的入核与 `SYSCALL` 入核在开销与实现上的对比**
 
 硬件叙述以 Intel *Software Developer’s Manual*（Volume 3A 等）为准，软件以 Linux 主线 `arch/x86` 为准；引用标号见文末 **References**。
 
@@ -16,14 +16,14 @@ title: "IDT 与 SYSCALL：差异、演化、Linux 实现与性能"
 
 ## 主题一：IDT 与 `SYSCALL` 的区别与演化
 
-### 1.1 谁在决定内核入口
+### 谁在决定内核入口
 
 - **异常、硬件中断、`INT n`**：CPU 用 **IDT（Interrupt Descriptor Table）** 按 **向量号** 取门描述符，再按架构规则完成特权级与栈等处理；OS 负责 **填表** 并用 **`LIDT`** 之类加载 **IDTR**。该路径与一组 **MSR** 配合编程的 **`SYSCALL` 入核**是两套并存机制[^1][^2]。
 - **`SYSCALL`（64 位长模式下的系统调用主路径之一）**：CPU 根据 **`IA32_STAR`、`IA32_LSTAR`、`IA32_FMASK`** 等 **MSR** 切到 ring 0 并跳转到 **`IA32_LSTAR` 指向的 RIP**，**不查 IDT**[^3][^4]。
 
 二者都是架构规定的入口协议，但针对的事件类别不同：前者服务 **异步/异常类事件** 的统一交付，后者服务 **用户态主动发起的系统调用** 的专用快速通道。
 
-### 1.2 64 位模式下的 IDT 索引
+### 64 位模式下的 IDT 索引
 
 在 **64-bit / IA-32e** 下，门描述符为 **16 字节**；向量 *k* 对应表项在 IDT 中的字节偏移为 **k × 16**（与 legacy 模式下 8 字节项不同）[^1]。
 
@@ -31,7 +31,7 @@ title: "IDT 与 SYSCALL：差异、演化、Linux 实现与性能"
 
 > In 64-bit mode, the IDT index is formed by scaling the interrupt vector by 16. The first eight bytes (bytes 7:0) of a 64-bit mode interrupt gate are similar but not identical to legacy 32-bit interrupt gates. The type field (bits 11:8 in bytes 7:4) is described in Table 3-2. The Interrupt Stack Table (IST) field (bits 4:0 in bytes 7:4) is used by the stack switching mechanisms described in Section 6.14.5, “Interrupt Stack Table.” Bytes 11:8 hold the upper 32 bits of the target RIP (interrupt segment offset) in canonical form.
 
-### 1.3 对照表
+### 对照表
 
 | 特性 | 经 IDT 的路径 | `SYSCALL` 路径 |
 | :--- | :--- | :--- |
@@ -40,45 +40,45 @@ title: "IDT 与 SYSCALL：差异、演化、Linux 实现与性能"
 | 门/MSR 语义 | 类型、DPL、IST、段选择子等 **由 CPU 解释** | **`STAR`/`LSTAR`/`FMASK` 组合**，由 OS 预编程 |
 | 是否使用 IDT | 是 | **否**（本条目不讨论 FRED 等后续扩展）
 
-### 1.4 与“系统调用号 → 内核函数”的关系
+### 与「系统调用号 → 内核函数」的关系
 
 抽象上都可说成 **编号映射到处理逻辑**：IDT 用 **中断向量**，系统调用用 **`RAX` 中的调用号**。  
 **差别在于**：IDT 的查表与跳转是 **CPU 事件交付的一部分**；而 **`RAX → __x64_sys_*`** 属于 **内核在进入 `do_syscall_64` 之后的纯软件分发**，处理器并不解析“系统调用号”的语义。
 
-### 1.4.1 三条不同的“表/入口/快车道”
+#### 三条不同的「表 / 入口 / 快车道」
 
-将机制分为以下三层（可与 **§1.3**、**§3.2** 对照阅读）：
+将机制分为以下三层（可与 **上文「对照表」**、**下文「机制层对比」** 对照阅读）：
 
-1. **IDT（及经其投递的中断/异常/`INT n`）**  
+- **IDT（及经其投递的中断/异常/`INT n`）**
    由 CPU 规定、面向**全体异步与异常事件**的 **通用交付协议**：功能全、约束多，不以“最短一次用户主动系统调用”为唯一优化目标[^1][^2]。
 
-2. **系统调用分发（软件）**  
+- **系统调用分发（软件）**
    Linux 仍保留 **`sys_call_table[]`**，方便 **trace** 等子系统解析符号地址；**64 位主路径**上则由 **`x64_sys_call()` 的 `switch (nr)`** 落到 **`__x64_sys_*`**。无论数组还是 **`switch`**，都属于 **`syscall` 已经进核之后** 的普通控制流，**不是 CPU 替代的 IDT 查表**[^10]。
 
-3. **系统调用硬件快车道（`SYSCALL` + 若干 MSR）**  
+- **系统调用硬件快车道（`SYSCALL` + 若干 MSR）**
    **入口 `RIP` 与 `CS`/`SS`/`RFLAGS` 掩码**由 **`STAR`/`LSTAR`/`FMASK`（及 `EFER.SCE`）** 预编程；这是在 **不进 IDT** 的前提下完成的 **`ring 3 → ring 0` 专用序列**[^3][^11]。**`__x64_sys_*` 分发**在这一硬件入核序列完成之后，才由 **`do_syscall_64` / `x64_sys_call`** 等以 **普通内核控制流**执行[^10]。
 
-### 1.5 一条简化的演化脉络（x86 / Linux 相关）
+### 一条简化的演化脉络（x86 / Linux 相关）
 
-1. **80386 及保护模式**：**IDT** 与 **`INT n`** 成为统一的异常/中断/软中断交付入口；内核通过设置向量 *n* 的门，把控制流交给对应处理例程。
-2. **32 位 Linux**：用户态系统调用长期使用 **`int 0x80`**，即 **CPU 查 IDT 向量 0x80** 进入内核（仍属 IDT 路径）[^5]。
-3. **约 Pentium II / Pro 一代**：Intel 引入 **`SYSENTER`/`SYSEXIT`**，配合 **MSR** 提供另一条 **不经 IDT 门描述符的** 快速进核通道（Linux 在 **32 位兼容路径**等场景仍会碰到与 **`SYSENTER`/`SYSCALL`** 相关的入口约定）[^6]。
-4. **x86-64（AMD64 / Intel 64）**：架构在 **长模式**下提供 **`SYSCALL`/`SYSRET`**（由 **`IA32_EFER.SCE`** 等控制使能，细节以 SDM 为准）。**64 位 Linux 用户态**通常通过 **glibc 等内联 `syscall`**，内核入口落在 **`entry_SYSCALL_64`**[^3][^7]。
-5. **并存**：今日 64 位内核仍可能为 **32 位进程** 保留 **`int 0x80` / `SYSENTER` / 兼容入口**（向量与实现见内核头文件与 `entry_64_compat` 等）；**本文明细以 64 位 `syscall` 主线为主**。
+- **80386 及保护模式**：**IDT** 与 **`INT n`** 成为统一的异常/中断/软中断交付入口；内核通过设置向量 *n* 的门，把控制流交给对应处理例程。
+- **32 位 Linux**：用户态系统调用长期使用 **`int 0x80`**，即 **CPU 查 IDT 向量 0x80** 进入内核（仍属 IDT 路径）[^5]。
+- **约 Pentium II / Pro 一代**：Intel 引入 **`SYSENTER`/`SYSEXIT`**，配合 **MSR** 提供另一条 **不经 IDT 门描述符的** 快速进核通道（Linux 在 **32 位兼容路径**等场景仍会碰到与 **`SYSENTER`/`SYSCALL`** 相关的入口约定）[^6]。
+- **x86-64（AMD64 / Intel 64）**：架构在 **长模式**下提供 **`SYSCALL`/`SYSRET`**（由 **`IA32_EFER.SCE`** 等控制使能，细节以 SDM 为准）。**64 位 Linux 用户态**通常通过 **glibc 等内联 `syscall`**，内核入口落在 **`entry_SYSCALL_64`**[^3][^7]。
+- **并存**：今日 64 位内核仍可能为 **32 位进程** 保留 **`int 0x80` / `SYSENTER` / 兼容入口**（向量与实现见内核头文件与 `entry_64_compat` 等）；**本文明细以 64 位 `syscall` 主线为主**。
 
 ---
 
 ## 主题二：x86-64 Linux 上 `syscall` 从 CPU 到内核的完整机制
 
-### 2.1 三层结构（总览）
+### 三层结构（总览）
 
-1. **CPU（SDM）**：用户态约定 **`RAX`=调用号**、参数寄存器后执行 **`syscall`**。硬件将 **`RIP → RCX`、`RFLAGS → R11`**，按 **MSR** 加载 **`CS`/`SS`/`RIP`**，并令 **`RFLAGS <- RFLAGS & ~IA32_FMASK`**；**不保存 `RSP`**、不向栈压帧。  
-2. **内核入口 `entry_SYSCALL_64`**（`arch/x86/entry/entry_64.S`）：**`swapgs`**、切换到 **per-CPU 内核栈**，在栈上构造 **`struct pt_regs`**，再 **`call do_syscall_64`**。  
-3. **分发与返回**：**`do_syscall_64`** → **`x64_sys_call`** 的 **`switch (nr)`** → 各 **`__x64_sys_*`**。返回时若满足契约则 **`SYSRET`**，否则 **`IRET`**。
+- **CPU（SDM）**：用户态约定 **`RAX`=调用号**、参数寄存器后执行 **`syscall`**。硬件将 **`RIP → RCX`、`RFLAGS → R11`**，按 **MSR** 加载 **`CS`/`SS`/`RIP`**，并令 **`RFLAGS <- RFLAGS & ~IA32_FMASK`**；**不保存 `RSP`**、不向栈压帧。
+- **内核入口 `entry_SYSCALL_64`**（`arch/x86/entry/entry_64.S`）：**`swapgs`**、切换到 **per-CPU 内核栈**，在栈上构造 **`struct pt_regs`**，再 **`call do_syscall_64`**。
+- **分发与返回**：**`do_syscall_64`** → **`x64_sys_call`** 的 **`switch (nr)`** → 各 **`__x64_sys_*`**。返回时若满足契约则 **`SYSRET`**，否则 **`IRET`**。
 
 对比 **IDT 路径**：**IDT** 处理「向量 → 硬件按门交付」；**`syscall`** 处理「寄存器约定 + **MSR** 指定 **`RIP`** → **软件**补全栈帧再交付」。
 
-### 2.1.1 `SYSCALL` 与 MSR：多寄存器协同，而非单一 `LSTAR`
+### `SYSCALL` 与 MSR：多寄存器协同，而非单一 `LSTAR`
 
 **MSR（Model Specific Register）** 指通过 **`RDMSR`/`WRMSR`** 访问的 **按编号独立编址** 的一类寄存器；体系结构里与 `SYSCALL` 相关的常量名 **`IA32_STAR`、`IA32_LSTAR`、`IA32_FMASK`** 等各自对应不同 MSR 地址与语义。长模式下执行 **`SYSCALL`** 时，处理器按 **`IA32_EFER.SCE`** 判定该机制是否可用，再从 **`STAR`/`LSTAR`/`FMASK`** 读出 CS/SS、目标 RIP 与 RFLAGS 掩码[^3][^11]。
 
@@ -86,7 +86,7 @@ SDM 在 **`STAR`/`LSTAR`/`FMASK` 布局**处写明[^11]：
 
 > See Figure 5-14 for the layout of IA32_STAR, IA32_LSTAR and IA32_FMASK.
 
-并在同一节给出 **`RIP` 取自 `IA32_LSTAR`、`RFLAGS` 与 `IA32_FMASK` 的组合关系**（正文 **§2.3** 另有逐句引文）。
+并在同一节给出 **`RIP` 取自 `IA32_LSTAR`、`RFLAGS` 与 `IA32_FMASK` 的组合关系**（正文 **「CPU 侧（与 Vol.3A §5.8.8 等一致）」** 一节另有逐句引文）。
 
 Linux 在 **64 位内核引导路径**中与上述分工对齐：**`syscall_init()`** 写 **`MSR_STAR`**（用户/内核段选择子约定），再调用 **`idt_syscall_init()`** 写 **`MSR_LSTAR`**（`entry_SYSCALL_64`）与 **`MSR_SYSCALL_MASK`**（对应 **`IA32_FMASK`**）[^8]：
 
@@ -115,13 +115,13 @@ static inline void idt_syscall_init(void)
 }
 ```
 
-内核里 **`MSR_SYSCALL_MASK`** 与手册 **`IA32_FMASK`** 对应同一类编程接口；**`idt_syscall_init()`** 在 **`MSR_LSTAR` 与兼容路径 MSRs** 之间的分支仍以 `arch/x86/kernel/cpu/common.c` 为准，**§2.5** 给出与当前主线一致的更长摘录。
+内核里 **`MSR_SYSCALL_MASK`** 与手册 **`IA32_FMASK`** 对应同一类编程接口；**`idt_syscall_init()`** 在 **`MSR_LSTAR` 与兼容路径 MSRs** 之间的分支仍以 `arch/x86/kernel/cpu/common.c` 为准，**「内核源码摘录（与上表对应）」** 一节给出与当前主线一致的更长摘录。
 
 从机制上概括：**`IA32_LSTAR` 只给出 ring-0 入口 `RIP`**；**`IA32_STAR` 给出 `SYSCALL`/`SYSRET` 使用的 CS/SS 选择子场**；**`IA32_FMASK` 规定 `RFLAGS` 在进入时被清除的位**；**`IA32_EFER.SCE` 使能整条 `SYSCALL`/`SYSRET` 路径**[^3][^11]。三颗 MSR 与总开关共同构成 SDM **Figure 5-14** 所描述的配置平面，操作系统需一并初始化，而不是仅写 **`LSTAR`** 一项。
 
-## 2.1.2 长模式专用：`SYSCALL` 与 `SYSRET` —— 三颗 MSR 如何协同工作
+### 长模式专用：`SYSCALL` 与 `SYSRET` —— 三颗 MSR 如何协同工作
 
-### 一、核心概念：三个 MSR 各司其职
+#### 核心概念：三个 MSR 各司其职
 
 在 x86-64 长模式下，`syscall` 和 `sysret` 指令依赖三个 MSR（模型特定寄存器）来完成用户态到内核态、再回到用户态的完整流程。可以这样理解：
 
@@ -135,7 +135,7 @@ static inline void idt_syscall_init(void)
 
 ---
 
-### 二、流程图：一条系统调用的完整旅程
+#### 流程图：一条系统调用的完整旅程
 
 下面这个流程图展示了从**用户态执行 `syscall`** 到**内核处理**再到**返回用户态**的完整过程。每个框里都注明了“此时谁在读/写哪个 MSR”。
 
@@ -191,26 +191,26 @@ sequenceDiagram
 
 ---
 
-### 三、关键要点（避免踩坑）
+#### 关键要点（避免踩坑）
 
-#### 1. `syscall` 不会自动切换 RSP
+##### `syscall` 不会自动切换 RSP
 - 用户栈指针（RSP）**不会**被 `syscall` 指令改变。
 - 内核必须在入口代码中**手动切换**到内核栈（通常用 `swapgs` + 写 `rsp`）。
 - 这意味着：**RSP 的保存和恢复是软件的责任**，硬件不管。
 
-#### 2. `sysret` 的“契约”
+##### `sysret` 的「契约」
 - `sysret` 指令假设：
   - **RCX** 中存放着用户态的返回地址（由 `syscall` 自动保存）。
   - **R11** 中存放着用户态的 RFLAGS（由 `syscall` 自动保存）。
 - **如果内核代码不小心破坏了 RCX 或 R11，就不能再用 `sysret` 返回**，必须改用 `iret` 路径。
 
-#### 3. 返回值约定
+##### 返回值约定
 - 系统调用的返回值**必须放在 RAX** 中。
 - 这是用户态和内核态的约定，`sysret` 不会动 RAX。
 
 ---
 
-### 四、与 `int 0x80` + IDT 路径的对比（可选扩展）
+#### 与 `int 0x80` + IDT 路径的对比（可选扩展）
 
 如果你想理解为什么这套机制比 `int 0x80` 快，可以这样对比：
 
@@ -229,7 +229,7 @@ sequenceDiagram
 
 ---
 
-### 核心三颗 MSR
+#### 核心三颗 MSR
 
 | MSR 名称 | 地址 | 作用 | 读/写时机 |
 | :--- | :--- | :--- | :--- |
@@ -239,7 +239,7 @@ sequenceDiagram
 
 ---
 
-### 辅助 MSR
+#### 辅助 MSR
 
 还有一个**前提条件**相关的 MSR：
 
@@ -249,34 +249,34 @@ sequenceDiagram
 
 ---
 
-### 一句话总结
+#### 一句话总结
 
 > **`IA32_STAR` 管“段”（权限），`IA32_LSTAR` 管“地址”（去哪），`IA32_FMASK` 管“标志位”（环境），三颗 MSR 配合 `IA32_EFER.SCE` 开关，共同决定了 `syscall` 的完整行为。**
 
-### 2.2 端到端序列（示意）
+### 端到端序列（示意）
 
 ```mermaid
 sequenceDiagram
     participant User as 用户态进程
     participant CPU as CPU硬件
     participant Kernel as Linux内核
-    User->>User: 1）RAX 系统调用号 nr，RDI RSI RDX R10 R8 R9 为 arg0 至 arg5
-    User->>CPU: 2）执行 syscall
-    CPU->>CPU: 3）RCX 存返回点 RIP，R11 存 RFLAGS
-    CPU->>CPU: 4）RIP 取 IA32_LSTAR，RFLAGS 按 IA32_FMASK 清零若干位
-    CPU->>Kernel: 5）进入 entry_SYSCALL_64
-    Kernel->>Kernel: 6）swapgs，切内核栈，推 pt_regs
-    Kernel->>Kernel: 7）do_syscall_64，x64_sys_call 按 nr 分发
-    Kernel->>Kernel: 8）写回 RAX 返回值或负 errno
-    Kernel->>Kernel: 9）可 SYSRET 则 SYSRET，否则 IRET
-    CPU->>User: 10）回到用户态，自 RCX 所指指令继续
+    User->>User: RAX=nr，RDI/RSI/RDX/R10/R8/R9 为 arg0–arg5
+    User->>CPU: 执行 syscall
+    CPU->>CPU: RCX←返回点 RIP，R11←RFLAGS
+    CPU->>CPU: RIP←IA32_LSTAR；RFLAGS 按 IA32_FMASK 清零若干位
+    CPU->>Kernel: 进入 entry_SYSCALL_64
+    Kernel->>Kernel: swapgs，切内核栈，推 pt_regs
+    Kernel->>Kernel: do_syscall_64，x64_sys_call 按 nr 分发
+    Kernel->>Kernel: 写回 RAX 返回值或负 errno
+    Kernel->>Kernel: 可 SYSRET 则 SYSRET，否则 IRET
+    CPU->>User: 回到用户态，自 RCX 所指指令继续
 ```
 
 #### 与上图步骤对应的内核代码（`linux/arch/x86`）
 
-序列图 **1）** 由用户态约定（glibc / vDSO 等内联 **`syscall`**，见 **man `syscall(2)`**[^7]）；**2）–4）** 为 CPU 根据 **`IA32_LSTAR`/`IA32_FMASK`/`IA32_STAR`** 的行为，内核侧在启动时写 MSR（**`idt_syscall_init()`** 等，见 **§2.5** 与 [^8]）。自 **5）** 起按下述代码块列举，惯例与 **`/Users/weli/works/bootimage-example/LINUX_X86_64_ENTRY_AND_PT_REGS.md`** 一致：围栏第一行为 **`起始行:结束行:arch/…/文件`**（相对 **`linux/`** 源码树根；本文行号依 **`/Users/weli/works/linux`**）。
+序列图里最前段由用户态约定（glibc / vDSO 等内联 **`syscall`**，见 **man `syscall(2)`**[^7]）；其后为 CPU 根据 **`IA32_LSTAR`/`IA32_FMASK`/`IA32_STAR`** 的行为，内核侧在启动时写 MSR（**`idt_syscall_init()`** 等，见 **「内核源码摘录（与上表对应）」** 与 [^8]）。自 **`entry_SYSCALL_64` 起** 按下述代码块列举，惯例与 **`/Users/weli/works/bootimage-example/LINUX_X86_64_ENTRY_AND_PT_REGS.md`** 一致：围栏第一行为 **`起始行:结束行:arch/…/文件`**（相对 **`linux/`** 源码树根；本文行号依 **`/Users/weli/works/linux`**）。
 
-**5）–6）`entry_SYSCALL_64`（`arch/x86/entry/entry_64.S`）** — **`IA32_LSTAR`** 指向此处：**`swapgs`**、装入 **`cpu_current_top_of_stack`**、**`pt_regs`** 布局压栈、**`PUSH_AND_CLEAR_REGS`**、**`movq %rsp,%rdi`** / **`movslq %eax,%rsi`**、**`call do_syscall_64`**。
+**`entry_SYSCALL_64`（`arch/x86/entry/entry_64.S`）** — **`IA32_LSTAR`** 指向此处：**`swapgs`**、装入 **`cpu_current_top_of_stack`**、**`pt_regs`** 布局压栈、**`PUSH_AND_CLEAR_REGS`**、**`movq %rsp,%rdi`** / **`movslq %eax,%rsi`**、**`call do_syscall_64`**。
 
 ```87:121:arch/x86/entry/entry_64.S
 SYM_CODE_START(entry_SYSCALL_64)
@@ -316,7 +316,7 @@ SYM_INNER_LABEL(entry_SYSCALL_64_after_hwframe, SYM_L_GLOBAL)
 	call	do_syscall_64		/* returns with IRQs disabled */
 ```
 
-**7）`do_syscall_64`（前半）、`do_syscall_x64`、`x64_sys_call`（`arch/x86/entry/syscall_64.c`）** — 与上引 **112–114** 行入参一致；合法系统调用号下 **`regs->ax`** 在 **`do_syscall_x64` → `x64_sys_call`** 链上更新。
+**`do_syscall_64`（前半）、`do_syscall_x64`、`x64_sys_call`（`arch/x86/entry/syscall_64.c`）** — 与上引 **112–114** 行入参一致；合法系统调用号下 **`regs->ax`** 在 **`do_syscall_x64` → `x64_sys_call`** 链上更新。
 
 ```87:100:arch/x86/entry/syscall_64.c
 __visible noinstr bool do_syscall_64(struct pt_regs *regs, int nr)
@@ -364,7 +364,7 @@ long x64_sys_call(const struct pt_regs *regs, unsigned int nr)
 }
 ```
 
-**8）`__x64_sys_*` 原型、`sys_call_table[]`、生成 `syscalls_64.h`** — 各 **`__x64_sys_*`** 实现分布在 **`kernel/`**、**`fs/`** 等；编号表 **`arch/x86/entry/syscalls/syscall_64.tbl`**，**Kbuild** 生成 **`arch/x86/include/generated/asm/syscalls_64.h`**（**`$(out)`** 见下）。
+**`__x64_sys_*` 原型、`sys_call_table[]`、生成 `syscalls_64.h`** — 各 **`__x64_sys_*`** 实现分布在 **`kernel/`**、**`fs/`** 等；编号表 **`arch/x86/entry/syscalls/syscall_64.tbl`**，**Kbuild** 生成 **`arch/x86/include/generated/asm/syscalls_64.h`**（**`$(out)`** 见下）。
 
 ```12:14:arch/x86/entry/syscall_64.c
 #define __SYSCALL(nr, sym) extern long __x64_##sym(const struct pt_regs *);
@@ -396,7 +396,7 @@ $(out)/syscalls_64.h: $(syscall64) $(systbl) FORCE
 	$(call if_changed,systbl)
 ```
 
-**9）–10）`SYSRET` 快路径与 `IRET` 慢路径** — **`do_syscall_64`** 末尾 **`return true`** 且 **`entry_SYSCALL_64`** 中 **`testb %al,%al`** 成功则 **`sysretq`**；否则 **`jmp` / `jz`** 汇入 **`swapgs_restore_regs_and_return_to_usermode`** 后经 **`iretq`**。
+**`SYSRET` 快路径与 `IRET` 慢路径** — **`do_syscall_64`** 末尾 **`return true`** 且 **`entry_SYSCALL_64`** 中 **`testb %al,%al`** 成功则 **`sysretq`**；否则 **`jmp` / `jz`** 汇入 **`swapgs_restore_regs_and_return_to_usermode`** 后经 **`iretq`**。
 
 ```102:140:arch/x86/entry/syscall_64.c
 	/*
@@ -526,7 +526,7 @@ SYM_INNER_LABEL(native_irq_return_iret, SYM_L_GLOBAL)
 
 本地树路径：**`/Users/weli/works/linux`**（与主线 `torvalds/linux` 同源时行号一致；若你本地的 fork 有差异，以 **`git blame`** / 实际文件为准。）
 
-### 2.3 CPU 侧（与 Vol.3A §5.8.8 等一致）
+### CPU 侧（与 Vol.3A §5.8.8 等一致）
 
 1. **`RIP`（下一条指令）→ `RCX`**；**`RFLAGS` → `R11`**[^3]。  
 2. **`RIP`** 来自 **`IA32_LSTAR`**；**`CS`/`SS`** 的选择子与 **`IA32_STAR`** 的位域布局按 SDM Figure 5-14[^3]。  
@@ -544,7 +544,7 @@ SYM_INNER_LABEL(native_irq_return_iret, SYM_L_GLOBAL)
 
 （手册在「gets the … as follows」之后对 **Target code segment**、**Stack segment** 等另有逐条说明，此处摘入与 **`LSTAR`/`FMASK`** 及 **RSP** 最直接相关的句子；完整列举见 [^1] 中 **§5.8.8** 与 **Figure 5-14**。）
 
-### 2.4 Linux 侧（源码锚点）
+### Linux 侧（源码锚点）
 
 | 内容 | 文件与要点 |
 |------|------------|
@@ -552,7 +552,7 @@ SYM_INNER_LABEL(native_irq_return_iret, SYM_L_GLOBAL)
 | **入口汇编** | `arch/x86/entry/entry_64.S`：`entry_SYSCALL_64`（`swapgs`、`pt_regs`、`do_syscall_64`、若可则 `sysretq`） |
 | **C 分发与 `SYSRET`/`IRET` 判定** | `arch/x86/entry/syscall_64.c`：`do_syscall_64`、`x64_sys_call`；**`sys_call_table[]`** 仍存在于镜像中，**主路径分发**为 **`switch`** |
 
-### 2.5 内核源码摘录（与上表对应）
+### 内核源码摘录（与上表对应）
 
 下列片段与主线 Linux 树一致，便于和 SDM 对照阅读[^8][^9][^10]。
 
@@ -649,40 +649,40 @@ __visible noinstr bool do_syscall_64(struct pt_regs *regs, int nr)
 
 **`syscall` 相对 `int` + IDT 更快，主要不是因为“少查一次内存里的表”**，而是因为 **`int` 走 IDT 门与异常/中断类交付**，含 **门与特权相关检查、中断帧布局**，返回侧又常配合 **`IRET`**；**`SYSCALL`/`SYSRET`** 针对系统调用做了裁剪。内核里的 **调用号分发**发生在两条路径**入核之后**，不是整体差距的主因。
 
-### 3.1 路径对比（示意）
+### 路径对比（示意）
 
 ```mermaid
 graph TD
     subgraph 快路径_syscall
-    A[用户态] -->|1. syscall| B[CPU]
-    B -->|2. 读取 LSTAR/STAR/FMASK| C[内核入口 entry_SYSCALL_64]
-    C -->|3. do_syscall_64 + x64_sys_call| D[__x64_sys_*]
+    A[用户态] -->|syscall| B[CPU]
+    B -->|读 LSTAR/STAR/FMASK| C[内核入口 entry_SYSCALL_64]
+    C -->|do_syscall_64 + x64_sys_call| D[__x64_sys_*]
     end
 
     subgraph 传统路径_int0x80
-    E[用户态] -->|1. int 0x80| F[CPU]
-    F -->|2. 通过 IDT 向量门进入| G[中断门入口]
-    G -->|3. 中断类交付与返回语义| H[内核处理]
+    E[用户态] -->|int 0x80| F[CPU]
+    F -->|经 IDT 向量门| G[中断门入口]
+    G -->|中断类交付与返回| H[内核处理]
     end
 ```
 
 ```mermaid
 graph TD
     subgraph 快路径_syscall
-    A1[用户态] -->|1. syscall| B1[CPU]
-    B1 -->|2. 从 MSR 取入口| C1[内核入口]
-    C1 -->|3. 软件分发到具体例程| D1[__x64_sys_* 等]
+    A1[用户态] -->|syscall| B1[CPU]
+    B1 -->|从 MSR 取入口| C1[内核入口]
+    C1 -->|软件分发| D1[__x64_sys_* 等]
     end
 
     subgraph 慢路径_int_idt
-    E1[用户态] -->|1. int 0x80| F1[CPU]
-    F1 -->|2. 硬件查 IDT| G1[IDT 门]
-    G1 -->|3. 特权与栈等检查 + 转入处理程序| H1[内核入口]
-    H1 -->|4. 同样要再做软件分发| I1[具体例程]
+    E1[用户态] -->|int 0x80| F1[CPU]
+    F1 -->|查 IDT| G1[IDT 门]
+    G1 -->|特权与栈检查 + 转入处理程序| H1[内核入口]
+    H1 -->|再做软件分发| I1[具体例程]
     end
 ```
 
-### 3.2 机制层对比
+### 机制层对比
 
 | 特性 | **`int 0x80` + IDT** | **`syscall` + MSR** |
 | :--- | :--- | :--- |
@@ -692,11 +692,11 @@ graph TD
 | 硬件保存的现场 | **中断/异常帧**（含段与标志等，因事件与模式而异） | **主要为 `RCX`/`R11` 的返回契约** |
 | 返回 | 常见 **`IRET`** | 条件满足时 **`SYSRET`**，否则 **`IRET`** |
 
-### 3.3 单次查表与整条路径
+### 单次查表与整条路径
 
 **硬件对 IDT 的一次访问**与 **内核对 `switch (nr)` 的几条指令**各自都很快；差别主要来自 **整条入核/出核**：多保存了哪些状态、是否经过 **IDT 门语义**、返回是 **`IRET` 全功能**还是 **`SYSRET` 窄契约**、以及 Linux 在出口是否 **回退到 `IRET`**。
 
-### 3.4 入核与出核：`int 0x80` 与 `syscall` 的步骤对照
+### 入核与出核：`int 0x80` 与 `syscall` 的步骤对照
 
 下表沿用在 **IDT + `IRET`** 与 **`SYSCALL` + `SYSRET`（及 Linux 可能回退的 `IRET`）** 之间做对照的常见写法；其中 **`int` 路径的栈帧**以 **64 位长模式**下向内核栈压入的字段为准（**SS、RSP、RFLAGS、CS、RIP** 及可能的错误码等）[^1]，与 legacy 保护模式下部分教材中的“多段寄存器”示意图并不完全同形。
 
@@ -711,24 +711,24 @@ graph TD
 
 同一组维度在 **`syscall` 专题**里也可以压缩理解：宏观上都要完成 **ring 切换与寄存器约定**，微观上 **`SYSCALL`/`SYSRET` 把可由专用指令“包办”的部分收紧**，**`int`/IDT/`IRET`** 为覆盖全体中断/异常类型保留更宽的默认行为。
 
-### 3.4.1 与上表对应的三个技术要点（64 位长模式）
+#### 与上表对应的三个技术要点（64 位长模式）
 
-以下三点承接 **§3.4** 表格，用语与 **IA-32e 长模式** 下的栈帧布局及当前 **Linux `arch/x86/entry`** 实现一致。
+以下三点承接 **上文「入核与出核」对照表**，用语与 **IA-32e 长模式** 下的栈帧布局及当前 **Linux `arch/x86/entry`** 实现一致。
 
-1. **硬件保存的寄存器现场不同**  
+- **硬件保存的寄存器现场不同**
    **`INT n` 经 IDT** 时走 **通用中断/异常交付**：在 **64 位长模式**下，CPU 向 **当前特权级 0 栈** 压入 **SS、RSP、RFLAGS、CS、RIP** 及视向量而定的 **错误码** 等，与同一条 **IRET** 恢复约定兼容、并由**全体 IDT 向量**共享这一框架[^1]。**`SYSCALL`** **不向栈压帧**，仅用 **`RCX`、`R11`** 分别保留 **`RIP`、`RFLAGS` 的返回契约信息**；通用寄存器与 **`RSP` 等**由 **`entry_SYSCALL_64`** 等 **软件路径** 写入 **`struct pt_regs`**[^3][^9]。
 
-2. **是否经过 IDT 与 DPL 检查**  
+- **是否经过 IDT 与 DPL 检查**
    **`INT n`** 根据 **门描述符** 做 **DPL、门类型** 等与 **软件中断** 相关的一致性检查[^1]。**`SYSCALL`** **不读取 IDT 门**：**CPL 0 入口 `RIP`**、**段与 `RFLAGS` 掩码**由 **`IA32_LSTAR`、`IA32_STAR`、`IA32_FMASK`** 及 **`IA32_EFER.SCE`** 预先约定[^3][^11]；**合法性**依赖 **OS 对这些 MSR 与 GDT 项的初始化**以及内核入口实现。
 
-3. **返回路径的恢复范围**  
+- **返回路径的恢复范围**
    **`IRET`** 从栈上 **中断帧** 恢复 **SS、RSP、RFLAGS、CS、RIP** 等，**语义覆盖完整**[^1]。**`SYSRET`**（长模式下 **`REX.W`**）在契约成立时仅从 **`RCX`、`R11`** 恢复 **`RIP`、`RFLAGS`**，**用户态 `CS`/`SS`** 按 **`IA32_STAR`** 出核位域装载[^4]。**Linux** 在 **`do_syscall_64`** 中若判定 **`SYSRET` 契约**不成立或须走通用返回路径，则 **改用 `IRET`**[^10]。
 
-### 3.5 数量级举例
+### 数量级举例
 
 在常见 x86-64 桌面平台上，对 **`getpid` 类极短系统调用**做周期计数，**`int 0x80`** 有时可达约 **二百周期**量级，**`syscall`** 多在约 **数十至百余周期**量级，可差数倍。结果强依赖 **CPU、微架构、是否实际走 `SYSRET` 与测量方法**；定量的结论应在目标机上用 **`perf` 等**重复测量。
 
-### 3.6 小结
+### 小结
 
 - **IDT**：通用 **事件交付** 机制，优先保证覆盖面与一致性，**不以最短系统调用为唯一目标**。  
 - **系统调用分发**：**`x64_sys_call` 的 `switch`** 为主路径；**`sys_call_table[]`** 仍服务 **观测/枚举** 等需求；二者都在 **`syscall` 已进核之后** 执行。  
@@ -739,9 +739,9 @@ graph TD
 
 ## 建议的自修顺序
 
-1. SDM：**中断/异常与 IDT**、**`SYSCALL`/`SYSRET`**。  
-2. Linux：**`common.c`（MSR）→ `entry_64.S` → `syscall_64.c`**。  
-3. 对照阅读：`entry_64.S` 与 `syscall_64.c`，结合文末 References。
+- SDM：**中断/异常与 IDT**、**`SYSCALL`/`SYSRET`**。
+- Linux：**`common.c`（MSR）→ `entry_64.S` → `syscall_64.c`**。
+- 对照阅读：`entry_64.S` 与 `syscall_64.c`，结合文末 References。
 
 ## References
 
