@@ -126,42 +126,42 @@ chmod 775 ccoctl.rhel8
 
 ```mermaid
 graph TD
-    subgraph 安装前 (由 ccoctl 执行)
+    subgraph pre_ccoctl["安装前 (由 ccoctl 执行)"]
         A[ccoctl] --> B1(生成密钥对)
         A --> B2(为每个组件创建 IAM Role)
         A --> B3(上传公钥到 S3 桶)
         A --> B4(在 AWS 创建 OIDC IdP<br/>指向 S3 桶)
     end
 
-    subgraph AWS 云平台
-        S3[S3 桶 (公钥端点)] --> OIDC[AWS OIDC 身份提供商]
-        subgraph IAM
+    subgraph aws_cloud["AWS 云平台"]
+        S3["S3 桶 (公钥端点)"] --> OIDC["AWS OIDC 身份提供商"]
+        subgraph iam["IAM"]
             direction LR
-            Role_Ingress[IAM Role Ingress<br/>信任策略: 限定 ServiceAccount]
-            Role_Registry[IAM Role Registry<br/>信任策略: 限定 ServiceAccount]
+            Role_Ingress["IAM Role Ingress<br/>信任策略: 限定 ServiceAccount"]
+            Role_Registry["IAM Role Registry<br/>信任策略: 限定 ServiceAccount"]
         end
     end
 
-    subgraph OpenShift 集群
+    subgraph ocp["OpenShift 集群"]
         direction TB
-        API[Kubernetes API Server<br/>持有 私钥] --> SA_Ingress[ServiceAccount: router<br/>Annotation: role-arn=Role_Ingress]
-        SA_Registry[ServiceAccount: registry<br/>Annotation: role-arn=Role_Registry]
-        Pod_Ingress[Pod: Ingress Controller] -->|挂载| SA_Ingress
-        Pod_Registry[Pod: Image Registry] -->|挂载| SA_Registry
+        API["Kubernetes API Server<br/>持有 私钥"] --> SA_Ingress["ServiceAccount: router<br/>Annotation: role-arn=Role_Ingress"]
+        SA_Registry["ServiceAccount: registry<br/>Annotation: role-arn=Role_Registry"]
+        Pod_Ingress["Pod: Ingress Controller"] -->|挂载| SA_Ingress
+        Pod_Registry["Pod: Image Registry"] -->|挂载| SA_Registry
     end
 
-    subgraph 运行时 (自动流程)
+    subgraph runtime["运行时 (自动流程)"]
         direction LR
-        Req1[Pod 请求 AWS API] --> Req2[SDK 自动读取 JWT 令牌]
-        Req2 --> Req3[SDK 向 STS 发送 AssumeRoleWithWebIdentity 请求<br/>携带 JWT 令牌和 IAM Role ARN]
+        Req1["Pod 请求 AWS API"] --> Req2["SDK 自动读取 JWT 令牌"]
+        Req2 --> Req3["SDK 向 STS 发送 AssumeRoleWithWebIdentity 请求<br/>携带 JWT 令牌和 IAM Role ARN"]
     end
 
-    subgraph AWS STS 验证与响应
-        Val1[STS 接收请求] --> Val2[根据 JWT 的 iss 字段<br/>找到 OIDC IdP]
-        Val2 --> Val3[OIDC IdP 从 S3 获取公钥<br/>验证 JWT 签名]
+    subgraph sts_flow["AWS STS 验证与响应"]
+        Val1["STS 接收请求"] --> Val2["根据 JWT 的 iss 字段<br/>找到 OIDC IdP"]
+        Val2 --> Val3["OIDC IdP 从 S3 获取公钥<br/>验证 JWT 签名"]
         Val3 --> Val4{验证通过?}
-        Val4 -- 是 --> Val5[校验 JWT 的 sub 字段<br/>是否匹配 IAM Role 信任策略]
-        Val5 -- 是 --> Val6[STS 生成临时凭证<br/>(AK/SK/Token) 返回给 Pod]
+        Val4 -->|是| Val5["校验 JWT 的 sub 字段<br/>是否匹配 IAM Role 信任策略"]
+        Val5 -->|是| Val6["STS 生成临时凭证<br/>(AK/SK/Token) 返回给 Pod"]
     end
 
     Pod_Ingress -.-> Req1
