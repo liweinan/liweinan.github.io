@@ -10,7 +10,7 @@ title: "当Linux内核不再「迁就」PostgreSQL：一次抢占模型变更引
 
 想象一下这样的场景：你的数据库服务器刚刚升级了最新的Linux Kernel 7.0，期待着更好的性能和安全性。然而，上线后监控图表却显示了一个触目惊心的画面——PostgreSQL的吞吐量在毫无征兆的情况下**骤降了将近一半**。
 
-这不是虚构的故障演练，而是在Kernel 7.0发布前测试中被多次报告的真实问题[^1]。在标准的工作负载测试下，PostgreSQL等数据库的性能出现了显著的衰退，问题根源直指Linux内核调度器的一次看似"优化"的改动——**惰性抢占（PREEMPT_LAZY）** 的引入[^2]。本文将深入技术底层，剖析这次性能衰退的来龙去脉，并探讨其背后的设计哲学冲突。
+这背后的根源，直指Linux内核调度器在Kernel 7.0中引入的一次重大变更——**惰性抢占（PREEMPT_LAZY）** 模型[^1][^2]。本文将深入技术底层，剖析这次性能衰退的来龙去脉，并探讨其背后的设计哲学冲突。
 
 
 ## 一、Linux抢占模型速览：吞吐量 vs. 响应时间的权衡
@@ -295,26 +295,21 @@ sequenceDiagram
 ```
 
 
-## 四、修复方案：从"内核妥协"到"用户态适配"
+## 四、修复方案：内核的设计立场与RSEQ时间片扩展
 
-面对这个棘手的性能衰退问题，社区出现了两种截然不同的声音。
-
-### 方案A：内核妥协（被否决）
-
-最初，有人提出了一个看似最简单的方案：**将Kernel 7.0的默认抢占模式恢复为`PREEMPT_VOLUNTARY`**。毕竟，这是所有软件都已经验证过的"安全"配置。
-
-然而，这个提议被调度器维护者**Peter Zijlstra明确否决了**。他在commit [`476e8583ca16`](https://github.com/torvalds/linux/commit/476e8583ca16)中果断地在x86架构上启用了PREEMPT_LAZY[^12]，提交信息非常简洁：
+面对PostgreSQL的性能问题，调度器维护者Peter Zijlstra在commit [`476e8583ca16`](https://github.com/torvalds/linux/commit/476e8583ca16)中坚定地在x86架构上启用了PREEMPT_LAZY[^12]，提交信息非常简洁：
 
 > sched, x86: Enable Lazy preemption
 > 
 > Add the TIF bit and select the Kconfig symbol to make it go.
 
-他的理由代表了内核社区的长期愿景：
+这一决定背后的设计理念可以从commit [`7dadeaa6e851`](https://github.com/torvalds/linux/commit/7dadeaa6e851)中看出[^2]：引入`PREEMPT_LAZY`的核心目标是**简化内核代码，最终移除所有`cond_resched()`调用**。这是一个正确的技术方向，体现了内核社区的长期愿景：
 
-1. **设计目标**：引入`PREEMPT_LAZY`就是为了**干掉所有`cond_resched()`**，简化内核。这是一个正确的技术方向，不能因为一个应用的回退而放弃。
-2. **责任归属**：内核不应该为了迁就用户空间程序的行为而保留过时的机制。如果PostgreSQL依赖"不被抢占"来实现高性能，那么**应该修复的是PostgreSQL，而不是冻结内核的发展**。
+1. **简化内核**：消除内核代码中数百个启发式的`cond_resched()`检查点
+2. **统一调度**：将抢占决策集中到调度器，而非分散在代码各处
+3. **明确责任**：如果用户空间程序依赖特定的抢占行为来保证性能，应该通过显式的内核接口来声明需求，而非依赖隐式假设
 
-### 方案B：让PostgreSQL使用"RSEQ时间片扩展"（官方推荐）
+### 官方解决方案：让PostgreSQL使用RSEQ时间片扩展
 
 Peter Zijlstra和Thomas Gleixner给出的解决方案是：**让PostgreSQL使用Kernel 7.0中新增的RSEQ（Restartable Sequences）时间片扩展功能**[^13]。
 
@@ -357,8 +352,7 @@ struct rseq {
 
 这完美地解决了我们之前分析的"持锁被抢"的困境。PostgreSQL可以获得它梦寐以求的"短时不可抢占"保证，同时内核也可以继续朝着更简洁、更统一的调度架构演进。
 
-- **短期方案**：在Kernel 7.0发布初期，可以通过内核启动参数强制将抢占模式恢复为传统模式，作为权宜之计。
-- **长期方案**：PostgreSQL社区**需要在其代码中集成RSEQ时间片扩展的支持**。这是一个需要修改PostgreSQL锁管理器（`s_lock.c`）的工程，但这是从根本上解决问题的唯一途径。
+PostgreSQL社区需要在其代码中集成RSEQ时间片扩展的支持。这需要修改PostgreSQL锁管理器（`s_lock.c`）的实现，在获取自旋锁前请求时间片扩展，释放锁后清除请求，从而避免在持锁期间被抢占。
 
 ### 如何使用RSEQ时间片扩展
 

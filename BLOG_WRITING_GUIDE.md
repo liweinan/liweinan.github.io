@@ -351,6 +351,7 @@ sequenceDiagram
 - ✅ 使用准确的技术术语
 - ✅ 区分事实和推测（"实际测试显示" vs "理论上可能"）
 - ✅ 引用commit message作为设计意图的证据
+- ✅ **所有陈述和转述都必须有具体来源链接**（避免"有人提出"、"据报道"等没有明确出处的说法）
 
 **示例**:
 ```markdown
@@ -362,6 +363,14 @@ Peter Zijlstra说明了工作机制[^6]：
 
 # ❌ 差 - 无来源的断言
 LAZY标志会在时钟中断时被升级。（读者会问：你怎么知道的？）
+
+# ❌ 差 - 没有具体来源的转述
+有人提出了一个方案：恢复PREEMPT_VOLUNTARY模式。
+（谁提出的？在哪里提出的？什么时候？）
+
+# ✅ 好 - 有具体人名、commit和链接
+Peter Zijlstra在commit [`476e8583ca16`](https://github.com/torvalds/linux/commit/476e8583ca16)中
+果断地在x86架构上启用了PREEMPT_LAZY[^12]。
 ```
 
 ### 6.2 叙事技巧
