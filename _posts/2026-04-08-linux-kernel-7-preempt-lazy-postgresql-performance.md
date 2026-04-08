@@ -261,7 +261,7 @@ sequenceDiagram
     
     Note over CPU0: 时钟中断到达！
     Sched->>CPU0: 升级标志，强制抢占
-    CPU0--xCPU0: 被换出 (仍持有锁L!)
+    CPU0 --x CPU0: 被换出 (仍持有锁L!)
     deactivate CPU0
     
     Note over CPU1,CPU2: 其他CPU上的进程尝试获取锁
