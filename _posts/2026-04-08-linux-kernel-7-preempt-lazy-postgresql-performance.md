@@ -250,46 +250,44 @@ sequenceDiagram
     participant CPU1 as CPU 1 (进程B)
     participant CPU2 as CPU 2 (进程C)
     
-    CPU0 ->> Lock: 获取锁L
+    CPU0->>Lock: 获取锁L
     activate Lock
-    CPU0 ->> CPU0: 执行临界区代码
+    CPU0->>CPU0: 执行临界区代码
     
     Note over Sched: 设置 TIF_NEED_RESCHED_LAZY
-    Sched -->> CPU0: (标记，但不立即抢占)
+    Sched-->>CPU0: (标记，但不立即抢占)
     
-    CPU0 ->> CPU0: 继续执行临界区...
+    CPU0->>CPU0: 继续执行临界区...
     
     Note over CPU0: 时钟中断到达！
-    Sched ->> CPU0: 升级标志，强制抢占
-    CPU0 --x CPU0: 被换出 (仍持有锁L!)
-    deactivate CPU0
+    Sched->>CPU0: 升级标志，强制抢占
+    Note right of CPU0: 被换出 (仍持有锁L!)
     
     Note over CPU1,CPU2: 其他CPU上的进程尝试获取锁
     
-    CPU1 ->> Lock: TAS_SPIN(lock)
-    Lock -->> CPU1: 失败 (锁被占用)
-    CPU1 ->> CPU1: 自旋等待...
-    CPU1 ->> CPU1: 自旋等待...
+    CPU1->>Lock: TAS_SPIN(lock)
+    Lock-->>CPU1: 失败 (锁被占用)
+    CPU1->>CPU1: 自旋等待...
+    CPU1->>CPU1: 自旋等待...
     
-    CPU2 ->> Lock: TAS_SPIN(lock)
-    Lock -->> CPU2: 失败 (锁被占用)
-    CPU2 ->> CPU2: 自旋等待...
-    CPU2 ->> CPU2: 自旋等待...
+    CPU2->>Lock: TAS_SPIN(lock)
+    Lock-->>CPU2: 失败 (锁被占用)
+    CPU2->>CPU2: 自旋等待...
+    CPU2->>CPU2: 自旋等待...
     
     Note over CPU1,CPU2: CPU空转，浪费算力！
     
-    CPU1 ->> CPU1: 继续自旋...
-    CPU2 ->> CPU2: 继续自旋...
+    CPU1->>CPU1: 继续自旋...
+    CPU2->>CPU2: 继续自旋...
     
     Note over Sched,CPU0: 经过漫长等待...
-    Sched ->> CPU0: 重新调度进程A
-    activate CPU0
-    CPU0 ->> CPU0: 完成临界区
-    CPU0 ->> Lock: 释放锁L
+    Sched->>CPU0: 重新调度进程A
+    CPU0->>CPU0: 完成临界区
+    CPU0->>Lock: 释放锁L
     deactivate Lock
     
-    CPU1 ->> Lock: TAS_SPIN(lock)
-    Lock -->> CPU1: 成功！
+    CPU1->>Lock: TAS_SPIN(lock)
+    Lock-->>CPU1: 成功！
     activate Lock
     Note over CPU1,CPU2: 终于可以继续工作了
 ```
