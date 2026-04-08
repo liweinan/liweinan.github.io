@@ -522,6 +522,148 @@ grep -n "/Users/\|/home/" _posts/YYYY-MM-DD-*.md
 
 # 5. 检查代码块语言标识符
 grep -n '```[a-z]*' _posts/YYYY-MM-DD-*.md
+
+# 6. 验证Mermaid图表渲染（推荐）
+# 见下方 8.2.1 Mermaid图表本地验证
+```
+
+### 8.2.1 Mermaid图表本地验证
+
+**强烈建议**：在提交blog前本地验证所有Mermaid图表，避免推送后才发现渲染错误。
+
+#### 安装Mermaid CLI
+
+```bash
+# 使用npx（无需全局安装，每次自动下载最新版）
+npx -y @mermaid-js/mermaid-cli@latest --version
+
+# 或者全局安装（如果需要频繁使用）
+npm install -g @mermaid-js/mermaid-cli
+```
+
+**系统要求**：需要Node.js环境（通过`node --version`检查）
+
+#### 提取并验证所有图表
+
+**方法1：使用Python脚本（推荐）**
+
+```bash
+# 创建提取脚本
+cat > /tmp/test_mermaid.py << 'EOF'
+import re
+import sys
+
+post_file = sys.argv[1] if len(sys.argv) > 1 else '_posts/YYYY-MM-DD-*.md'
+
+with open(post_file, 'r') as f:
+    content = f.read()
+
+diagrams = re.findall(r'```mermaid\n(.*?)```', content, re.DOTALL)
+print(f"Found {len(diagrams)} diagrams\n")
+
+for i, diagram in enumerate(diagrams, 1):
+    filename = f'/tmp/diagram_{i}.mmd'
+    with open(filename, 'w') as f:
+        f.write(diagram.strip())
+    print(f"Saved {filename}")
+EOF
+
+# 运行提取
+python3 /tmp/test_mermaid.py _posts/2026-04-08-your-post.md
+
+# 验证所有图表
+for i in 1 2 3 4; do
+  echo "Testing diagram_$i..."
+  npx -y @mermaid-js/mermaid-cli@latest \
+    -i /tmp/diagram_$i.mmd \
+    -o /tmp/output_$i.svg 2>&1 | grep -E "(Generating|Error)"
+  
+  if [ -f /tmp/output_$i.svg ]; then
+    echo "✅ diagram_$i: SUCCESS"
+  else
+    echo "❌ diagram_$i: FAILED"
+  fi
+done
+```
+
+**方法2：验证单个图表**
+
+```bash
+# 手动创建测试文件
+cat > /tmp/test.mmd << 'EOF'
+sequenceDiagram
+    participant A as 用户
+    participant B as 服务器
+    A->>B: 请求
+    B-->>A: 响应
+EOF
+
+# 渲染为SVG
+npx -y @mermaid-js/mermaid-cli@latest -i /tmp/test.mmd -o /tmp/test.svg
+
+# 检查结果
+ls -lh /tmp/test.svg && echo "✅ 渲染成功"
+```
+
+#### 常见Mermaid错误及修复
+
+**错误1：箭头缺少空格或多余空格**
+
+```bash
+# ❌ 错误（某些版本不支持带空格的箭头）
+A ->> B: 消息
+A -->> B: 消息
+
+# ✅ 正确（无空格版本更兼容）
+A->>B: 消息
+A-->>B: 消息
+```
+
+**错误2：自引用的销毁箭头**
+
+```bash
+# ❌ 错误
+CPU0 --x CPU0: 被销毁
+
+# ✅ 正确：用Note代替
+Note right of CPU0: 被销毁
+```
+
+**错误3：对participant使用deactivate**
+
+```bash
+# ❌ 错误
+participant CPU0
+deactivate CPU0
+
+# ✅ 正确：只对activate过的生命线使用deactivate
+activate Lock
+deactivate Lock
+```
+
+**错误4：participant名称中使用HTML标签**
+
+```bash
+# ❌ 错误（sequenceDiagram不支持）
+participant A as 用户<br/>应用
+
+# ✅ 正确
+participant A as 用户(应用)
+```
+
+#### 自动化脚本
+
+可将验证步骤加入pre-commit hook或Makefile：
+
+```bash
+# .git/hooks/pre-commit
+#!/bin/bash
+changed_posts=$(git diff --cached --name-only | grep '^_posts/.*\.md$')
+if [ -n "$changed_posts" ]; then
+  echo "Validating Mermaid diagrams..."
+  python3 /tmp/test_mermaid.py $changed_posts
+  # 添加验证逻辑...
+fi
 ```
 
 ---
