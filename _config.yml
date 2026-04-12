@@ -2,7 +2,23 @@ title: "阿男的小窝"
 logo: "/images/site-logo.png"
 author: "阿男"
 email: l.weinan@gmail.com
+url: "https://weinan.io"
+baseurl: ""
+lang: zh-CN
+description: "阿男的技术博客：Linux 内核、云原生、Java/Rust 与系统编程笔记。"
+# GA4：左下角「管理」→「数据流」→ 点网站数据流 → 顶部「衡量 ID」（G- 开头）。填好后推送即可生效。
+ga4_measurement_id: "G-B2Y5VESQWM"
 plugins:
   - jekyll-seo-tag
   - jekyll-paginate
+  - jekyll-sitemap
+  - jekyll-feed
 paginate: 20
+feed:
+  posts_limit: 30
+defaults:
+  - scope:
+      path: ""
+      type: posts
+    values:
+      layout: post

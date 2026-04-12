@@ -14,13 +14,13 @@
             {% if page.previous.url %}
             <li>
                 <span>上一篇</span>
-                <a href="{{page.previous.url}}">{{page.previous.title}}</a>
+                <a href="{{ site.url }}{{ page.previous.url }}">{{ page.previous.title }}</a>
             </li>
             {% endif %}
             {% if page.next.url %}
             <li>
                 <span>下一篇</span>
-                <a href="{{page.next.url}}">{{page.next.title}}</a>
+                <a href="{{ site.url }}{{ page.next.url }}">{{ page.next.title }}</a>
             </li>
             {% endif %}
         </ul>
