@@ -35,7 +35,7 @@ a.site-brand {
     padding: 0.3em 0.8em;
     border-radius: 4px;
     transition: all 0.2s ease;
-    /* 与标题同一字号基准，logo 用 em 与「阿男的小窝」对齐 */
+    /* 与标题同一字号基准，logo 用 em 与「阿男聊技术」对齐 */
     font-size: 1.5em;
     /* 避免继承 .main 的 150% 行高，否则行框过高会导致 logo 与字形视觉不齐 */
     line-height: 1;
