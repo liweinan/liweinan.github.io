@@ -4,3 +4,5 @@
 _site/
 new_blog.txt
 ref.txt
+draft*
+tmp*
