@@ -186,6 +186,34 @@ static __always_inline int get_lazy_tif_bit(void)
 \```
 ```
 
+### 3.4 内核调用链（call chain）格式
+
+**适用场景**: 描述 Linux 内核**启动顺序**、**系统调用/中断/异常从用户态进入内核的传递链**时，若用长段落串讲函数名，可读性差且易与真实调用关系混淆。应优先使用**树状调用链**（call chain）表达。
+
+**推荐格式**:
+- 每行一个环节，子环节以 `└─` 缩进；可有多级 `└─`。
+- 每个节点写**函数名或硬件事件**，后接**圆括号**内的**相对仓库根的路径与行号**（`arch/x86/.../file.c:行号`），必要时用**`约`或行号范围**表示多行实现。
+- 需要强调语义时，在行末加**方括号短注**`【…】`（与代码注释风格一致，避免长句）。
+- 树内**仅使用纯文本**（代码块内不要写 Markdown 链接，链接不生效）；在代码块**之后**用一行「参见 / 对应源码：」集中给出 [`torvalds/linux` blob 链接](https://github.com/torvalds/linux)。
+
+**示例**（行号需与所引用的内核版本或 **GitHub 链接行号**一致，升级内核后应重对）:
+
+```text
+start_kernel()（init/main.c:1017）
+    └─ trap_init()（arch/x86/kernel/traps.c:1682）【陷阱与 IDT】
+
+cpu_init()（arch/x86/kernel/cpu/common.c:2466）
+    └─ syscall_init()（common.c:2304）
+        └─ idt_syscall_init()（common.c:2268）
+            └─ MSR_STAR、MSR_LSTAR(entry_SYSCALL_64)、MSR_SYSCALL_MASK 等
+```
+
+**与 `traps.c:行号 → 某文件:行号` 的互文**: 若从 A 文件**跳读**到 B 文件，可写为 `（main.c:1017 → traps.c:1682）` 表示“在 main 的该处发起，落点见 traps 行号”。
+
+**避免**:
+- 将**无直接调用关系**的步骤硬写成父子链（例如 `trap_init()` 并不会调用 `cpu_init()`；应分两棵树或分两节说明）。
+- 仅有一句“经 A、再 B、再 C”而不见树状结构——宜改为调用链。
+
 ---
 
 ## 四、Mermaid 图表规范
