@@ -59,36 +59,53 @@ struct pt_regs *regs = (struct pt_regs *)current_top_of_stack() - 1;
 
 因此：**异常 / `INT $0x80` / 外设 IRQ**，只要从用户态走上这条路径并最终进入 `sync_regs`，**目标栈顶语义与 `syscall` 一致**：都是 **`task_pt_regs(current)`** 对应区域。
 
----
-
-## 5. 与 `TSS.RSP0` / entry trampoline 的区别（必读）
-
-- **`cpu_init()` → `load_sp0((unsigned long)(cpu_entry_stack(cpu) + 1))`**（[`arch/x86/kernel/cpu/common.c`](https://github.com/torvalds/linux/blob/master/arch/x86/kernel/cpu/common.c)）把 **`TSS.RSP0`** 设为 **per-CPU entry trampoline stack**，用于**特权级切换的第一站**，与 **`task_pt_regs`** 所在的**进程内核栈**不是同一概念。
-- **`syscall`** **不经过** IDT，也**不使用** `TSS.RSP0`；它直接 **`cpu_current_top_of_stack`**。
-- **用户态 → 内核经 IDT** 时硬件先用 **`RSP0`**（entry stack），再在软件路径上 **`sync_regs`** 对齐到 **`task_pt_regs(current)`**。
+下文「同一套 top of stack 语义」指：**线程内核栈布局里那一份 `task_pt_regs(current)` / `task_top_of_stack(current)` 约定**，由 `cpu_current_top_of_stack` / `current_top_of_stack()` 表达；**不包含** `TSS.RSP0` 指向的 entry trampoline 栈。
 
 ---
 
-## 6. 简要对照表
+## 5. 与博文「三类事件」及各入口的对应关系
+
+博文里区分 **syscall**、**经 IDT 的软/硬中断与异常** 等；此处从**栈顶约定**把它们与 `cpu_current_top_of_stack` / `sync_regs` / `TSS.RSP0` 对齐说明。下列「是否用到同一套语义」均相对上文定义而言。
+
+| 入口类型 | 是否用到「同一套 top of stack 语义」 | 说明 |
+|---------|--------------------------------------|------|
+| **`syscall`** | ✅ | 汇编 **`movq PER_CPU_VAR(cpu_current_top_of_stack), %rsp`**（[`entry_64.S`](https://github.com/torvalds/linux/blob/master/arch/x86/entry/entry_64.S) **`entry_SYSCALL_64`**）；与上下文切换里 **`raw_cpu_write(cpu_current_top_of_stack, task_top_of_stack(next))`**（[`process_64.c`](https://github.com/torvalds/linux/blob/master/arch/x86/kernel/process_64.c)）写入的值**同源**。不经 IDT，**不使用** `TSS.RSP0`。 |
+| **用户态 IDT**（`INT $0x80`、外设 IRQ、多数 **`IST = 0`** 的异常） | ✅（在走到 **`sync_regs`** 并完成对齐时） | 硬件先从用户态切到 **`TSS.RSP0`**（entry trampoline 栈）；`idtentry` → **`error_entry`** → **`sync_regs`** 里 **`regs = (struct pt_regs *)current_top_of_stack() - 1`**，即 **`task_pt_regs(current)`**。入口帧若在 trampoline 上与 `regs` 不一致，则 **`*regs = *eregs`** 拷到线程栈标准槽位（[`traps.c`](https://github.com/torvalds/linux/blob/master/arch/x86/kernel/traps.c) **`sync_regs`**）。 |
+| **`TSS.RSP0` / entry trampoline** | ❌（**另一套**） | **`load_sp0((unsigned long)(cpu_entry_stack(cpu) + 1))`**（[`cpu/common.c`](https://github.com/torvalds/linux/blob/master/arch/x86/kernel/cpu/common.c) **`cpu_init` / `native_load_sp0`**）只表示** ring0 的第一段栈指针**；**不是** `task_top_of_stack(current)`，也不等同于 `task_pt_regs` 所在进程栈。 |
+| **IST 异常** | 硬件：**不同栈**；软件对齐目标：**仍** `task_pt_regs(current)` | 向量带 **IST≠0** 时，CPU 先把栈切到 **IST** 栈，与当前线程内核栈不同。`sync_regs` 注释写明可处理 **IST 或 trampoline** 上的 handler 帧：若 **`eregs` ≠ `regs`**，仍把 **`eregs`** 拷到 **`current_top_of_stack() - 1`** 所指 **`regs`**（线程栈上的标准 `pt_regs`），故**软件侧「目的槽」仍是同一套 top-of-stack 语义**；差别在**硬件先落哪里**。 |
+| **内核态**被中断 / 异常 | ⚠️ **不能**与用户态 IDT 路径一概而论 | **`error_entry`** 在内核态入口可能**不**走用户态那条 **`jmp sync_regs`**（例如 paranoid、或帧本来就在内核栈上）；是否再迁到「线程栈上的标准 **`task_pt_regs`**」取决于向量与 **`USER`** / **`PARANOID`** 等宏分支。不能与「用户态 IRQ / `INT $0x80` + `sync_regs`」等同表述为同一套路径。 |
+
+---
+
+## 6. 与 `TSS.RSP0` / entry trampoline 的并存关系（细读）
+
+- **`cpu_init()` → `load_sp0((unsigned long)(cpu_entry_stack(cpu) + 1))`** 把 **`TSS.RSP0`** 设为 **per-CPU entry trampoline stack**：仅供 **ring3 → ring0** 特权切换时硬件选中的**第一站**栈。
+- **用户态 → 内核经 IDT**：硬件必然先用到 **`RSP0`**（与 `cpu_current_top_of_stack` **无关**）；随后在 `idtentry` / `error_entry` / `sync_regs` 中把状态落到**进程**的 **`task_pt_regs(current)`**。
+- **`syscall`**：不经过上述 IDT+RSP0 序列，直接用 **`cpu_current_top_of_stack`** 设 **`%rsp`**，回到 §3、§5 表格第一行。
+
+---
+
+## 7. 术语与宏对照（速查）
 
 | 概念 | 含义 |
 |------|------|
-| `task_pt_regs(task)` | 任务内核栈布局中 **`struct pt_regs*`** |
-| `task_top_of_stack(task)` | **`task_pt_regs(task) + 1`** 的地址数值 |
-| `cpu_current_top_of_stack`（per-CPU） | 缓存 **`task_top_of_stack(current)`** |
-| `current_top_of_stack()` | 读取上述 per-CPU 值 |
-| `syscall` | 汇编 **`mov …, cpu_current_top_of_stack`** → `%rsp` |
-| `sync_regs()` | **`(struct pt_regs *)(current_top_of_stack() - 1)`** 作为线程栈目的槽 |
+| `task_pt_regs(task)` | 任务内核栈布局中 **`struct pt_regs*`**（[`processor.h`](https://github.com/torvalds/linux/blob/master/arch/x86/include/asm/processor.h)） |
+| `task_top_of_stack(task)` | **`(unsigned long)(task_pt_regs(task) + 1)`**，与 **`pt_regs`** 相邻的栈顶一端 |
+| `cpu_current_top_of_stack`（per-CPU） | 运行中缓存 **`task_top_of_stack(current)`** |
+| `current_top_of_stack()` | 读该 per-CPU 变量；**不是**读 `TSS.sp0` |
+| `syscall` | 汇编加载 **`cpu_current_top_of_stack` → %rsp**，再压栈构帧 |
+| `sync_regs()` | **`(struct pt_regs *)current_top_of_stack() - 1`** 作为线程栈上的目标 **`regs`** |
 
 ---
 
-## 7. 例外与边界（避免过度概括）
+## 8. 例外与边界（避免过度概括）
 
-- **内核态**正在执行时被中断 / 异常：**`error_entry`** 可能不走用户态那条 **`jmp sync_regs`**；栈上状态与是否再迁到“线程栈上的标准 `pt_regs`”需按具体向量与宏（如 paranoid、IST）单独看，不能一律等同用户态路径。
-- **IST≠0** 的异常：硬件先落在 **IST** 栈；**`sync_regs`** 注释说明其帮助处理 **IST 或 entry trampoline** 上的 handler，最终仍对齐到 **`current_top_of_stack()-1`** 所指的线程栈槽位（与主线实现意图一致时）。
+- **仅当** 从用户态进入且最终进入 **`sync_regs`** 并完成 **`regs`/`eregs`** 对齐时，才可以说与 **`syscall`** 共用**同一条「`task_pt_regs(current)` 槽位」语义**。
+- **IST≠0**：硬件落栈与线程栈不同；**软件**仍把 **`pt_regs` 内容对齐到 **`current_top_of_stack()-1`**（见 §5 表 IST 行）。若实现或配置导致某条路径**不进** `sync_regs`，则需单独跟踪该向量（本笔记不替代码写死分支表）。
+- **内核态**：见 §5 表末行；需按 **`entry_64.S`** / **`traps.c`** 里具体宏与标签区分，避免把 **`cpu_current_top_of_stack`** 误当成所有异常上下文的唯一栈指针。
 
 ---
 
 ## 参考锚点（便于在树里 `grep`）
 
-`cpu_current_top_of_stack`、`current_top_of_stack`、`task_top_of_stack`、`task_pt_regs`、`sync_regs`、`entry_SYSCALL_64`、`native_load_sp0` / `load_sp0`、`cpu_entry_stack`。
+`cpu_current_top_of_stack`、`current_top_of_stack`、`task_top_of_stack`、`task_pt_regs`、`sync_regs`、`entry_SYSCALL_64`、`native_load_sp0` / `load_sp0`、`cpu_entry_stack`、`idtentry`、`error_entry`、`paranoid`、`eregs`。
